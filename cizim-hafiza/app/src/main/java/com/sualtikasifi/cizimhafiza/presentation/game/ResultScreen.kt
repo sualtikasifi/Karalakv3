@@ -998,9 +998,9 @@ internal fun DoubleXpFace(amount: Int, u: androidx.compose.ui.unit.Dp, fs: (Floa
         verticalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxSize().padding(top = u * 5f, bottom = u * 10f)
     ) {
-        // the amount is the lure: gold, so it stands out from the white words around it and from the claim button beside it
+        // the amount is the lure: the biggest words on the button (gold on this orange was tried and read worse than white)
         LetteredText(
-            stringResource(R.string.result_x2_amount, amount), fs(52f), fill = Color(0xFFFFE27A), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f,
+            stringResource(R.string.result_x2_amount, amount), fs(52f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f,
             modifier = Modifier.fillMaxWidth().weight(0.57f)
         )
         Row(
