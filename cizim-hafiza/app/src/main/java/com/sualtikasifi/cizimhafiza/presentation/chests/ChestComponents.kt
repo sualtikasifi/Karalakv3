@@ -522,12 +522,12 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit, double
                                 }
                             },
                             gold = reward.gold,
-                            modifier = Modifier.at((BOARD_W - 600f) / 2f, 1660f, 600f, 600f / AD_BTN_RATIO)
+                            modifier = Modifier.at((BOARD_W - 560f) / 2f, 1668f, 560f, 560f / AD_BTN_RATIO)
                         )
                     }
                     // "Harika!" on the leafy orange button, once everything is in.
                     Box(
-                        Modifier.at(270f, 1790f, 540f, 225f)
+                        Modifier.at((BOARD_W - 515f) / 2f, 1808f, 515f, 210f)
                             .graphicsLayer {
                                 val t = button.value; alpha = t; val s = 0.8f + 0.2f * t; scaleX = s; scaleY = s
                             }
@@ -578,12 +578,30 @@ private fun DoubleGoldPill(state: Int, gold: Int, u: Dp, fs: (Float) -> androidx
             if (state == 1) {
                 androidx.compose.material3.CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier = Modifier.size(u * 52f))
             } else {
-                RewardLettering(
-                    text = if (done) stringResource(R.string.chest_double_done) else stringResource(R.string.chest_double_ad, gold),
-                    size = fs(46f),
-                    top = Color.White, bottom = Color(0xFFE8FFD8), outline = Color(0xFF14602A),
-                    modifier = Modifier.fillMaxWidth().fillMaxHeight(0.62f)
-                )
+                if (done) {
+                    RewardLettering(
+                        text = stringResource(R.string.chest_double_done),
+                        size = fs(54f),
+                        top = Color.White, bottom = Color(0xFFE8FFD8), outline = Color(0xFF14602A),
+                        modifier = Modifier.fillMaxWidth().fillMaxHeight(0.6f)
+                    )
+                } else {
+                    // two lines: what to do (big), what it earns (smaller)
+                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                        RewardLettering(
+                            text = stringResource(R.string.chest_double_watch),
+                            size = fs(54f),
+                            top = Color.White, bottom = Color(0xFFE8FFD8), outline = Color(0xFF14602A),
+                            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.5f)
+                        )
+                        RewardLettering(
+                            text = stringResource(R.string.chest_double_gain, gold),
+                            size = fs(44f),
+                            top = Color(0xFFFFF3B0), bottom = Color(0xFFFFD34D), outline = Color(0xFF14602A),
+                            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.42f / 0.5f)
+                        )
+                    }
+                }
             }
         }
     }

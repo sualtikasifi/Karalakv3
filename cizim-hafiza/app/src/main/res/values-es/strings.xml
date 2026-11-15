@@ -1210,7 +1210,8 @@
     <string name="chests_reward_gold">+%1$d de Oro</string>
     <string name="chests_reward_gold_label">Oro</string>
     <string name="chests_reward_button">¡Genial!</string>
-    <string name="chest_double_ad" formatted="false">Ver anuncio: +%1$d de oro más</string>
+    <string name="chest_double_watch">Ver anuncio</string>
+    <string name="chest_double_gain" formatted="false">+%1$d de oro más</string>
     <string name="chest_double_done">¡Oro duplicado!</string>
     <string name="chest_lost_watch">Ver anuncio y abrir ya</string>
     <string name="home_xp_format">%1$d / %2$d XP</string>
