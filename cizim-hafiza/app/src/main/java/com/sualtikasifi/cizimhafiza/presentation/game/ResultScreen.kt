@@ -996,16 +996,17 @@ internal fun DoubleXpFace(amount: Int, u: androidx.compose.ui.unit.Dp, fs: (Floa
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxSize().padding(top = u * 7f, bottom = u * 13f)
+        modifier = Modifier.fillMaxSize().padding(top = u * 5f, bottom = u * 10f)
     ) {
+        // the amount is the lure: gold, so it stands out from the white words around it and from the claim button beside it
         LetteredText(
-            stringResource(R.string.result_x2_amount, amount), fs(46f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f,
-            modifier = Modifier.fillMaxWidth().weight(0.55f)
+            stringResource(R.string.result_x2_amount, amount), fs(52f), fill = Color(0xFFFFE27A), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f,
+            modifier = Modifier.fillMaxWidth().weight(0.57f)
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth().weight(0.45f)
+            modifier = Modifier.fillMaxWidth().weight(0.43f)
         ) {
             Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 30f))
             Spacer(Modifier.width(u * 8f))
