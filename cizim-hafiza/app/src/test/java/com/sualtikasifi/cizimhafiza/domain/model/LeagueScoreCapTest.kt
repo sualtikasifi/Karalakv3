@@ -35,10 +35,10 @@ class LeagueScoreCapTest {
     }
 
     @Test
-    fun `the allowance grows by 3000 an hour from the account's own start`() {
+    fun `the allowance grows by 1500 an hour from the account's own start`() {
         val start = monthStart + 10 * hour
         val plan = LeagueScoreCap.plan(1_000_000, october, october, start, 29_000, start + 10 * hour)
-        assertEquals(30_000L + 30_000L - LeagueScoreCap.SAFETY_MARGIN_XP, plan.publishXp)
+        assertEquals(30_000L + 15_000L - LeagueScoreCap.SAFETY_MARGIN_XP, plan.publishXp)
     }
 
     @Test

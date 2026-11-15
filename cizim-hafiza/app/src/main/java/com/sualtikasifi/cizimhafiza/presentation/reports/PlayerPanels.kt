@@ -59,6 +59,7 @@ import com.sualtikasifi.cizimhafiza.util.PlayerAdmin
 import com.sualtikasifi.cizimhafiza.util.CouponUse
 import com.sualtikasifi.cizimhafiza.util.PlayerDetails
 import com.sualtikasifi.cizimhafiza.util.PlayerInfo
+import com.sualtikasifi.cizimhafiza.util.PlayerSearch
 import com.sualtikasifi.cizimhafiza.util.PlayerReportGroup
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -193,7 +194,9 @@ data class PlayersState(
     val loadingDetails: Boolean = false,
     /** Coupons an account redeemed, read only when asked for. */
     val couponUses: Map<String, List<CouponUse>> = emptyMap(),
-    val loadingCoupons: Boolean = false
+    val loadingCoupons: Boolean = false,
+    /** The list is the month's leaders (with their pace), not a search result. */
+    val showingLeaders: Boolean = false
 )
 
 @HiltViewModel
@@ -210,7 +213,7 @@ class PlayersViewModel @Inject constructor(private val admin: PlayerAdmin) : Vie
         viewModelScope.launch {
             admin.find(q)
                 .onSuccess { r ->
-                    _state.update { it.copy(busy = false, results = r, searched = true, selected = null, details = emptyMap(), couponUses = emptyMap()) }
+                    _state.update { it.copy(busy = false, results = r, searched = true, selected = null, details = emptyMap(), couponUses = emptyMap(), showingLeaders = false) }
                     // one hit opens its card at once; several are a list to choose from
                     if (r.size == 1) open(r.first().uid)
                 }
@@ -226,6 +229,19 @@ class PlayersViewModel @Inject constructor(private val admin: PlayerAdmin) : Vie
         }
         _state.update { it.copy(selected = uid) }
         if (uid !in _state.value.details) loadDetails(uid)
+    }
+
+    /** The month's top scores, with each one's pace: who climbs faster than honest play does. */
+    fun leaders() {
+        if (_state.value.busy) return
+        _state.update { it.copy(busy = true, message = null) }
+        viewModelScope.launch {
+            admin.leagueLeaders()
+                .onSuccess { r ->
+                    _state.update { it.copy(busy = false, results = r, searched = true, selected = null, details = emptyMap(), couponUses = emptyMap(), showingLeaders = true) }
+                }
+                .onFailure { e -> _state.update { it.copy(busy = false, message = e.message ?: "Lider listesi okunamadı.") } }
+        }
     }
 
     private fun loadDetails(uid: String) {
@@ -291,6 +307,10 @@ internal fun PlayersPanel(viewModel: PlayersViewModel = hiltViewModel()) {
             )
             ConsoleButton("Ara", viewModel::search, enabled = !state.busy && state.query.isNotBlank(), loading = state.busy && state.results.isEmpty(), height = 42.dp)
         }
+        ConsoleButton("Bu ayın liderleri ve hızları", viewModel::leaders, Modifier.fillMaxWidth(), enabled = !state.busy, loading = state.busy && state.query.isBlank(), height = 40.dp, style = ConsoleButtonStyle.Dark)
+        if (state.showingLeaders && state.results.isNotEmpty()) {
+            Text("Ayın başından beri ortalama XP/saat; ${PlayerSearch.SUSPICIOUS_XP_PER_HOUR} üstü şüpheli sayılır. Açmak için dokun: ödülden önce bak.", style = Console.Small)
+        }
         state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
         if (!state.searched && state.results.isEmpty()) {
             ConsoleEmpty(Icons.Filled.Search, "Bir oyuncu ara", body = "Adın ilk harflerini yaz (büyük küçük harf fark etmez); profilini, cezalarını ve bakiyesini gör, adını sıfırla, kilitle ya da telafi gönder.")
@@ -317,6 +337,17 @@ private fun PlayerCard(p: PlayerInfo, state: PlayersState, viewModel: PlayersVie
             Column(Modifier.weight(1f)) {
                 Text(p.nickname.ifBlank { "(adsız)" }, style = Console.Title, maxLines = 1)
                 Text("Kod ${p.friendCode.ifBlank { "-" }} · seviye ${p.level}", style = Console.Small)
+            }
+            if (state.showingLeaders) {
+                val monthStart = com.sualtikasifi.cizimhafiza.domain.model.LeagueScoreCap.monthStartMillis(
+                    com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(java.time.LocalDate.now(java.time.ZoneOffset.ofHours(3)))
+                )
+                val pace = PlayerSearch.xpPerHour(p.periodXp, monthStart, now)
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("${Console.compact(p.periodXp.toDouble())} XP", style = Console.Title)
+                    Tag("$pace XP/sa", fg = if (PlayerSearch.isSuspiciousPace(pace)) Console.Critical else Console.InkMuted, bg = if (PlayerSearch.isSuspiciousPace(pace)) Console.CriticalSoft else Console.SurfaceAlt)
+                }
+                Spacer(Modifier.width(8.dp))
             }
             if (locked) Tag("Kilitli", fg = Console.Critical, bg = Console.CriticalSoft)
         }

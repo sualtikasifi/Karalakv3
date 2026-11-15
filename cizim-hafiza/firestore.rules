@@ -710,8 +710,8 @@ service cloud.firestore {
     }
 
     // How much a month's score may hold: a 30000 burst (everything that legitimately lands at once — the monthly
-    // prize, referral rewards, a long offline stretch published in one go) plus 3000 an hour since the month began,
-    // which no hand can reach. Measured from the START OF THE MONTH, not from the previous write: a per-write
+    // prize, referral rewards, a long offline stretch published in one go) plus 1500 an hour since the month began,
+    // which no hand can reach (the heaviest honest players of a month average a few hundred an hour, round the clock). Measured from the START OF THE MONTH, not from the previous write: a per-write
     // allowance let a script climb to the ceiling in a handful of back-to-back writes. The same numbers decide who
     // appears in the global table and who can win it (functions/src/leagueRules.ts) — keep them in step.
     // The score must belong to the current month (or to last month during the first hour of a new one, for a device
@@ -720,7 +720,7 @@ service cloud.firestore {
     // The same allowance is also measured from the moment THIS account published its first score of the month
     // (periodStartAt, stamped by the server on that write and fixed for the rest of the month). A brand-new account —
     // which costs nothing to make — therefore opens a month at no more than the burst and cannot climb faster than
-    // 3000 an hour, however many writes it sends: a per-write allowance (the earlier rule) handed out a fresh burst
+    // 1500 an hour, however many writes it sends: a per-write allowance (the earlier rule) handed out a fresh burst
     // with every write, so a script reached the ceiling in seconds. An honest player who reinstalls starts again from
     // the burst and catches up within a day (LeagueScoreCap in the app publishes what the rules accept).
     // A score change must carry the server's time stamp.
@@ -740,8 +740,8 @@ service cloud.firestore {
              && (p == current || (p == current - 1 && now < periodStartMillis(current) + 3600000))
              && after.periodXp is int
              && startOk
-             && after.periodXp <= 30000 + (now - periodStartMillis(p)) / 1200
-             && after.periodXp <= 30000 + (now - startMillis) / 1200
+             && after.periodXp <= 30000 + (now - periodStartMillis(p)) / 2400
+             && after.periodXp <= 30000 + (now - startMillis) / 2400
              && after.get('periodXpAt', null) == request.time;
     }
 

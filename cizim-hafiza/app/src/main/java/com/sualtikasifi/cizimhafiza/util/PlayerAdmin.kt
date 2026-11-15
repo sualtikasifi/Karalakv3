@@ -83,6 +83,20 @@ object PlayerSearch {
      * The nicknames are stored as typed, so a prefix search is case sensitive: it is tried as typed and with the first letter
      * in capitals (the usual way a name is written), Turkish rules for the i.
      */
+    /** A month's average above this many XP an hour (round the clock) is worth a look: the heaviest honest players sit at a few hundred. */
+    const val SUSPICIOUS_XP_PER_HOUR = 500
+
+    /** The first day of a month is too short to say anything about a pace: it is measured over at least this many hours. */
+    private const val MIN_HOURS = 24.0
+
+    /** [periodXp] spread over the hours since the month began ([nowMillis] - [monthStartMillis]), at least a day's worth. */
+    fun xpPerHour(periodXp: Long, monthStartMillis: Long, nowMillis: Long): Long {
+        val hours = maxOf(MIN_HOURS, (nowMillis - monthStartMillis) / 3_600_000.0)
+        return (periodXp / hours).toLong()
+    }
+
+    fun isSuspiciousPace(xpPerHour: Long) = xpPerHour > SUSPICIOUS_XP_PER_HOUR
+
     fun nicknamePrefixes(q: String): List<String> {
         val tr = java.util.Locale("tr")
         val capital = q.replaceFirstChar { it.titlecase(tr) }
@@ -235,6 +249,30 @@ class PlayerAdmin @Inject constructor(
             }
         }
         coroutineScope { uids.take(PlayerSearch.MAX_RESULTS).map { async { lite(it) } }.awaitAll().filterNotNull() }
+    }
+
+    /**
+     * This month's highest scores, for a look at who is climbing unusually fast. The newest 40 by score are read and only this
+     * month's kept (a profile that has not played since keeps last month's number), so the top of the month never needs an index.
+     */
+    suspend fun leagueLeaders(limit: Int = 15): Result<List<PlayerInfo>> = runCatching {
+        val period = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(
+            java.time.LocalDate.now(java.time.ZoneOffset.ofHours(3))
+        )
+        firestore.collection("users").orderBy("periodXp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .limit(40).get().await().documents
+            .filter { it.getLong("periodId") == period }
+            .take(limit)
+            .map { user ->
+                PlayerInfo(
+                    uid = user.id,
+                    nickname = user.getString("nickname").orEmpty(),
+                    level = user.getLong("level") ?: 0L,
+                    periodXp = user.getLong("periodXp") ?: 0L,
+                    totalXp = user.getLong("totalXp") ?: 0L,
+                    friendCode = user.getString("friendCode").orEmpty()
+                )
+            }
     }
 
     private suspend fun lite(uid: String): PlayerInfo? {
