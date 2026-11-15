@@ -122,6 +122,30 @@ const store = (page) => page.evaluate(() => window.__store);
   await browser.close();
 }
 
+// ---- the test door: an Android phone opening the download page with ?webtest=1 gets the browser game button, and the game's gate lets it in
+{
+  const ua = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
+  const { browser, page } = await open(chromium, { userAgent: ua, viewport: { width: 400, height: 800 } }, "/indir/?webtest=1");
+  try {
+    await page.waitForSelector("#web", { timeout: 6000 });
+    const shown = await page.$eval("#web", (a) => getComputedStyle(a).display !== "none" && a.getAttribute("href") === "/?webtest=1");
+    if (!shown) fail("webtest: the download page does not offer the browser game button");
+    // the game's own gate, run on this phone (the flag was remembered by the page above): it must not send the phone away
+    await page.evaluate(async () => { (0, eval)(await (await fetch("/oyna/gate.js")).text()); });
+    await page.waitForTimeout(400);
+    if (!/\/indir/.test(page.url())) fail(`webtest: the gate still sent the Android phone away (${page.url()})`);
+  } catch (e) { fail(`webtest: ${e.message.split("\n")[0]}`); }
+  await browser.close();
+  // without the door the button stays hidden for an Android phone
+  const plain = await open(chromium, { userAgent: ua, viewport: { width: 400, height: 800 } }, "/indir/");
+  try {
+    await plain.page.waitForSelector("#web", { state: "attached", timeout: 6000 });
+    const hidden = await plain.page.$eval("#web", (a) => getComputedStyle(a).display === "none");
+    if (!hidden) fail("Android without the test door: the browser game button is shown");
+  } catch (e) { fail(`download page without the door: ${e.message.split("\n")[0]}`); }
+  await plain.browser.close();
+}
+
 // ---- a link that is not there
 {
   const { browser, page } = await open(iphone, { ...devices["iPhone 13"], locale: "en-US" }, `/b/Zzzzzzzzzz`);

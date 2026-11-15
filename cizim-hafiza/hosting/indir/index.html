@@ -134,7 +134,15 @@
   // an iPhone has no app: the browser game is the main button there
   // the browser game is for iPhones and iPads only: everybody else gets the store only
   var iosDevice = ios || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  if (!iosDevice) { $("web").style.display = "none"; var pw = document.querySelector(".pg a.web"); if (pw) { pw.removeAttribute("href"); pw.style.pointerEvents = "none"; } } // the painted button says iOS: it does nothing elsewhere
+  // the test door (see gate.js): with ?webtest=1 the browser game button works on any phone, for trying the game; ?webtest=0 shuts it again
+  var webtest = false;
+  try {
+    var wm = /[?&]webtest=([01])(&|$)/.exec(location.search);
+    if (wm) localStorage.setItem("karalak_webtest", wm[1]);
+    webtest = localStorage.getItem("karalak_webtest") === "1";
+  } catch (e) { webtest = /[?&]webtest=1(&|$)/.test(location.search); }
+  if (webtest && !iosDevice) { $("web").href = "/?webtest=1"; var tw = document.querySelector(".pg a.web"); if (tw) tw.setAttribute("href", "/?webtest=1"); }
+  if (!iosDevice && !webtest) { $("web").style.display = "none"; var pw = document.querySelector(".pg a.web"); if (pw) { pw.removeAttribute("href"); pw.style.pointerEvents = "none"; } } // the painted button says iOS: it does nothing elsewhere
   if (ios) { $("store").className = "btn second"; $("web").className = "btn primary"; $("store").parentNode.insertBefore($("web"), $("store")); }
 })();
 </script>
