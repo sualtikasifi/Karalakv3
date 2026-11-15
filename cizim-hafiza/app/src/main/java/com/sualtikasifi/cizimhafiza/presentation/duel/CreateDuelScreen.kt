@@ -110,7 +110,7 @@ fun CreateDuelScreen(
             text = stringResource(R.string.duel_create_opponent, opponentName),
             size = fs(50f),
             outline = PurpleOutline,
-            modifier = Modifier.art(190f, 596f, 462f, 76f),
+            modifier = Modifier.art(190f, 590f, 462f, 76f),
             minScale = 0.5f
         )
         FitText(
@@ -133,7 +133,7 @@ fun CreateDuelScreen(
             text = stringResource(R.string.select_word_count),
             size = fs(38f),
             outline = PurpleOutline,
-            modifier = Modifier.art(168f, 1192f, 506f, 68f),
+            modifier = Modifier.art(168f, 1186f, 506f, 68f),
             minScale = 0.5f
         )
         Row(
