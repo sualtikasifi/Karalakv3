@@ -5,6 +5,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -157,10 +160,23 @@ fun CreateDuelScreen(
         val sceneBitmap = remember { runCatching { com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(context.resources, R.drawable.duel_create_bg) }.getOrNull() }
         val pxX = (sceneBitmap?.width ?: 1) / ArtW
         val pxY = (sceneBitmap?.height ?: 1) / ArtH
-        val startSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.95f)
+        // A calm press: it goes down quickly, comes back with one soft settle (no wobble), and the phone ticks once as it lands.
+        val startSource = remember { MutableInteractionSource() }
+        val startPressed by startSource.collectIsPressedAsState()
+        val startScale = animateFloatAsState(
+            targetValue = if (startPressed) 0.965f else 1f,
+            animationSpec = spring(dampingRatio = 0.78f, stiffness = 520f),
+            label = "start_press"
+        )
+        val startSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.SinkState(startSource, startScale)
+        val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+        androidx.compose.runtime.LaunchedEffect(startPressed) {
+            if (startPressed) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+        }
         Box(
             Modifier.art(45f, 1470f, 750f, 152f)
-                .sunkenFace(startSink, sceneBitmap, 45f * pxX, 1470f * pxY, 750f * pxX, 152f * pxY, (14f * u.value).dp, (60f * u.value).dp)
+                .sunkenFace(startSink, sceneBitmap, 45f * pxX, 1470f * pxY, 750f * pxX, 152f * pxY, (12f * u.value).dp, (62f * u.value).dp,
+                    wellTop = Color(0xFF7A3508), wellBottom = Color(0xFFB85A10), dim = 0.12f)
                 .clickable(
                     interactionSource = startSink.source, indication = null,
                     onClick = { onChallengeStarted(selectedCount) }

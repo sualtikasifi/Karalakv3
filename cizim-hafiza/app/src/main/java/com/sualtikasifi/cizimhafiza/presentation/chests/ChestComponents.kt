@@ -236,7 +236,7 @@ private fun ChestTier.openVideoTailMs(): Long = 150L
  */
 /**
  * "Reklam izle: altın ×2" on the reward board: [watch] shows the rewarded ad and reports whether it was earned (the caller pays
- * the extra gold). Null offer = no button. Only a chest opened from its slot gets one; a coupon's, a login's or the free chest
+ * the extra gold). Null offer = no button. A chest opened from its slot and a coupon's get one; a login's or the free chest
  * does not (those are already gifts or already behind an ad).
  */
 class ChestDoubleOffer(val watch: (onResult: (earned: Boolean) -> Unit) -> Unit)

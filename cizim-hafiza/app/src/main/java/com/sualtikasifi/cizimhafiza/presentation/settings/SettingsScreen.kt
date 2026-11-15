@@ -336,7 +336,13 @@ fun SettingsScreen(
         couponState.chestRewards.firstOrNull()?.let { reward ->
             // Keyed on how many are left, so each chest starts its own opening from the beginning.
             androidx.compose.runtime.key(couponState.chestRewards.size) {
-                com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeCouponChest)
+                // Offered once per opening, and only when an ad is already loaded (decided as the board comes up).
+                val offer = remember(reward) {
+                    if (activity != null && viewModel.canOfferCouponDouble(reward)) {
+                        com.sualtikasifi.cizimhafiza.presentation.chests.ChestDoubleOffer { done -> viewModel.doubleCouponGold(activity, reward, done) }
+                    } else null
+                }
+                com.sualtikasifi.cizimhafiza.presentation.chests.ChestOpeningDialog(reward = reward, onDismiss = viewModel::consumeCouponChest, doubleOffer = offer)
             }
         }
         // What came of the last try, as a pill with its own icon: what was won (green), or why not (red).
