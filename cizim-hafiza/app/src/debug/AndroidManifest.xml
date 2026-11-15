@@ -81,6 +81,10 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.FrameDialogPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the result screen's "x2 XP" ad button (see DoubleXpPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.DoubleXpPreviewActivity"
+            android:exported="true" />
         <!-- Debug builds only: the painted rank ladder (see RankLadderPreviewActivity). -->
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.RankLadderPreviewActivity"

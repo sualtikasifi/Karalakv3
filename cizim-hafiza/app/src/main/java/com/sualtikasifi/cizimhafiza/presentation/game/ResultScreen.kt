@@ -65,6 +65,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.breathing
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.a11yButton
 import androidx.compose.foundation.layout.wrapContentSize
@@ -406,35 +407,10 @@ fun ResultScreen(
                             enabled = canDouble,
                             veiled = !com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current,
                             onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly { onDoubleXp?.invoke() },
-                            modifier = Modifier.weight(1f)
+                            // a slow breath while it can be used: the eye goes to the offer first
+                            modifier = Modifier.weight(1f).then(if (canDouble) Modifier.breathing(0.022f, 1400) else Modifier)
                         ) {
-                            // Both lines centred on the button's face, the clapper beside the small line's left. The face is
-                            // the orange part only: the picture's dark rim is thicker under it (about 16 units of 100) than
-                            // over it (about 12), so the two lines are kept inside that band and share it 64/36 (the amount is the lure, so it gets the room; the small line sits a little low); each line
-                            // shrinks to its room, so neither can run onto the rim.
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.fillMaxSize().padding(top = u * 6f, bottom = u * 12f)
-                            ) {
-                                LetteredText(stringResource(R.string.result_x2_amount, com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(state.xpEarned) * 2), fs(48f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth().weight(0.68f))
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxWidth().weight(0.32f).offset(y = u * 3f)
-                                ) {
-                                    Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 22f))
-                                    Spacer(Modifier.width(u * 6f))
-                                    FitText(
-                                        text = stringResource(R.string.result_watch_ad),
-                                        style = PaintedStyle(color = Color.White, fontSize = fs(23f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
-                                        maxLines = 1,
-                                        minScale = 0.5f,
-                                        contentAlignment = Alignment.CenterStart,
-                                        modifier = Modifier.weight(1f, fill = false)
-                                    )
-                                }
-                            }
+                            DoubleXpFace(amount = com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(state.xpEarned) * 2, u = u, fs = ::fs)
                         }
                     }
                     // Where the player's thumb lands, so the XP can fly from exactly there to the home bar.
@@ -1009,6 +985,38 @@ internal fun ArtButton(
         Box(Modifier.fillMaxSize().padding(start = u * (if (iconRoom > 0f) iconRoom else 38f), end = u * 38f), content = content)
     }
 }
+/**
+ * The face of the "x2 XP" ad button: the doubled amount big on top, "Reklam izle" under it with the clapper, both lettered the same way
+ * (white, brown outline) and centred together on the button's orange face. The face is the picture's orange part only: its dark rim is thicker
+ * under it than over it, so the block is kept in that band, the amount getting a little more than half of it and the call to action the rest
+ * (big enough to read as the thing to tap, not a footnote); each line shrinks to its room, so neither can run onto the rim.
+ */
+@Composable
+internal fun DoubleXpFace(amount: Int, u: androidx.compose.ui.unit.Dp, fs: (Float) -> androidx.compose.ui.unit.TextUnit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxSize().padding(top = u * 7f, bottom = u * 13f)
+    ) {
+        LetteredText(
+            stringResource(R.string.result_x2_amount, amount), fs(46f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f,
+            modifier = Modifier.fillMaxWidth().weight(0.55f)
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth().weight(0.45f)
+        ) {
+            Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 30f))
+            Spacer(Modifier.width(u * 8f))
+            LetteredText(
+                stringResource(R.string.result_watch_ad), fs(34f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+        }
+    }
+}
+
 /** A parchment panel for the extra cards (quick match, duel, daily challenge). */
 @Composable
 internal fun PaperPanel(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
