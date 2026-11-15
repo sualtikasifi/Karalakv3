@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.offset
+import com.sualtikasifi.cizimhafiza.presentation.common.breathing
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.rememberCoroutineScope
@@ -499,7 +500,7 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit, double
                             }
                         }
                     }
-                    // The offer to double the gold, on the paper under the prizes: a small second choice, never the main button.
+                    // The offer to double the gold: its own green button between the paper and "Harika!", with the gold it would add written on it.
                     if (doubleState != 3 && stage == 2) {
                         DoubleGoldPill(
                             state = doubleState,
@@ -520,12 +521,13 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit, double
                                     }
                                 }
                             },
-                            modifier = Modifier.at((BOARD_W - 540f) / 2f, 1522f, 540f, 72f)
+                            gold = reward.gold,
+                            modifier = Modifier.at((BOARD_W - 600f) / 2f, 1660f, 600f, 600f / AD_BTN_RATIO)
                         )
                     }
                     // "Harika!" on the leafy orange button, once everything is in.
                     Box(
-                        Modifier.at(210f, 1712f, 660f, 275f)
+                        Modifier.at(270f, 1790f, 540f, 225f)
                             .graphicsLayer {
                                 val t = button.value; alpha = t; val s = 0.8f + 0.2f * t; scaleX = s; scaleY = s
                             }
@@ -548,41 +550,47 @@ private fun ChestOpeningScene(reward: ChestReward, onDismiss: () -> Unit, double
     }
 }
 
-/** The small orange "Reklam izle: altın ×2" pill; a green tick once it has paid. */
+/**
+ * The green "Reklam izle: +N altın daha" button (a painted picture, the play icon on its left; the words are laid over it). While the
+ * ad runs a spinner takes the words' place; once it has paid, the icon becomes a tick and the words say so.
+ */
 @Composable
-private fun DoubleGoldPill(state: Int, u: Dp, fs: (Float) -> androidx.compose.ui.unit.TextUnit, onClick: () -> Unit, modifier: Modifier) {
+private fun DoubleGoldPill(state: Int, gold: Int, u: Dp, fs: (Float) -> androidx.compose.ui.unit.TextUnit, onClick: () -> Unit, modifier: Modifier) {
     val done = state == 2
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
-    Row(
+    BoxWithConstraints(
         modifier = modifier
-            .shadow(u * 8f, shape, ambientColor = Color(0xFF6E3C0A), spotColor = Color(0xFF6E3C0A))
-            .background(
-                if (done) Brush.verticalGradient(listOf(Color(0xFF6FD97A), Color(0xFF2FA248)))
-                else Brush.verticalGradient(listOf(Color(0xFFFFB347), Color(0xFFF47721))),
-                shape
-            )
-            .border(u * 5f, if (done) Color(0xFF14602A) else Color(0xFFA9460A), shape)
-            .then(if (state == 0) Modifier.pressable(pressedScale = 0.95f, onClick = onClick) else Modifier),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+            .then(if (state == 0) Modifier.breathing(0.02f, 1400).pressable(pressedScale = 0.95f, onClick = onClick) else Modifier),
+        contentAlignment = Alignment.Center
     ) {
-        if (state == 1) {
-            androidx.compose.material3.CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier = Modifier.size(u * 40f))
-        } else {
-            Text(
-                text = if (done) "✓" else "▶",
-                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color.White, fontSize = fs(40f), textAlign = TextAlign.Center)
-            )
-            Spacer(Modifier.width(u * 14f))
-            RewardLettering(
-                text = stringResource(if (done) R.string.chest_double_done else R.string.chest_double_ad),
-                size = fs(36f),
-                top = Color.White, bottom = Color(0xFFFFEBC8), outline = if (done) Color(0xFF0E4A20) else Color(0xFF823200),
-                modifier = Modifier.weight(1f, fill = false).fillMaxHeight(0.8f)
-            )
+        Image(painterResource(R.drawable.chest_ad_btn), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+        if (done) {
+            // the play icon becomes a tick
+            Box(
+                Modifier.align(Alignment.CenterStart).offset(x = maxWidth * 0.073f).size(maxHeight * 0.62f)
+                    .background(Color(0xFF1F8F3A), androidx.compose.foundation.shape.CircleShape)
+                    .border(u * 4f, Color.White, androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("✓", style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color.White, fontSize = fs(46f), textAlign = TextAlign.Center))
+            }
+        }
+        Box(Modifier.align(Alignment.CenterEnd).fillMaxWidth(0.74f).fillMaxHeight().padding(end = maxWidth * 0.05f), contentAlignment = Alignment.Center) {
+            if (state == 1) {
+                androidx.compose.material3.CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier = Modifier.size(u * 52f))
+            } else {
+                RewardLettering(
+                    text = if (done) stringResource(R.string.chest_double_done) else stringResource(R.string.chest_double_ad, gold),
+                    size = fs(46f),
+                    top = Color.White, bottom = Color(0xFFE8FFD8), outline = Color(0xFF14602A),
+                    modifier = Modifier.fillMaxWidth().fillMaxHeight(0.62f)
+                )
+            }
         }
     }
 }
+
+/** chest_ad_btn.webp's width / height. */
+private const val AD_BTN_RATIO = 1240f / 309f
 
 private const val BOARD_W = 1080f
 private const val BOARD_H = 2000f
