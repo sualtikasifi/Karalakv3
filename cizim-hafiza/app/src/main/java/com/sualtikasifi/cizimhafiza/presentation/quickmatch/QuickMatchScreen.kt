@@ -178,11 +178,11 @@ fun QuickMatchScreen(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-            val searchingAlpha by animateFloatAsState(if (state is QuickMatchState.Searching) 1f else 0f, tween(450), label = "quick_match_search_scene")
-            // the last moments of the notice fade the scene away, so the screen does not end with a cut
-            val leaving by animateFloatAsState(if (cancelling) 0.35f else 1f, tween((CANCEL_NOTICE_MS - 250).toInt(), delayMillis = 250), label = "quick_match_leaving")
+            // While the cancel notice shows, the scene stays fully opaque: the search state is already gone by then, and
+            // fading it (or its own alpha) would let the plank background underneath show through the painted scene.
+            val searchingAlpha by animateFloatAsState(if (state is QuickMatchState.Searching || cancelling) 1f else 0f, tween(450), label = "quick_match_search_scene")
             if (searchingAlpha > 0f) {
-                SearchingScene(onBack = leave, cancelling = cancelling, modifier = Modifier.alpha(searchingAlpha * leaving))
+                SearchingScene(onBack = leave, cancelling = cancelling, modifier = Modifier.alpha(searchingAlpha))
             }
             Column(
                 modifier = Modifier
