@@ -647,32 +647,48 @@ private fun GoldPill(gold: Int) {
 /** One tab of the store: the painted wooden plaque (orange when chosen, brown otherwise) with its little picture and word. */
 @Composable
 private fun TabChip(label: String, art: Int, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    // The painted pill (icon at its left end, an empty glossy middle for the label) lifts a touch when chosen and the
-    // other two go quiet: paler and less saturated, so the chosen tab is the one that is plainly lit.
-    val glow by androidx.compose.animation.core.animateFloatAsState(
+    // The painted pill (icon at its left end, an empty glossy middle for the label). The chosen tab is lit and a little
+    // larger, with a warm glow around it; the others keep their colour but are darker and a little smaller, so all three
+    // stay readable and the chosen one is the one that plainly shines.
+    val lit by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (selected) 1f else 0f,
         animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = 380f),
-        label = "tabGlow"
+        label = "tabLit"
     )
-    val quiet = remember {
-        androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0.45f) })
-    }
+    val tone = androidx.compose.ui.graphics.ColorFilter.colorMatrix(dimmed(0.9f + 0.1f * lit, 0.70f + 0.30f * lit))
     BoxWithConstraints(
         modifier = modifier
             .aspectRatio(TAB_ART_W / TAB_ART_H)
             .graphicsLayer {
-                val lift = 1f + 0.045f * glow
-                scaleX = lift
-                scaleY = lift
+                val size = 0.93f + 0.15f * lit
+                scaleX = size
+                scaleY = size
             }
             .pressable(pressedScale = 0.93f, onClick = onClick)
     ) {
         val w = maxWidth
         val h = maxHeight
+        // a soft warm glow behind the chosen pill: a few rounded bars, each a little wider and fainter than the last
+        Box(
+            Modifier.fillMaxSize().drawBehind {
+                if (lit > 0.01f) {
+                    val top = size.height * 0.20f
+                    val barH = size.height - top
+                    for (i in 1..6) {
+                        val grow = i * 2.2.dp.toPx()
+                        drawRoundRect(
+                            color = Color(0xFFFFE27A).copy(alpha = 0.16f * lit * (1f - i / 7f)),
+                            topLeft = Offset(-grow, top - grow),
+                            size = androidx.compose.ui.geometry.Size(size.width + 2 * grow, barH + 2 * grow),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(barH / 2f + grow)
+                        )
+                    }
+                }
+            }
+        )
         Image(
             painterResource(art), contentDescription = null, contentScale = ContentScale.FillBounds,
-            colorFilter = if (selected) null else quiet,
-            alpha = 0.72f + 0.28f * glow,
+            colorFilter = tone,
             modifier = Modifier.fillMaxSize()
         )
         // the label sits in the empty middle: right of the icon, left of the small splash, on the bar (below the leaves)
@@ -683,6 +699,21 @@ private fun TabChip(label: String, art: Int, selected: Boolean, modifier: Modifi
             LetteredText(label, (h.value * 0.34f).sp, outline = Color(0xFF2A1250), maxLines = 1, minScale = 0.5f)
         }
     }
+}
+
+/** A colour matrix with the given saturation (1 = unchanged), every colour then multiplied by [brightness]. */
+private fun dimmed(saturation: Float, brightness: Float): androidx.compose.ui.graphics.ColorMatrix {
+    val s = saturation
+    val b = brightness
+    val r = 0.213f; val g = 0.715f; val bl = 0.072f
+    return androidx.compose.ui.graphics.ColorMatrix(
+        floatArrayOf(
+            b * (r + (1 - r) * s), b * (g - g * s), b * (bl - bl * s), 0f, 0f,
+            b * (r - r * s), b * (g + (1 - g) * s), b * (bl - bl * s), 0f, 0f,
+            b * (r - r * s), b * (g - g * s), b * (bl + (1 - bl) * s), 0f, 0f,
+            0f, 0f, 0f, 1f, 0f
+        )
+    )
 }
 
 private const val TAB_ART_W = 600f
