@@ -591,7 +591,9 @@ internal fun PaintedHome(
                 else Box(box(363f, 770f, 483f, 808f), contentAlignment = Alignment.Center) { BoostBadge(xpEvent.multiplier) }
             }
         }
-        Tile(558f, 776f, 816f, 1012f, 578f, 918f, 798f, 1002f, stringResource(R.string.menu_play), onPlay)
+        // two lines like the card beside it ("Arkadaşınla / Yarış"): the first word on top, the rest below (a language
+        // whose name for it is one word stays on one line)
+        Tile(558f, 776f, 816f, 1012f, 578f, 918f, 798f, 1002f, stringResource(R.string.menu_play).replaceFirst(' ', '\n'), onPlay)
         Tile(30f, 1018f, 288f, 1204f, 50f, 1142f, 268f, 1188f, stringResource(R.string.menu_levels), onLevels)
         Tile(294f, 1018f, 552f, 1204f, 320f, 1142f, 526f, 1188f, stringResource(R.string.menu_friends), onFriends, needsNet = true) {
             if (pendingFriendRequests > 0) CornerCount(box(484f, 1024f, 548f, 1072f), pendingFriendRequests)
