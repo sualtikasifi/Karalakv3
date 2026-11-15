@@ -1052,6 +1052,8 @@ function refreshHome() {
   try { const fr = frameRing(frameById(P.frame)); fr.style.cssText += ";width:100%;height:100%"; $("h-avatar").replaceChildren(fr); } catch {}
   $("h-nick").textContent = P.nick; paintLevel(P.xp);
   for (const k of Object.keys(x.tiles)) $("tx-" + k).textContent = x.tiles[k];
+// "Çevrimdışı / Oyna" on two lines like "Arkadaşınla / Yarış" (a one-word name stays on one line)
+$("tx-offline").style.whiteSpace = "pre-line"; $("tx-offline").textContent = x.tiles.offline.replace(" ", "\n");
   for (const k of ["gold", "chest"]) $("h-soon-" + k).textContent = x.appOnly;
   refreshDaily(); renderChests(ctx);
   // A rune can be bought now: the mascot shows a pulsing badge (MainMenuViewModel.runeReady).

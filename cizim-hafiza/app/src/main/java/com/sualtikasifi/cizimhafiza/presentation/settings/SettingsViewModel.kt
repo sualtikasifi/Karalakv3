@@ -66,8 +66,8 @@ class SettingsViewModel @Inject constructor(
                 is RedeemResult.Success -> {
                     couponFailures = 0
                     val coupon = result.coupon
-                    if (coupon.gold > 0) settingsRepository.earnGold(coupon.gold)
-                    if (coupon.xp > 0) settingsRepository.addXp(coupon.xp)
+                    if (coupon.gold > 0) settingsRepository.earnGold(coupon.gold, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.COUPON)
+                    if (coupon.xp > 0) settingsRepository.addXp(coupon.xp, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.COUPON)
                     // Chests are not put away: each is opened right now, one opening animation after another.
                     val opened = coupon.chests.flatMap { (tier, n) -> List(n) { settingsRepository.openChestNow(tier) } }
                     if (opened.isNotEmpty()) _coupon.update { it.copy(chestRewards = it.chestRewards + opened) }

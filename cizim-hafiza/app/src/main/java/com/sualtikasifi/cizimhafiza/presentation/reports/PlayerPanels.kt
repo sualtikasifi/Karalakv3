@@ -59,6 +59,7 @@ import com.sualtikasifi.cizimhafiza.util.PlayerAdmin
 import com.sualtikasifi.cizimhafiza.util.CouponUse
 import com.sualtikasifi.cizimhafiza.util.PlayerDetails
 import com.sualtikasifi.cizimhafiza.util.PlayerInfo
+import com.sualtikasifi.cizimhafiza.util.PlayerSearch
 import com.sualtikasifi.cizimhafiza.util.PlayerReportGroup
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -193,7 +194,14 @@ data class PlayersState(
     val loadingDetails: Boolean = false,
     /** Coupons an account redeemed, read only when asked for. */
     val couponUses: Map<String, List<CouponUse>> = emptyMap(),
-    val loadingCoupons: Boolean = false
+    val loadingCoupons: Boolean = false,
+    /** The list is the month's leaders (with their pace), not a search result. */
+    val showingLeaders: Boolean = false,
+    /** The "Ceza ve geri alma" form: what to take back, why, and the account whose permanent ban awaits its second tap. */
+    val penaltyXp: String = "",
+    val penaltyGold: String = "",
+    val penaltyReason: String = "",
+    val confirmBan: String? = null
 )
 
 @HiltViewModel
@@ -210,7 +218,7 @@ class PlayersViewModel @Inject constructor(private val admin: PlayerAdmin) : Vie
         viewModelScope.launch {
             admin.find(q)
                 .onSuccess { r ->
-                    _state.update { it.copy(busy = false, results = r, searched = true, selected = null, details = emptyMap(), couponUses = emptyMap()) }
+                    _state.update { it.copy(busy = false, results = r, searched = true, selected = null, details = emptyMap(), couponUses = emptyMap(), showingLeaders = false) }
                     // one hit opens its card at once; several are a list to choose from
                     if (r.size == 1) open(r.first().uid)
                 }
@@ -226,6 +234,19 @@ class PlayersViewModel @Inject constructor(private val admin: PlayerAdmin) : Vie
         }
         _state.update { it.copy(selected = uid) }
         if (uid !in _state.value.details) loadDetails(uid)
+    }
+
+    /** The month's top scores, with each one's pace: who climbs faster than honest play does. */
+    fun leaders() {
+        if (_state.value.busy) return
+        _state.update { it.copy(busy = true, message = null) }
+        viewModelScope.launch {
+            admin.leagueLeaders()
+                .onSuccess { r ->
+                    _state.update { it.copy(busy = false, results = r, searched = true, selected = null, details = emptyMap(), couponUses = emptyMap(), showingLeaders = true) }
+                }
+                .onFailure { e -> _state.update { it.copy(busy = false, message = e.message ?: "Lider listesi okunamadı.") } }
+        }
     }
 
     private fun loadDetails(uid: String) {
@@ -254,7 +275,7 @@ class PlayersViewModel @Inject constructor(private val admin: PlayerAdmin) : Vie
             _state.update { it.copy(busy = false, message = if (r.isSuccess) done else "Olmadı: ${r.exceptionOrNull()?.message}") }
             if (r.isSuccess) {
                 // the record and the name may have changed: read both again
-                admin.find(_state.value.query).onSuccess { list -> _state.update { it.copy(results = list) } }
+                if (!_state.value.showingLeaders) admin.find(_state.value.query).onSuccess { list -> _state.update { it.copy(results = list) } }
                 loadDetails(uid)
             }
         }
@@ -263,6 +284,24 @@ class PlayersViewModel @Inject constructor(private val admin: PlayerAdmin) : Vie
     fun resetName(p: PlayerInfo) = act(p.uid, "Ad sıfırlandı.") { admin.resetName(p.uid, p.nickname) }
     fun lock(p: PlayerInfo) = act(p.uid, "Oyuncu kilitlendi.") { admin.lock(p.uid) }
     fun unlock(p: PlayerInfo) = act(p.uid, "Kilitler kaldırıldı.") { admin.unlock(p.uid) }
+    /** Takes XP / gold back and/or punishes: the player's app applies it on its next opening. A ban asks for a second tap first. */
+    fun penalize(p: PlayerInfo, action: PlayerAdmin.Action) {
+        val s = _state.value
+        if (action == PlayerAdmin.Action.BAN && s.confirmBan != p.uid) {
+            _state.update { it.copy(confirmBan = p.uid, message = "Kalıcı ban için bir kez daha dokun. Geri alınabilir ama oyuncu bunu görür.") }
+            return
+        }
+        val done = when (action) {
+            PlayerAdmin.Action.REVOKE -> "Geri alma sıraya alındı: oyuncunun uygulaması bir sonraki açılışında uygular."
+            PlayerAdmin.Action.STRIKE -> "Ceza yazıldı: oyuncunun uygulaması bir sonraki açılışında uygular."
+            PlayerAdmin.Action.BAN -> "Kalıcı ban yazıldı: oyuncunun uygulaması bir sonraki açılışında uygular."
+        }
+        act(p.uid, done) {
+            admin.penalize(p.uid, action, s.penaltyXp.toIntOrNull() ?: 0, s.penaltyGold.toIntOrNull() ?: 0, s.penaltyReason.ifBlank { "panel" })
+        }
+        _state.update { it.copy(confirmBan = null, penaltyXp = "", penaltyGold = "", penaltyReason = "") }
+    }
+
     fun grant(p: PlayerInfo) {
         val s = _state.value
         act(p.uid, "Telafi sıraya alındı: oyuncunun uygulaması bir sonraki açılışında (en geç birkaç saat içinde) alır.") {
@@ -291,6 +330,10 @@ internal fun PlayersPanel(viewModel: PlayersViewModel = hiltViewModel()) {
             )
             ConsoleButton("Ara", viewModel::search, enabled = !state.busy && state.query.isNotBlank(), loading = state.busy && state.results.isEmpty(), height = 42.dp)
         }
+        ConsoleButton("Bu ayın liderleri ve hızları", viewModel::leaders, Modifier.fillMaxWidth(), enabled = !state.busy, loading = state.busy && state.query.isBlank(), height = 40.dp, style = ConsoleButtonStyle.Dark)
+        if (state.showingLeaders && state.results.isNotEmpty()) {
+            Text("Ayın başından beri ortalama XP/saat; ${PlayerSearch.SUSPICIOUS_XP_PER_HOUR} üstü şüpheli sayılır. Açmak için dokun: ödülden önce bak.", style = Console.Small)
+        }
         state.message?.let { ConsoleNotice(it, kind = noticeKindOf(it)) }
         if (!state.searched && state.results.isEmpty()) {
             ConsoleEmpty(Icons.Filled.Search, "Bir oyuncu ara", body = "Adın ilk harflerini yaz (büyük küçük harf fark etmez); profilini, cezalarını ve bakiyesini gör, adını sıfırla, kilitle ya da telafi gönder.")
@@ -318,7 +361,18 @@ private fun PlayerCard(p: PlayerInfo, state: PlayersState, viewModel: PlayersVie
                 Text(p.nickname.ifBlank { "(adsız)" }, style = Console.Title, maxLines = 1)
                 Text("Kod ${p.friendCode.ifBlank { "-" }} · seviye ${p.level}", style = Console.Small)
             }
-            if (locked) Tag("Kilitli", fg = Console.Critical, bg = Console.CriticalSoft)
+            if (state.showingLeaders) {
+                val monthStart = com.sualtikasifi.cizimhafiza.domain.model.LeagueScoreCap.monthStartMillis(
+                    com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(java.time.LocalDate.now(java.time.ZoneOffset.ofHours(3)))
+                )
+                val pace = PlayerSearch.xpPerHour(p.periodXp, monthStart, now)
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("${Console.compact(p.periodXp.toDouble())} XP", style = Console.Title)
+                    Tag("$pace XP/sa", fg = if (PlayerSearch.isSuspiciousPace(pace)) Console.Critical else Console.InkMuted, bg = if (PlayerSearch.isSuspiciousPace(pace)) Console.CriticalSoft else Console.SurfaceAlt)
+                }
+                Spacer(Modifier.width(8.dp))
+            }
+            if (locked) Tag(if (com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(d?.lockedUntilMillis ?: 0L)) "Banlı" else "Kilitli", fg = Console.Critical, bg = Console.CriticalSoft)
         }
         if (!open) return@ConsoleCard
         Spacer(Modifier.height(10.dp))
@@ -340,10 +394,13 @@ private fun PlayerCard(p: PlayerInfo, state: PlayersState, viewModel: PlayersVie
             Figure("Havuzda tur", d.poolRuns?.toString() ?: "—", Modifier.weight(1f))
             Figure("Kuyrukta tur", d.queueRuns?.toString() ?: "—", Modifier.weight(1f), alert = (d.queueRuns ?: 0L) > 0)
         }
+        // where this month's XP and gold came from (the cloud save of an updated, signed-in player)
+        Spacer(Modifier.height(8.dp))
+        EarnedBySource(p, d)
         d.lastSavedMillis?.let { Text("Son bulut kaydı: ${clock(it)} (oyuncunun son görülme zamanına en yakın iz)", style = Console.Small, modifier = Modifier.padding(top = 6.dp)) }
         if (locked) {
             Spacer(Modifier.height(8.dp))
-            ConsoleNotice("${clock(d.lockedUntilMillis)} tarihine kadar kilitli", kind = NoticeKind.Error)
+            ConsoleNotice(if (com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(d.lockedUntilMillis)) "Kalıcı olarak banlı (Kilidi aç ile geri alınır)" else "${clock(d.lockedUntilMillis)} tarihine kadar kilitli", kind = NoticeKind.Error)
         }
         if (d.penalties.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
@@ -383,6 +440,40 @@ private fun PlayerCard(p: PlayerInfo, state: PlayersState, viewModel: PlayersVie
         Spacer(Modifier.height(12.dp))
         Box(Modifier.fillMaxWidth().height(1.dp).background(Console.Grid))
         Spacer(Modifier.height(10.dp))
+        Overline("Ceza ve geri alma")
+        Spacer(Modifier.height(4.dp))
+        Text("Yazdığın miktar oyuncunun uygulamasında bir sonraki açılışta düşülür (eldekinden fazlası düşmez). Boş bırakırsan yalnızca ceza yazılır.", style = Console.Small)
+        Spacer(Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            ConsoleTextField(
+                value = state.penaltyGold, onValueChange = { v -> viewModel.edit { copy(penaltyGold = v.filter(Char::isDigit).take(9)) } },
+                placeholder = "Geri alınacak altın", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
+            )
+            ConsoleTextField(
+                value = state.penaltyXp, onValueChange = { v -> viewModel.edit { copy(penaltyXp = v.filter(Char::isDigit).take(9)) } },
+                placeholder = "Geri alınacak XP", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f)
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        ConsoleTextField(
+            value = state.penaltyReason, onValueChange = { v -> viewModel.edit { copy(penaltyReason = v.take(80)) } },
+            placeholder = "Neden (denetim kaydına yazılır)", modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        val anyRevoke = ((state.penaltyGold.toIntOrNull() ?: 0) + (state.penaltyXp.toIntOrNull() ?: 0)) > 0
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            ConsoleSecondaryButton("Yalnız geri al", { viewModel.penalize(p, PlayerAdmin.Action.REVOKE) }, Modifier.weight(1f), enabled = !state.busy && anyRevoke, height = 38.dp)
+            ConsoleButton("Ceza ver", { viewModel.penalize(p, PlayerAdmin.Action.STRIKE) }, Modifier.weight(1f), enabled = !state.busy, height = 38.dp, style = ConsoleButtonStyle.DangerSoft)
+        }
+        Spacer(Modifier.height(8.dp))
+        ConsoleButton(
+            if (state.confirmBan == p.uid) "Evet, kalıcı olarak banla" else "Kalıcı ban",
+            { viewModel.penalize(p, PlayerAdmin.Action.BAN) }, Modifier.fillMaxWidth(), enabled = !state.busy, height = 40.dp,
+            style = if (state.confirmBan == p.uid) ConsoleButtonStyle.Danger else ConsoleButtonStyle.DangerSoft
+        )
+        Spacer(Modifier.height(12.dp))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Console.Grid))
+        Spacer(Modifier.height(10.dp))
         Overline("Telafi gönder")
         Spacer(Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -407,6 +498,48 @@ private fun PlayerCard(p: PlayerInfo, state: PlayersState, viewModel: PlayersVie
             icon = Icons.Filled.Redeem, height = 40.dp
         )
     }
+}
+
+/**
+ * "Bu ay nereden kazandı": the month's XP and gold by source, biggest first, with each one's share. A player whose month comes
+ * mostly from one source that is not play (a coupon, a reward) stands out here. Nothing is shown for a save that carries none.
+ */
+@Composable
+private fun EarnedBySource(p: PlayerInfo, d: PlayerDetails) {
+    val period = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(java.time.LocalDate.now(java.time.ZoneOffset.ofHours(3)))
+    val xp = d.xpSources
+    val gold = d.goldSources
+    if (xp == null && gold == null || d.earnedPeriod != period) {
+        Text(
+            "Kazanç kaynağı verisi yok: oyuncu henüz bu özelliğe sahip sürümü kullanmıyor, Google'a bağlı değil ya da bu ay yeni bir bulut kaydı yok.",
+            style = Console.Small
+        )
+        return
+    }
+    Overline("Bu ay nereden kazandı")
+    SourceLines("XP", xp.orEmpty(), p.periodXp)
+    Spacer(Modifier.height(6.dp))
+    SourceLines("Altın", gold.orEmpty(), null)
+}
+
+@Composable
+private fun SourceLines(title: String, sources: Map<String, Long>, publishedXp: Long?) {
+    val total = sources.values.sum().coerceAtLeast(1L)
+    Text(
+        "$title: toplam ${Console.compact(sources.values.sum().toDouble())}" + (publishedXp?.let { " (ligde ${Console.compact(it.toDouble())})" } ?: ""),
+        style = Console.Small.copy(color = Console.Ink),
+        modifier = Modifier.padding(top = 3.dp)
+    )
+    sources.entries.sortedByDescending { it.value }.forEach { (key, amount) ->
+        val share = (amount * 100 / total).toInt()
+        // play is expected to be most of a month; a reward or coupon doing that is what to look at
+        val odd = share >= 50 && key !in setOf("game", "online", "daily")
+        Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(com.sualtikasifi.cizimhafiza.domain.model.EarnSource.labelOf(key), style = Console.Small, modifier = Modifier.weight(1f))
+            Text("${Console.compact(amount.toDouble())} · %$share", style = Console.Small.copy(color = if (odd) Console.Critical else Console.Ink))
+        }
+    }
+    if (sources.isEmpty()) Text("Henüz kayıt yok.", style = Console.Small)
 }
 
 /** One labelled figure in a row of them. */

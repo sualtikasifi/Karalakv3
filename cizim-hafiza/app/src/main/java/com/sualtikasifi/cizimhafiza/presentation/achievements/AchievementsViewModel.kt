@@ -114,8 +114,8 @@ class AchievementsViewModel @Inject constructor(
         viewModelScope.launch {
             if (achievementDao.claim(achievement.name) == 1) {
                 when (achievement.rewardType) {
-                    AchievementRewardType.XP -> settingsRepository.addXp(achievement.xpReward)
-                    AchievementRewardType.GOLD -> settingsRepository.earnGold(achievement.goldReward)
+                    AchievementRewardType.XP -> settingsRepository.addXp(achievement.xpReward, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.ACHIEVEMENT)
+                    AchievementRewardType.GOLD -> settingsRepository.earnGold(achievement.goldReward, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.ACHIEVEMENT)
                 }
             }
         }

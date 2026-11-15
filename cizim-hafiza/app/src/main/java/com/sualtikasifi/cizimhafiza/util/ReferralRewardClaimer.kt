@@ -67,11 +67,11 @@ class ReferralRewardClaimer @Inject constructor(
             runCatching { friendRepository.claimPendingRewards() }
                 .onSuccess { totals ->
                     if (totals.xp > 0) {
-                        settingsRepository.addXp(totals.xp)
+                        settingsRepository.addXp(totals.xp, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.REFERRAL)
                         _lastClaimedXp.value = totals.xp
                     }
                     if (totals.gold > 0) {
-                        settingsRepository.earnGold(totals.gold)
+                        settingsRepository.earnGold(totals.gold, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.REFERRAL)
                         _lastClaimedGold.value = totals.gold
                     }
                 }

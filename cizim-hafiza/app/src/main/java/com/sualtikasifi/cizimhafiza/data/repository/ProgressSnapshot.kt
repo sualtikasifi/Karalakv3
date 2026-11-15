@@ -101,6 +101,13 @@ data class ProgressSnapshot(
     /** 1 once the rating ask was shown, and how many Quick Match rounds were finished — so a reinstall does not ask again. */
     val ratingPromptShown: Int = 0,
     val quickMatchGames: Int = 0,
+    /**
+     * What the account earned this league month, by source (see EarnLog): which month, then XP and gold per source. Only read by
+     * the developer panel, never restored into the game.
+     */
+    val earnedPeriod: Long = -1L,
+    val xpSources: Map<String, Long> = emptyMap(),
+    val goldSources: Map<String, Long> = emptyMap(),
     val backedUpAt: Long
 ) {
     /**
@@ -149,6 +156,9 @@ data class ProgressSnapshot(
         "dailyResult" to dailyResult,
         "ratingPromptShown" to ratingPromptShown,
         "quickMatchGames" to quickMatchGames,
+        "earnedPeriod" to earnedPeriod,
+        "xpSources" to xpSources,
+        "goldSources" to goldSources,
         "backedUpAt" to backedUpAt
     )
 
@@ -203,6 +213,9 @@ data class ProgressSnapshot(
             dailyResult = data.str("dailyResult"),
             ratingPromptShown = data.int("ratingPromptShown"),
             quickMatchGames = data.int("quickMatchGames"),
+            earnedPeriod = data.long("earnedPeriod", absent = -1L),
+            xpSources = (data["xpSources"] as? Map<*, *>)?.mapNotNull { (k, v) -> (k as? String)?.let { it to ((v as? Number)?.toLong() ?: 0L) } }?.toMap().orEmpty(),
+            goldSources = (data["goldSources"] as? Map<*, *>)?.mapNotNull { (k, v) -> (k as? String)?.let { it to ((v as? Number)?.toLong() ?: 0L) } }?.toMap().orEmpty(),
             backedUpAt = data.long("backedUpAt")
         )
 

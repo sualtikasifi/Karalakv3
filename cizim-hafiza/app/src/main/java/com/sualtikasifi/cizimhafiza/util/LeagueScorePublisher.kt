@@ -82,6 +82,7 @@ class LeagueScorePublisher @Inject constructor(
      * while the debounce above is still counting down.
      */
     fun publishNow() {
+        if (settingsRepository.leagueBanned) return
         scope.launch { publish(snapshotFor(settingsRepository.periodXp.value, avatarPhotoResolver.currentUrl())) }
     }
 
@@ -108,6 +109,8 @@ class LeagueScorePublisher @Inject constructor(
         !legalConsentStore.childMode.value || authRepository.authState.value is com.sualtikasifi.cizimhafiza.domain.repository.AuthState.Linked
 
     private suspend fun publish(snapshot: Snapshot) {
+        // a permanently banned account publishes nothing: its score cannot come back by playing offline
+        if (settingsRepository.leagueBanned) return
         if (!snapshot.mayPublish) return
         if (settingsRepository.publishedLeagueScoreSignature == snapshot.signature) return
         runCatching {

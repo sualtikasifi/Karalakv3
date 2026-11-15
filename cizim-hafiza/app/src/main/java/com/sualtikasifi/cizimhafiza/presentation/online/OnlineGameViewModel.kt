@@ -732,7 +732,7 @@ class OnlineGameViewModel @Inject constructor(
         // on top of it, not instead of it.
         val liveXp = if (outcome.isCorrect) XpAwards.scaled(outcome.xpAwarded, xpEventMultiplier) else 0
         if (liveXp > 0) {
-            settingsRepository.addXp(liveXp)
+            settingsRepository.addXp(liveXp, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.ONLINE)
             roundXpEarned += liveXp
         }
 

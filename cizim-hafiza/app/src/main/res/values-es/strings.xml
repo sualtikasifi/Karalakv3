@@ -1189,6 +1189,9 @@
     <string name="penalty_understood">Entendido</string>
     <string name="quick_match_locked_title">Este modo está cerrado temporalmente</string>
     <string name="quick_match_locked_body">Este modo está cerrado por un tiempo debido a una infracción. Partida Rápida y Jugar con Amigos vuelven a abrir en unos %1$s.</string>
+    <string name="quick_match_banned_title">Cuenta cerrada</string>
+    <string name="quick_match_banned_body">Esta cuenta fue retirada de forma permanente de los modos en línea y de la liga por infringir las normas. Puedes seguir jugando sin conexión.</string>
+    <string name="penalty_banned_warning">Tu cuenta se cerró de forma permanente. Partida Rápida, Jugar con Amigos y la liga no se abrirán más para esta cuenta. Puedes seguir jugando sin conexión.</string>
 
     <!-- Chests (kasalar) — earned only from a WON Race a Friend match. -->
     <string name="chest_tier_silver">Cofre de Aprendiz</string>

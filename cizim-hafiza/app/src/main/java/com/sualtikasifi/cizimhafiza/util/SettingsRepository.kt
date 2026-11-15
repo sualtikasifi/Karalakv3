@@ -363,7 +363,22 @@ class SettingsRepository @Inject constructor(
     val ownedStoreIds: StateFlow<Set<String>> get() = ledger.ownedStoreIds
 
     /** Gold earned by playing (rounds, achievements, daily challenge). Sealed like every other economy write. */
-    fun earnGold(amount: Int) = ledger.addGold(amount)
+    fun earnGold(amount: Int, source: com.sualtikasifi.cizimhafiza.domain.model.EarnSource = com.sualtikasifi.cizimhafiza.domain.model.EarnSource.OTHER) {
+        ledger.addGold(amount)
+        logEarned("gold", source, amount)
+    }
+
+    /** Adds [amount] to this month's running total of what [source] paid ([kind] is "xp" or "gold"); see EarnLog. */
+    @Synchronized
+    private fun logEarned(kind: String, source: com.sualtikasifi.cizimhafiza.domain.model.EarnSource, amount: Int) {
+        if (amount <= 0) return
+        val period = LeaguePeriod.periodIdFor(com.sualtikasifi.cizimhafiza.util.TurkeyTime.today())
+        prefs.edit { putString(KEY_EARN_LOG, com.sualtikasifi.cizimhafiza.domain.model.EarnLog.add(prefs.getString(KEY_EARN_LOG, null), period, kind, source, amount)) }
+    }
+
+    /** What this account earned this league month, by source (empty until it earns something). */
+    fun earnedThisMonth(): com.sualtikasifi.cizimhafiza.domain.model.EarnLog.Totals =
+        com.sualtikasifi.cizimhafiza.domain.model.EarnLog.parse(prefs.getString(KEY_EARN_LOG, null))
 
     /** Takes gold back after a moderation penalty. Never below zero; sealed like every other economy write. */
     fun revokeGold(amount: Int): Int = ledger.revokeGold(amount)
@@ -448,9 +463,9 @@ class SettingsRepository @Inject constructor(
     }
 
     /** Opens a chest of [tier] on the spot (a coupon's chest): its reward is paid at once and no slot is needed. */
-    fun openChestNow(tier: ChestTier): ChestReward = chests.payOutright(tier)
+    fun openChestNow(tier: ChestTier): ChestReward = chests.payOutright(tier).also { logEarned("gold", com.sualtikasifi.cizimhafiza.domain.model.EarnSource.CHEST, it.gold) }
     fun startUnlockingChest(chestId: String): Boolean = chests.startUnlocking(chestId)
-    fun openChestIfReady(chestId: String): ChestReward? = chests.openIfReady(chestId)
+    fun openChestIfReady(chestId: String): ChestReward? = chests.openIfReady(chestId)?.also { logEarned("gold", com.sualtikasifi.cizimhafiza.domain.model.EarnSource.CHEST, it.gold) }
     fun instantOpenChest(chestId: String): Boolean = chests.instantOpen(chestId)
     fun speedUpChest(chestId: String, millis: Long): Boolean = chests.speedUp(chestId, millis)
 
@@ -542,6 +557,7 @@ class SettingsRepository @Inject constructor(
         // "Ücretsiz altının hazır!" when this wait is over (see GiftReadyNotifier).
         com.sualtikasifi.cizimhafiza.notifications.GiftReadyNotifier.sync(context, next, _adChestNextAt.value)
         ledger.addGold(AD_GOLD_AMOUNT)
+        logEarned("gold", com.sualtikasifi.cizimhafiza.domain.model.EarnSource.AD, AD_GOLD_AMOUNT)
         return true
     }
 
@@ -556,6 +572,7 @@ class SettingsRepository @Inject constructor(
         val next = now + AD_CHEST_COOLDOWN_MILLIS * (100 - RuneEffects.adCooldownReductionPercent(runes.levels)) / 100
         val reward = chests.payOutright(ChestTier.GOLD) { putLong(KEY_AD_CHEST_NEXT_AT, next) }
         _adChestNextAt.value = next
+        logEarned("gold", com.sualtikasifi.cizimhafiza.domain.model.EarnSource.AD, reward.gold)
         com.sualtikasifi.cizimhafiza.notifications.GiftReadyNotifier.sync(context, _adGoldNextAtMillis.value, next)
         return reward
     }
@@ -623,9 +640,18 @@ class SettingsRepository @Inject constructor(
         penaltiesApplied = penaltiesApplied + 1
     }
 
+    /**
+     * This account was banned for good from the developer panel: it no longer publishes a league score, so a ban is not undone by playing
+     * offline. Account-scoped (cleared with the rest when another account takes over the device).
+     */
+    var leagueBanned: Boolean
+        get() = prefs.getBoolean(KEY_LEAGUE_BANNED, false)
+        set(value) { prefs.edit(commit = true) { putBoolean(KEY_LEAGUE_BANNED, value) } }
+
     @Synchronized
-    fun addXp(amount: Int) {
+    fun addXp(amount: Int, source: com.sualtikasifi.cizimhafiza.domain.model.EarnSource = com.sualtikasifi.cizimhafiza.domain.model.EarnSource.OTHER) {
         if (amount <= 0) return
+        logEarned("xp", source, amount)
         // The XP runes speed up the player's LEVEL only; the league (period) XP stays exactly what was earned, so a rune
         // never buys a better league place.
         val gained = amount + amount * RuneEffects.xpPercent(runes.levels) / 100
@@ -860,6 +886,8 @@ class SettingsRepository @Inject constructor(
         putInt(KEY_LIFETIME_SCORE, 0)
         putInt(KEY_LIFETIME_XP, 0)
         putInt(KEY_PENALTIES_APPLIED, 0)
+        remove(KEY_LEAGUE_BANNED)
+        remove(KEY_EARN_LOG)
         putInt(KEY_LIFETIME_WORDS_DRAWN, 0)
         putInt(KEY_LIFETIME_GAMES_PLAYED, 0)
         putInt(KEY_LIFETIME_PERFECT_ROUNDS, 0)
@@ -1213,6 +1241,8 @@ class SettingsRepository @Inject constructor(
         const val KEY_EARNED_LEAGUE_REWARDS = "earned_league_rewards"
         const val KEY_LIFETIME_SCORE = "lifetime_score"
         const val KEY_LIFETIME_XP = "lifetime_xp"
+        const val KEY_LEAGUE_BANNED = "league_banned"
+        const val KEY_EARN_LOG = "earn_log"
         const val KEY_PENALTIES_APPLIED = "penalties_applied"
         const val KEY_LIFETIME_WORDS_DRAWN = "lifetime_words_drawn"
         const val KEY_LIFETIME_GAMES_PLAYED = "lifetime_games_played"

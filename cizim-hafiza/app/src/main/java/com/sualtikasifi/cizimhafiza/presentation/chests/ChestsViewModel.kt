@@ -67,7 +67,7 @@ class ChestsViewModel @Inject constructor(
     fun doubleGold(activity: android.app.Activity, reward: com.sualtikasifi.cizimhafiza.domain.model.ChestReward, onResult: (Boolean) -> Unit) {
         adManager.maybeShowRewarded(activity, DOUBLE_PLACEMENT) { outcome ->
             val earned = outcome == com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.EARNED
-            if (earned) settingsRepository.earnGold(reward.gold)
+            if (earned) settingsRepository.earnGold(reward.gold, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.AD)
             onResult(earned)
         }
     }

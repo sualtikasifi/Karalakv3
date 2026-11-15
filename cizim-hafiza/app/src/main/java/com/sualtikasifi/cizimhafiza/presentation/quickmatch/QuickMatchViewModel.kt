@@ -128,6 +128,7 @@ class QuickMatchViewModel @Inject constructor(
             // consequence the player is meant to understand, and a tile that
             // silently does nothing reads as a broken app.
             penaltyRepository.lockedUntilMillis()?.let { until ->
+                if (com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(until)) settingsRepository.leagueBanned = true
                 _state.value = QuickMatchState.Locked(until)
                 return@launch
             }

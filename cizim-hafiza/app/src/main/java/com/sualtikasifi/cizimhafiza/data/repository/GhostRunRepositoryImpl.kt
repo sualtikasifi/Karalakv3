@@ -138,6 +138,13 @@ class GhostRunRepositoryImpl @Inject constructor(
         xpEarned: Int,
         goldEarned: Int
     ) {
+        // A player's rounds are only ever filed to grow a pool that the matches do not read yet (every match is drawn from
+        // the hand-trained set, see BOT_OPPONENT_SHARE) and that the reviewer works through by hand: the first few rounds
+        // of a day are plenty for that, and every one costs two writes (more once the old ones are pruned).
+        if (filedToday() >= MAX_FILED_PER_DAY) {
+            Log.i(TAG, "Round not recorded: $MAX_FILED_PER_DAY rounds already filed today")
+            return
+        }
         val slice = GhostRuns.recordableSlice(wordIds, perWord, items) ?: run {
             // Says WHY, because a round that never reaches the review queue is
             // otherwise indistinguishable from a broken upload.
@@ -219,6 +226,7 @@ class GhostRunRepositoryImpl @Inject constructor(
             mapOf("uid" to uid, "itemsJson" to json.encodeToString(slice.items))
         )
         batch.commit().await()
+        countFiledToday()
         Log.i(TAG, "Round filed for review: ${runRef.id} (${slice.wordIds.size} words)")
 
         pruneOwnRuns(uid)
@@ -489,6 +497,19 @@ class GhostRunRepositoryImpl @Inject constructor(
      * roughly once per [PRUNE_ODDS] saves keeps the overshoot to a handful of
      * documents and the cost to a tenth.
      */
+    private val filingPrefs by lazy { context.getSharedPreferences("ghost_filing", android.content.Context.MODE_PRIVATE) }
+
+    private fun filingDay(): String = java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString()
+
+    /** Rounds this device has filed for review today (UTC). */
+    private fun filedToday(): Int =
+        if (filingPrefs.getString("day", null) == filingDay()) filingPrefs.getInt("count", 0) else 0
+
+    private fun countFiledToday() {
+        val n = filedToday() + 1
+        filingPrefs.edit().putString("day", filingDay()).putInt("count", n).apply()
+    }
+
     private suspend fun pruneOwnRuns(uid: String) {
         if (Random.nextInt(PRUNE_ODDS) != 0) return
         runCatching {
@@ -517,6 +538,9 @@ class GhostRunRepositoryImpl @Inject constructor(
     private companion object {
         const val TAG = "GhostRunRepository"
         const val PRUNE_ODDS = 10
+
+        /** The most rounds one device files for review in a day (UTC). */
+        const val MAX_FILED_PER_DAY = 3
         const val PRUNE_HEADROOM = 10
         const val CANDIDATES_PER_QUERY = 4
 

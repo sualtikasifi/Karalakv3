@@ -159,8 +159,8 @@ class MainMenuViewModel @Inject constructor(
         val reward = rewards.forDay(day)
         val newStreak = settingsRepository.recordLoginClaim(loginDay, popup.streakBefore, continuing = true)
         val gold = com.sualtikasifi.cizimhafiza.domain.model.RuneEffects.loginGold(settingsRepository.runeLevels.value, reward.gold)
-        if (gold > 0) settingsRepository.earnGold(gold)
-        if (reward.xp > 0) settingsRepository.addXp(reward.xp)
+        if (gold > 0) settingsRepository.earnGold(gold, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.LOGIN)
+        if (reward.xp > 0) settingsRepository.addXp(reward.xp, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.LOGIN)
         // The Şanslı Zar rune sometimes adds a joker to the day's reward; it is shown in the window with the rest.
         val dice = settingsRepository.luckyDiceJoker()
         val jokers = reward.jokers + listOfNotNull(dice)

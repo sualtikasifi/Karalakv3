@@ -1188,6 +1188,9 @@
     <string name="penalty_understood">Understood</string>
     <string name="quick_match_locked_title">This mode is temporarily closed</string>
     <string name="quick_match_locked_body">This mode is closed for a while because of a violation. Quick Match and Play with Friends reopen in about %1$s.</string>
+    <string name="quick_match_banned_title">Account closed</string>
+    <string name="quick_match_banned_body">This account was permanently removed from the online modes and the league for breaking the rules. You can keep playing offline.</string>
+    <string name="penalty_banned_warning">Your account was permanently closed. Quick Match, Race a Friend and the league will not open again for this account. You can keep playing offline.</string>
 
     <!-- Chests (kasalar) — earned only from a WON Race a Friend match. -->
     <string name="chest_tier_silver">Apprentice Chest</string>

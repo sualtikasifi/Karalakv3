@@ -154,6 +154,9 @@ class BackupRepositoryImpl @Inject constructor(
             }.orEmpty(),
             ratingPromptShown = if (settingsRepository.ratingPromptShown) 1 else 0,
             quickMatchGames = settingsRepository.quickMatchGamesFinished,
+            earnedPeriod = settingsRepository.earnedThisMonth().period,
+            xpSources = settingsRepository.earnedThisMonth().xp,
+            goldSources = settingsRepository.earnedThisMonth().gold,
             backedUpAt = System.currentTimeMillis()
         )
     }

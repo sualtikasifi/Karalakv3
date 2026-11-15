@@ -54,7 +54,7 @@ class GuessInboxViewModel @Inject constructor(
         if (list.isEmpty()) return
         val paid = paidSolves()
         if (paid > 0) {
-            settingsRepository.earnGold(paid * GuessStore.REWARD_GOLD)
+            settingsRepository.earnGold(paid * GuessStore.REWARD_GOLD, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.GUESS)
             store.recordPaidSolves(paid)
         }
         _entries.value = emptyList()

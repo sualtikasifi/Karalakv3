@@ -220,8 +220,8 @@ class LeagueViewModel @Inject constructor(
         // Ownership of the cosmetic itself is recorded separately; its result
         // no longer decides whether the bonus is due.
         period.rewardId?.let { settingsRepository.grantLeagueReward(it) }
-        settingsRepository.earnGold(GameConstants.LEAGUE_MONTHLY_GOLD)
-        settingsRepository.addXp(GameConstants.LEAGUE_MONTHLY_XP)
+        settingsRepository.earnGold(GameConstants.LEAGUE_MONTHLY_GOLD, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.LEAGUE)
+        settingsRepository.addXp(GameConstants.LEAGUE_MONTHLY_XP, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.LEAGUE)
         // Null when this build does not know the id — an older app reading a
         // prize whose artwork it does not ship. The grant still stands, so
         // updating the app later reveals it.

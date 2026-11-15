@@ -111,6 +111,12 @@ class AutoBackupPublisher @Inject constructor(
         const val TAG = "AutoBackupPublisher"
 
         /** Long enough to sit out a match's per-word XP, short enough to land before the app is closed. */
-        const val BACKUP_DEBOUNCE_MS = 10_000L
+        /**
+         * How long the progress must stand still before it is uploaded. It used to be 10 seconds, and a drawing game
+         * moves gold and XP after every word, so one match of ten words could upload the whole snapshot several times:
+         * for a signed-in player that is most of their daily Firestore writes. A minute still lands the progress long
+         * before anything can be lost, and leaving the app (backupNowIfLinked) and signing out upload at once anyway.
+         */
+        const val BACKUP_DEBOUNCE_MS = 60_000L
     }
 }

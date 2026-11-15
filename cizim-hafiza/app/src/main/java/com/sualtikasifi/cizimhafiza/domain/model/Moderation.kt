@@ -139,6 +139,12 @@ object Moderation {
      */
     const val REVIEWER_EMAIL = "raunen3075@gmail.com"
 
+    /** A lock that never runs out: 1 January 2100. The developer panel's "Kalıcı ban" writes this as the penalty's `lockedUntil`. */
+    const val PERMANENT_LOCK_MILLIS = 4_102_444_800_000L
+
+    /** Whether [lockedUntilMillis] is a permanent ban rather than a lockout that will run out (anything beyond ten years is). */
+    fun isPermanent(lockedUntilMillis: Long): Boolean = lockedUntilMillis >= System.currentTimeMillis() + 10L * 365 * 24 * 60 * 60 * 1000
+
 
     /**
      * The lockout for the [strike]-th offence (lifetime, never reset — an approved round does not clear it, or somebody

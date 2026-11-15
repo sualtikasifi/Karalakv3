@@ -60,7 +60,11 @@ data class PlayerDetails(
     val lastSavedMillis: Long? = null,
     /** Rounds of this player that are in the live pool and waiting in the queue. */
     val poolRuns: Long? = null,
-    val queueRuns: Long? = null
+    val queueRuns: Long? = null,
+    /** This month's XP and gold by source, from the cloud save (null when that save carries none: a player who has not updated or is not signed in). */
+    val earnedPeriod: Long? = null,
+    val xpSources: Map<String, Long>? = null,
+    val goldSources: Map<String, Long>? = null
 )
 
 /** A coupon this account redeemed. */
@@ -83,6 +87,20 @@ object PlayerSearch {
      * The nicknames are stored as typed, so a prefix search is case sensitive: it is tried as typed and with the first letter
      * in capitals (the usual way a name is written), Turkish rules for the i.
      */
+    /** A month's average above this many XP an hour (round the clock) is worth a look: the heaviest honest players sit at a few hundred. */
+    const val SUSPICIOUS_XP_PER_HOUR = 500
+
+    /** The first day of a month is too short to say anything about a pace: it is measured over at least this many hours. */
+    private const val MIN_HOURS = 24.0
+
+    /** [periodXp] spread over the hours since the month began ([nowMillis] - [monthStartMillis]), at least a day's worth. */
+    fun xpPerHour(periodXp: Long, monthStartMillis: Long, nowMillis: Long): Long {
+        val hours = maxOf(MIN_HOURS, (nowMillis - monthStartMillis) / 3_600_000.0)
+        return (periodXp / hours).toLong()
+    }
+
+    fun isSuspiciousPace(xpPerHour: Long) = xpPerHour > SUSPICIOUS_XP_PER_HOUR
+
     fun nicknamePrefixes(q: String): List<String> {
         val tr = java.util.Locale("tr")
         val capital = q.replaceFirstChar { it.titlecase(tr) }
@@ -162,6 +180,51 @@ class PlayerAdmin @Inject constructor(
         until
     }
 
+    /** What the developer panel does to a player's record in one go (see [penalize]). */
+    enum class Action {
+        /** Takes XP / gold back and nothing else: no strike, no lock. */
+        REVOKE,
+        /** One strike up the lockout ladder, with the XP / gold given (may be none). */
+        STRIKE,
+        /** Closes the account for good: the online modes and the league never open again, the XP / gold given is taken back. */
+        BAN
+    }
+
+    /**
+     * Writes one penalty for [uid] that the player's own app applies the next time it opens (the same record the review of a
+     * rejected round writes, see PenaltyRepositoryImpl): [xp] and [gold] taken back, and by [action] no lock, the next lockout or a
+     * permanent one. Audited in the same write. Nothing is taken beyond what the account holds: the app floors at zero.
+     */
+    suspend fun penalize(uid: String, action: Action, xp: Int, gold: Int, reason: String): Result<Unit> = runCatching {
+        require(xp in 0..MAX_REVOKE && gold in 0..MAX_REVOKE) { "Miktar geçersiz" }
+        require(action != Action.REVOKE || xp + gold > 0) { "Geri alınacak bir miktar yaz" }
+        val strikes = firestore.collection("moderationStrikes").document(uid)
+        val previous = (strikes.get().await().getLong("count") ?: 0L).toInt()
+        val strike = if (action == Action.REVOKE) previous else previous + 1
+        val now = System.currentTimeMillis()
+        val until = when (action) {
+            Action.REVOKE -> 0L
+            Action.STRIKE -> now + Moderation.lockoutMillisFor(strike)
+            Action.BAN -> Moderation.PERMANENT_LOCK_MILLIS
+        }
+        val batch = firestore.batch()
+        batch.set(
+            firestore.collection("penalties").document(),
+            mapOf(
+                "uid" to uid, "xpRevoked" to xp.toLong(), "goldRevoked" to gold.toLong(), "strike" to strike.toLong(),
+                "lockedUntil" to until, "appliedAt" to 0L, "createdAt" to now, "by" to "panel", "reason" to reason.take(80)
+            )
+        )
+        if (action != Action.REVOKE) batch.set(strikes, mapOf("count" to strike.toLong(), "updatedAt" to now))
+        val what = when (action) {
+            Action.REVOKE -> "geri alma"
+            Action.STRIKE -> "ceza $strike, ${(until - now) / 3_600_000} saat"
+            Action.BAN -> "kalıcı ban"
+        }
+        AdminAudit.add(firestore, batch, auth.currentUser?.email, "penalty-$what".take(40), uid, "$what: XP $xp, altın $gold — ${reason.take(60)}")
+        batch.commit().await()
+    }
+
     /** Lifts every lock still running on the account and takes one strike back for each. */
     suspend fun unlock(uid: String): Result<Int> = runCatching {
         val now = System.currentTimeMillis()
@@ -237,6 +300,30 @@ class PlayerAdmin @Inject constructor(
         coroutineScope { uids.take(PlayerSearch.MAX_RESULTS).map { async { lite(it) } }.awaitAll().filterNotNull() }
     }
 
+    /**
+     * This month's highest scores, for a look at who is climbing unusually fast. The newest 40 by score are read and only this
+     * month's kept (a profile that has not played since keeps last month's number), so the top of the month never needs an index.
+     */
+    suspend fun leagueLeaders(limit: Int = 15): Result<List<PlayerInfo>> = runCatching {
+        val period = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(
+            java.time.LocalDate.now(java.time.ZoneOffset.ofHours(3))
+        )
+        firestore.collection("users").orderBy("periodXp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .limit(40).get().await().documents
+            .filter { it.getLong("periodId") == period }
+            .take(limit)
+            .map { user ->
+                PlayerInfo(
+                    uid = user.id,
+                    nickname = user.getString("nickname").orEmpty(),
+                    level = user.getLong("level") ?: 0L,
+                    periodXp = user.getLong("periodXp") ?: 0L,
+                    totalXp = user.getLong("totalXp") ?: 0L,
+                    friendCode = user.getString("friendCode").orEmpty()
+                )
+            }
+    }
+
     private suspend fun lite(uid: String): PlayerInfo? {
         val user: DocumentSnapshot = firestore.collection("users").document(uid).get().await()
         if (!user.exists()) return null
@@ -249,6 +336,9 @@ class PlayerAdmin @Inject constructor(
             friendCode = user.getString("friendCode").orEmpty()
         )
     }
+
+    private fun sourcesOf(raw: Any?): Map<String, Long>? =
+        (raw as? Map<*, *>)?.mapNotNull { (k, v) -> (k as? String)?.let { it to ((v as? Number)?.toLong() ?: 0L) } }?.toMap()?.filterValues { it > 0L }
 
     /** The record of one account, every part read on its own so one that is refused leaves only its own gap. */
     suspend fun details(uid: String): PlayerDetails = coroutineScope {
@@ -289,7 +379,10 @@ class PlayerAdmin @Inject constructor(
             lifetimeXp = save?.getLong("lifetimeXp"),
             lastSavedMillis = save?.getTimestamp("sealedAt")?.toDate()?.time,
             poolRuns = pool.await(),
-            queueRuns = queue.await()
+            queueRuns = queue.await(),
+            earnedPeriod = save?.getLong("earnedPeriod"),
+            xpSources = save?.let { sourcesOf(it.get("xpSources")) },
+            goldSources = save?.let { sourcesOf(it.get("goldSources")) }
         )
     }
 
@@ -312,5 +405,6 @@ class PlayerAdmin @Inject constructor(
         const val MAX_PENALTIES = 8
         const val COUPONS_CHECKED = 25L
         const val MAX_GRANT = 100_000
+        const val MAX_REVOKE = 100_000_000
     }
 }

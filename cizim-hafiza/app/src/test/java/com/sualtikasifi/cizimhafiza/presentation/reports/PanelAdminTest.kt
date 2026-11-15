@@ -8,6 +8,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.CouponExistsException
 import com.sualtikasifi.cizimhafiza.util.AdminAuditText
 import com.sualtikasifi.cizimhafiza.util.PlayerSearch
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -301,6 +302,30 @@ class PanelAdminTest {
         assertEquals("şemsiye", state.forgotDrawing(pool.studioId)?.word)
         assertNull(state.forgotDrawing(99L))
         assertNull(state.forgotDrawing(null))
+    }
+
+    @Test
+    fun `a month's pace is averaged over the hours since it began, at least a day`() {
+        val start = 0L
+        val hour = 3_600_000L
+        // 100 hours in: 50000 XP is 500 an hour
+        assertEquals(500L, com.sualtikasifi.cizimhafiza.util.PlayerSearch.xpPerHour(50_000, start, 100 * hour))
+        // the first hour of a month is read as a whole day, not as a huge pace
+        assertEquals(1_000L, com.sualtikasifi.cizimhafiza.util.PlayerSearch.xpPerHour(24_000, start, hour))
+    }
+
+    @Test
+    fun `only a pace above the honest ceiling is suspicious`() {
+        assertFalse(com.sualtikasifi.cizimhafiza.util.PlayerSearch.isSuspiciousPace(500))
+        assertTrue(com.sualtikasifi.cizimhafiza.util.PlayerSearch.isSuspiciousPace(501))
+    }
+
+    @Test
+    fun `only a lock beyond ten years is a permanent ban`() {
+        val now = System.currentTimeMillis()
+        assertTrue(com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(com.sualtikasifi.cizimhafiza.domain.model.Moderation.PERMANENT_LOCK_MILLIS))
+        assertFalse(com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(now + 7L * 24 * 3_600_000))
+        assertFalse(com.sualtikasifi.cizimhafiza.domain.model.Moderation.isPermanent(0L))
     }
 }
 
