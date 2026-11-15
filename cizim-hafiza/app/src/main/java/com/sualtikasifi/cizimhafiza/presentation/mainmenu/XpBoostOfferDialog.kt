@@ -34,11 +34,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,7 +60,6 @@ private const val ArtH = 1315f
 private val OfferInk = Color(0xFF3B2314)
 private val RibbonOutline = Color(0xFF3A0F5E)
 private val ButtonOutline = Color(0xFF8A3A00)
-private val Plum = Color(0xFF6B2DB5)
 
 /**
  * The question asked on a tap on "Hızlı Eşleş": watch an ad for 30 minutes of double XP, or not now (the match then simply
@@ -116,7 +113,7 @@ fun XpBoostOfferDialog(step: XpOfferStep, onWatch: () -> Unit, onSkip: () -> Uni
                     val i = full.indexOf(duration)
                     if (i < 0) append(full) else {
                         append(full.substring(0, i))
-                        withStyle(SpanStyle(background = Plum, color = Color.White)) { append(" $duration ") }
+                        append(duration)
                         append(full.substring(i + duration.length))
                     }
                 }
