@@ -33,7 +33,7 @@ object FriendStreakRewards {
 
     fun apply(settings: SettingsRepository, reward: StreakReward) {
         when (reward) {
-            is StreakReward.Gold -> settings.earnGold(reward.amount)
+            is StreakReward.Gold -> settings.earnGold(reward.amount, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.FRIEND_STREAK)
             StreakReward.Jokers -> JokerType.entries.forEach { settings.addJoker(it, 1) }
             is StreakReward.Frame -> settings.grantStoreItem("frame:${reward.frame.name}")
             is StreakReward.Pen -> settings.grantStoreItem("pen:${reward.pen.name}")

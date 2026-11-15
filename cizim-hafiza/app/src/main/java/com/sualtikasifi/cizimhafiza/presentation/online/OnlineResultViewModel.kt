@@ -274,7 +274,7 @@ class OnlineResultViewModel @Inject constructor(
                         bestFriendBonus = raw > 0 && settingsRepository.takeBestFriendBonus()
                     )
                     val gold = breakdown.total
-                    if (gold > 0) settingsRepository.earnGold(gold)
+                    if (gold > 0) settingsRepository.earnGold(gold, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.ONLINE)
                     val roundXp = settingsRepository.lastOnlineRoundXp
                     val matchXp = XpAwards.ONLINE_MATCH + if (won) XpAwards.ONLINE_WIN else 0
                     settingsRepository.lastOnlineRoundXp = 0

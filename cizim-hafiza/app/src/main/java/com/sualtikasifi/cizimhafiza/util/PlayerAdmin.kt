@@ -60,7 +60,11 @@ data class PlayerDetails(
     val lastSavedMillis: Long? = null,
     /** Rounds of this player that are in the live pool and waiting in the queue. */
     val poolRuns: Long? = null,
-    val queueRuns: Long? = null
+    val queueRuns: Long? = null,
+    /** This month's XP and gold by source, from the cloud save (null when that save carries none: a player who has not updated or is not signed in). */
+    val earnedPeriod: Long? = null,
+    val xpSources: Map<String, Long>? = null,
+    val goldSources: Map<String, Long>? = null
 )
 
 /** A coupon this account redeemed. */
@@ -333,6 +337,9 @@ class PlayerAdmin @Inject constructor(
         )
     }
 
+    private fun sourcesOf(raw: Any?): Map<String, Long>? =
+        (raw as? Map<*, *>)?.mapNotNull { (k, v) -> (k as? String)?.let { it to ((v as? Number)?.toLong() ?: 0L) } }?.toMap()?.filterValues { it > 0L }
+
     /** The record of one account, every part read on its own so one that is refused leaves only its own gap. */
     suspend fun details(uid: String): PlayerDetails = coroutineScope {
         val now = System.currentTimeMillis()
@@ -372,7 +379,10 @@ class PlayerAdmin @Inject constructor(
             lifetimeXp = save?.getLong("lifetimeXp"),
             lastSavedMillis = save?.getTimestamp("sealedAt")?.toDate()?.time,
             poolRuns = pool.await(),
-            queueRuns = queue.await()
+            queueRuns = queue.await(),
+            earnedPeriod = save?.getLong("earnedPeriod"),
+            xpSources = save?.let { sourcesOf(it.get("xpSources")) },
+            goldSources = save?.let { sourcesOf(it.get("goldSources")) }
         )
     }
 

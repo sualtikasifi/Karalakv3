@@ -1021,7 +1021,7 @@ class GameViewModel @Inject constructor(
         // granting this too would pay the same round twice.
         val liveXp = if (outcome.isCorrect && !isDaily) XpAwards.scaled(outcome.xpAwarded, effectiveXpMultiplier) else 0
         if (liveXp > 0) {
-            settingsRepository.addXp(liveXp)
+            settingsRepository.addXp(liveXp, if (isDaily) EarnSourceDaily else EarnSourceGame)
             // Totalled for the result screen's "double it" ad — that offer
             // has to pay exactly what the round paid, and the per-word
             // grants above are the only place that number exists.
@@ -1110,7 +1110,7 @@ class GameViewModel @Inject constructor(
         // it, scaled by how well (stars), same as the star count itself is.
         stars?.let {
             val bonus = XpAwards.scaled(XpAwards.levelCompletionBonus(it), effectiveXpMultiplier)
-            settingsRepository.addXp(bonus)
+            settingsRepository.addXp(bonus, EarnSourceGame)
             roundXpEarned += bonus
             // Gold only for stars beyond the best already earned — replaying a cleared level pays none.
             newStars = (it - previousBestStars).coerceAtLeast(0)
@@ -1139,7 +1139,7 @@ class GameViewModel @Inject constructor(
                         .also { xpAwarded = it }
                 }
             )
-            settingsRepository.addXp(xpAwarded)
+            settingsRepository.addXp(xpAwarded, EarnSourceDaily)
             roundXpEarned += xpAwarded
             dailyStreak = updated.currentStreak
             DailyResultSummary(
@@ -1211,7 +1211,7 @@ class GameViewModel @Inject constructor(
             dailyStreak = dailyStreak,
             quickMatchWon = quickMatchWon
         )
-        if (gold.total > 0) settingsRepository.earnGold(gold.total)
+        if (gold.total > 0) settingsRepository.earnGold(gold.total, if (isDaily) EarnSourceDaily else EarnSourceGame)
         // Filed for review only now that the gold is known too: a rejection takes back exactly what the round paid,
         // XP as the level bar received it (rune bonus included) and the gold of the round.
         // Günlük Meydan Okuma has no drawn-vs-typed check the way Hızlı Eşleş
@@ -1370,7 +1370,7 @@ class GameViewModel @Inject constructor(
             val earned = outcome == RewardedOutcome.EARNED
             if (outcome == RewardedOutcome.UNAVAILABLE) reportAdUnavailable()
             if (!earned) return@maybeShowRewarded
-            settingsRepository.addXp(current.xpEarned)
+            settingsRepository.addXp(current.xpEarned, EarnSourceAd)
             _resultXpDoubled.value = true
             // Re-checkpointed with the flag flipped — see GamePhase.Result.xpDoubled's
             // doc comment: without this a process death right after doubling
@@ -1504,3 +1504,7 @@ class GameViewModel @Inject constructor(
 
 /** See GameViewModel.showResultInterstitial: shortest gap between a level ad and the previous interstitial. */
 private const val LEVEL_AD_MIN_GAP_MILLIS = 60_000L
+
+private val EarnSourceGame = com.sualtikasifi.cizimhafiza.domain.model.EarnSource.GAME
+private val EarnSourceDaily = com.sualtikasifi.cizimhafiza.domain.model.EarnSource.DAILY
+private val EarnSourceAd = com.sualtikasifi.cizimhafiza.domain.model.EarnSource.AD

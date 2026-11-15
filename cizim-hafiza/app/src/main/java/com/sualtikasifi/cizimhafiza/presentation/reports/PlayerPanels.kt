@@ -394,6 +394,9 @@ private fun PlayerCard(p: PlayerInfo, state: PlayersState, viewModel: PlayersVie
             Figure("Havuzda tur", d.poolRuns?.toString() ?: "—", Modifier.weight(1f))
             Figure("Kuyrukta tur", d.queueRuns?.toString() ?: "—", Modifier.weight(1f), alert = (d.queueRuns ?: 0L) > 0)
         }
+        // where this month's XP and gold came from (the cloud save of an updated, signed-in player)
+        Spacer(Modifier.height(8.dp))
+        EarnedBySource(p, d)
         d.lastSavedMillis?.let { Text("Son bulut kaydı: ${clock(it)} (oyuncunun son görülme zamanına en yakın iz)", style = Console.Small, modifier = Modifier.padding(top = 6.dp)) }
         if (locked) {
             Spacer(Modifier.height(8.dp))
@@ -495,6 +498,48 @@ private fun PlayerCard(p: PlayerInfo, state: PlayersState, viewModel: PlayersVie
             icon = Icons.Filled.Redeem, height = 40.dp
         )
     }
+}
+
+/**
+ * "Bu ay nereden kazandı": the month's XP and gold by source, biggest first, with each one's share. A player whose month comes
+ * mostly from one source that is not play (a coupon, a reward) stands out here. Nothing is shown for a save that carries none.
+ */
+@Composable
+private fun EarnedBySource(p: PlayerInfo, d: PlayerDetails) {
+    val period = com.sualtikasifi.cizimhafiza.domain.model.LeaguePeriod.periodIdFor(java.time.LocalDate.now(java.time.ZoneOffset.ofHours(3)))
+    val xp = d.xpSources
+    val gold = d.goldSources
+    if (xp == null && gold == null || d.earnedPeriod != period) {
+        Text(
+            "Kazanç kaynağı verisi yok: oyuncu henüz bu özelliğe sahip sürümü kullanmıyor, Google'a bağlı değil ya da bu ay yeni bir bulut kaydı yok.",
+            style = Console.Small
+        )
+        return
+    }
+    Overline("Bu ay nereden kazandı")
+    SourceLines("XP", xp.orEmpty(), p.periodXp)
+    Spacer(Modifier.height(6.dp))
+    SourceLines("Altın", gold.orEmpty(), null)
+}
+
+@Composable
+private fun SourceLines(title: String, sources: Map<String, Long>, publishedXp: Long?) {
+    val total = sources.values.sum().coerceAtLeast(1L)
+    Text(
+        "$title: toplam ${Console.compact(sources.values.sum().toDouble())}" + (publishedXp?.let { " (ligde ${Console.compact(it.toDouble())})" } ?: ""),
+        style = Console.Small.copy(color = Console.Ink),
+        modifier = Modifier.padding(top = 3.dp)
+    )
+    sources.entries.sortedByDescending { it.value }.forEach { (key, amount) ->
+        val share = (amount * 100 / total).toInt()
+        // play is expected to be most of a month; a reward or coupon doing that is what to look at
+        val odd = share >= 50 && key !in setOf("game", "online", "daily")
+        Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(com.sualtikasifi.cizimhafiza.domain.model.EarnSource.labelOf(key), style = Console.Small, modifier = Modifier.weight(1f))
+            Text("${Console.compact(amount.toDouble())} · %$share", style = Console.Small.copy(color = if (odd) Console.Critical else Console.Ink))
+        }
+    }
+    if (sources.isEmpty()) Text("Henüz kayıt yok.", style = Console.Small)
 }
 
 /** One labelled figure in a row of them. */
