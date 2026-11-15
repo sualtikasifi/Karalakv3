@@ -239,10 +239,18 @@ private fun WellField(
             enabled = enabled,
             singleLine = true,
             keyboardOptions = keyboardOptions,
-            textStyle = PaintedStyle(color = Ink, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold),
+            // One fixed line box, centred in the well: an empty field and a typed one then draw the same cursor, at the middle of the
+            // well (with the default metrics the empty field's cursor sat high and grew once a digit was typed).
+            textStyle = PaintedStyle(color = Ink, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 26.sp).copy(
+                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.None
+                )
+            ),
             cursorBrush = SolidColor(Ink),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp)
-                .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+            modifier = Modifier.fillMaxSize().padding(horizontal = 22.dp)
+                .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier),
+            decorationBox = { inner -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { inner() } }
         )
     }
 }
