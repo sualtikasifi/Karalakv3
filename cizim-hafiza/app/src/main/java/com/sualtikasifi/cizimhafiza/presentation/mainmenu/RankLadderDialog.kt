@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -110,7 +111,7 @@ internal fun RankLadderDialog(progress: LevelProgressState, onDismiss: () -> Uni
                     FitText(
                         text = stringResource(R.string.rank_ladder_subtitle, stringResource(progress.tier.rank.nameRes)),
                         style = PaintedStyle(color = RankInk, fontSize = fs(31f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-                        modifier = box(120f, 410f, 720f, 488f),
+                        modifier = box(182f, 408f, 660f, 490f),
                         maxLines = 2
                     )
 
@@ -140,13 +141,13 @@ internal fun RankLadderDialog(progress: LevelProgressState, onDismiss: () -> Uni
                         FitText(
                             text = name,
                             style = PaintedStyle(color = RankInk, fontSize = fs(46f), fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
-                            modifier = box(318f, top + 22f, 548f, top + 84f).alpha(dim),
+                            modifier = box(318f, top + 22f, 540f, top + 84f).alpha(dim),
                             minScale = 0.5f
                         )
                         FitText(
                             text = level,
                             style = PaintedStyle(color = RankInk.copy(alpha = 0.72f), fontSize = fs(30f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-                            modifier = box(318f, top + 84f, 548f, top + 130f).alpha(dim),
+                            modifier = box(318f, top + 84f, 540f, top + 130f).alpha(dim),
                             minScale = 0.5f
                         )
 
@@ -160,13 +161,13 @@ internal fun RankLadderDialog(progress: LevelProgressState, onDismiss: () -> Uni
                             else -> { pillBg = Color(0xFFE9D9C6); pillInk = RankInk.copy(alpha = 0.8f); pillText = stringResource(R.string.rank_ladder_remaining, xpAway) }
                         }
                         Box(
-                            box(560f, top + 49f, 735f, top + 105f).clip(RoundedCornerShape(50)).background(pillBg),
+                            box(548f, top + 47f, 737f, top + 107f).clip(RoundedCornerShape(50)).background(pillBg),
                             contentAlignment = Alignment.Center
                         ) {
                             FitText(
                                 text = pillText,
                                 style = PaintedStyle(color = pillInk, fontSize = fs(27f), fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
-                                modifier = Modifier.fillMaxSize().offset(0.dp, 0.dp),
+                                modifier = Modifier.fillMaxSize().padding(horizontal = unit * 14f),
                                 minScale = 0.5f
                             )
                         }
