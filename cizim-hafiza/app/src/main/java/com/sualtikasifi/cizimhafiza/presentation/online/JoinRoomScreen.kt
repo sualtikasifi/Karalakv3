@@ -25,6 +25,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -104,6 +105,15 @@ fun JoinRoomScreen(
             LetteredText(stringResource(R.string.online_join_room), with(density) { (46f * s).toSp() }, title = true)
         }
 
+        // The page opens ready to type the code: the keyboard comes up on the code field at once (the nickname is already filled in).
+        val codeFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+        val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            kotlinx.coroutines.delay(350)
+            runCatching { codeFocus.requestFocus() }
+            keyboard?.show()
+        }
+
         // The form panel.
         val panelWidth = maxWidth * 0.9f
         val panelHeight = panelWidth / PanelAspect
@@ -150,7 +160,7 @@ fun JoinRoomScreen(
                 onValueChange = viewModel::setRoomCode,
                 enabled = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                placeholder = stringResource(R.string.friends_add_friend_hint),
+                focusRequester = codeFocus,
                 modifier = Modifier
                     .offset(x = panelWidth * WellLeft, y = panelHeight * Well2Top)
                     .width(panelWidth * WellWidth)
@@ -212,7 +222,8 @@ private fun WellField(
     enabled: Boolean,
     keyboardOptions: KeyboardOptions,
     modifier: Modifier = Modifier,
-    placeholder: String? = null
+    placeholder: String? = null,
+    focusRequester: androidx.compose.ui.focus.FocusRequester? = null
 ) {
     Box(modifier = modifier.graphicsLayer { alpha = if (enabled) 1f else 0.85f }, contentAlignment = Alignment.CenterStart) {
         if (placeholder != null && value.isEmpty()) {
@@ -231,6 +242,7 @@ private fun WellField(
             textStyle = PaintedStyle(color = Ink, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold),
             cursorBrush = SolidColor(Ink),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp)
+                .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
         )
     }
 }

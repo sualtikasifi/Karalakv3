@@ -646,7 +646,9 @@ private fun AvatarFrameSwatch(item: AvatarFrameUiItem, onClick: () -> Unit) {
                             stringResource(R.string.avatar_frame_locked_level, item.frame.unlockLevel)
                         },
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        // a reason that wraps to several lines ("Arkadaş serisiyle açılır") is centred, not flush left
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
             }

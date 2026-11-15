@@ -45,6 +45,8 @@ import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
+import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenFace
 import com.sualtikasifi.cizimhafiza.presentation.common.rememberFitScale
 import com.sualtikasifi.cizimhafiza.presentation.common.scaledBy
 import com.sualtikasifi.cizimhafiza.util.GameConstants
@@ -110,7 +112,7 @@ fun CreateDuelScreen(
             text = stringResource(R.string.duel_create_opponent, opponentName),
             size = fs(50f),
             outline = PurpleOutline,
-            modifier = Modifier.art(190f, 596f, 462f, 76f),
+            modifier = Modifier.art(190f, 590f, 462f, 76f),
             minScale = 0.5f
         )
         FitText(
@@ -133,7 +135,7 @@ fun CreateDuelScreen(
             text = stringResource(R.string.select_word_count),
             size = fs(38f),
             outline = PurpleOutline,
-            modifier = Modifier.art(168f, 1192f, 506f, 68f),
+            modifier = Modifier.art(168f, 1186f, 506f, 68f),
             minScale = 0.5f
         )
         Row(
@@ -150,17 +152,26 @@ fun CreateDuelScreen(
         }
 
         // The button: the picture holds the brushes and the arrow, the words go between them.
+        // Pressed, the face of the painted button caves in (its own pixels drawn again, shrunk, inside its frame) and the words dip with it.
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val sceneBitmap = remember { runCatching { com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(context.resources, R.drawable.duel_create_bg) }.getOrNull() }
+        val pxX = (sceneBitmap?.width ?: 1) / ArtW
+        val pxY = (sceneBitmap?.height ?: 1) / ArtH
+        val startSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.95f)
         Box(
-            Modifier.art(45f, 1470f, 750f, 152f).clickable(
-                interactionSource = remember { MutableInteractionSource() }, indication = null,
-                onClick = { onChallengeStarted(selectedCount) }
-            )
+            Modifier.art(45f, 1470f, 750f, 152f)
+                .sunkenFace(startSink, sceneBitmap, 45f * pxX, 1470f * pxY, 750f * pxX, 152f * pxY, (14f * u.value).dp, (60f * u.value).dp)
+                .clickable(
+                    interactionSource = startSink.source, indication = null,
+                    onClick = { onChallengeStarted(selectedCount) }
+                )
         )
         LetteredText(
             text = stringResource(R.string.duel_create_start),
             size = fs(62f),
             outline = ButtonOutline,
-            modifier = Modifier.art(268f, 1503f, 380f, 88f),
+            modifier = Modifier.art(268f, 1503f, 380f, 88f)
+                .sinkWith(startSink, (45f + 750f / 2f - 268f) / 380f, (1470f + 152f / 2f - 1503f) / 88f),
             minScale = 0.5f
         )
     }
