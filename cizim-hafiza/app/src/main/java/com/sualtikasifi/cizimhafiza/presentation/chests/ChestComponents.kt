@@ -587,18 +587,20 @@ private fun DoubleGoldPill(state: Int, gold: Int, u: Dp, fs: (Float) -> androidx
                     )
                 } else {
                     // two lines: what to do (big), what it earns (smaller)
+                    // The two lines are one block, centred in the button's face with an even margin above and below (the face
+                    // is the middle of the picture: its top rim and gloss and its bottom shade are not for words).
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                         RewardLettering(
                             text = stringResource(R.string.chest_double_watch),
-                            size = fs(54f),
+                            size = fs(50f),
                             top = Color.White, bottom = Color(0xFFE8FFD8), outline = Color(0xFF14602A),
-                            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.5f)
+                            modifier = Modifier.fillMaxWidth().height(this@BoxWithConstraints.maxHeight * 0.31f)
                         )
                         RewardLettering(
                             text = stringResource(R.string.chest_double_gain, gold),
-                            size = fs(44f),
+                            size = fs(40f),
                             top = Color(0xFFFFF3B0), bottom = Color(0xFFFFD34D), outline = Color(0xFF14602A),
-                            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.42f / 0.5f)
+                            modifier = Modifier.fillMaxWidth().height(this@BoxWithConstraints.maxHeight * 0.27f)
                         )
                     }
                 }
