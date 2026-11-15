@@ -430,7 +430,7 @@ fun MainMenuScreen(
         }
 
         if (rankLadderOpen) {
-            RankLadderSheet(progress = levelProgress, onDismiss = { rankLadderOpen = false })
+            RankLadderDialog(progress = levelProgress, onDismiss = { rankLadderOpen = false })
         }
 
         if (openingClear && featureTourOpen) {
@@ -837,82 +837,6 @@ private fun StreakRescueDialog(lostStreak: Int, onRescue: () -> Unit, onDismiss:
         onRescue = com.sualtikasifi.cizimhafiza.presentation.common.adOnly(onRescue),
         onDismiss = onDismiss
     )
-}
-
-/**
- * Every rank, the level it opens at, and where the player currently stands.
- *
- * The card only ever showed the next rank and the XP left to it, which told
- * a player what was immediately ahead but nothing about the shape of the
- * climb — how many ranks exist, how far apart they are, what the top one is
- * called. A ladder someone can look at is what turns a number into a goal.
- */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable
-private fun RankLadderSheet(progress: LevelProgressState, onDismiss: () -> Unit) {
-    com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(title = stringResource(R.string.rank_ladder_title), onDismiss = onDismiss) {
-        Column(modifier = Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-            Text(
-                text = stringResource(
-                    R.string.rank_ladder_subtitle,
-                    stringResource(progress.tier.rank.nameRes)
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            LevelTier.entries.forEach { tier ->
-                val reached = progress.level >= tier.minLevel
-                val isCurrent = tier == progress.tier
-                val xpAway = (PlayerLevel.totalXpForLevel(tier.minLevel) - progress.totalXp).coerceAtLeast(0)
-                RaisedCard(
-                    corner = 18.dp,
-                    face = if (isCurrent) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                    border = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp)
-                            // A rank still ahead is dimmed rather than hidden:
-                            // the point of the list is seeing what is coming.
-                            .alpha(if (reached) 1f else 0.55f)
-                    ) {
-                        Text(text = tier.rank.emoji, style = MaterialTheme.typography.titleLarge)
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(tier.rank.nameRes),
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = stringResource(R.string.rank_ladder_unlock_level, tier.minLevel),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Text(
-                            text = when {
-                                isCurrent -> stringResource(R.string.rank_ladder_current)
-                                reached -> stringResource(R.string.rank_ladder_reached)
-                                else -> stringResource(R.string.rank_ladder_remaining, xpAway)
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (isCurrent) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            }
-                        )
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-    }
 }
 
 /**
