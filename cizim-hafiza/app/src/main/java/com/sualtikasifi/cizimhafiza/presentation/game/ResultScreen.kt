@@ -295,10 +295,12 @@ fun ResultScreen(
                         )
                     }
 
+                    // A quick match's recorded opponent or a duel's challenger: either way their ten drawings can be looked at.
                     val ghost = state.ghost
-                    val boardItems = if (showingOpponentGallery && ghost != null) ghostItems else state.items
+                    val opponentName = ghost?.nickname ?: state.duelChallenger?.challengerName
+                    val boardItems = if (showingOpponentGallery && opponentName != null) ghostItems else state.items
                     ResultWordsBoard(
-                        title = if (showingOpponentGallery && ghost != null) ghost.nickname
+                        title = if (showingOpponentGallery && opponentName != null) opponentName
                         else stringResource(R.string.result_words_title, state.items.size),
                         items = boardItems,
                         placeholders = state.items.size,
@@ -306,7 +308,7 @@ fun ResultScreen(
                         onPreview = { previewItem = it },
                         // The daily challenge has its own share button on its card, and the opponent's drawings are
                         // not the player's to pass on.
-                        onShareAll = if (ghost == null && state.daily == null) {
+                        onShareAll = if (ghost == null && state.daily == null && !showingOpponentGallery) {
                             {
                                 DrawingShareUtil.shareAllResults(
                                     context = context,
@@ -318,11 +320,11 @@ fun ResultScreen(
                                 )
                             }
                         } else null,
-                        header = if (ghost != null) {
+                        header = if (opponentName != null) {
                             {
                                 GalleryToggle(
                                     yourName = myName.ifBlank { stringResource(R.string.quick_match_gallery_yours) },
-                                    opponentName = ghost.nickname,
+                                    opponentName = opponentName,
                                     opponentReady = ghostItems.isNotEmpty(),
                                     showingOpponent = showingOpponentGallery,
                                     onSelect = { showingOpponentGallery = it }
@@ -476,7 +478,7 @@ fun ResultScreen(
             properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
         ) {
             BackHandler { previewItem = null }
-            val galleryItems = if (showingOpponentGallery && state.ghost != null) ghostItems else state.items
+            val galleryItems = if (showingOpponentGallery && (state.ghost != null || state.duelChallenger != null)) ghostItems else state.items
             val position = galleryItems.indexOf(itemToPreview)
             DrawingPreviewScene(
                 item = itemToPreview,
@@ -485,12 +487,14 @@ fun ResultScreen(
                 onPrevious = if (position > 0) ({ previewItem = galleryItems[position - 1] }) else null,
                 onNext = if (position in 0 until galleryItems.size - 1) ({ previewItem = galleryItems[position + 1] }) else null,
                 wordLanguage = wordLanguage,
-                reporting = showingOpponentGallery && onReportOpponentDrawing != null,
+                reporting = showingOpponentGallery && onReportOpponentDrawing != null && state.ghost != null,
                 onClose = { previewItem = null },
                 // Share your own, report somebody else's. The header already withholds sharing for the opponent's gallery on
                 // the grounds that their drawings are not the player's to pass on.
                 onAction = {
-                    if (showingOpponentGallery && onReportOpponentDrawing != null) reportItem = itemToPreview
+                    if (showingOpponentGallery && onReportOpponentDrawing != null && state.ghost != null) reportItem = itemToPreview
+                    // A friend's drawing from a duel: nothing to share (not the player's) and no pooled run to report.
+                    else if (showingOpponentGallery) Unit
                     // An empty canvas would go out as a card with nothing on it.
                     else if (itemToPreview.strokes.none { it.isNotEmpty() }) {
                         android.widget.Toast.makeText(context, R.string.share_empty_drawing, android.widget.Toast.LENGTH_SHORT).show()
@@ -691,11 +695,22 @@ private fun DuelChallengerVersusCard(
             u = u
         )
         if (onRematch != null) {
-            SecondaryButton(
-                text = stringResource(R.string.duel_rematch_action),
+            // The game's own painted button (the one the claim buttons use), lettered like them, with a breath so it invites a tap.
+            val fontScale0 = LocalDensity.current.fontScale
+            ArtButton(
+                res = R.drawable.rs_btn_claim,
+                u = u,
+                iconRoom = 0f,
                 onClick = onRematch,
-                modifier = Modifier.fillMaxWidth()
-            )
+                modifier = Modifier.fillMaxWidth().breathing(0.012f, 1600)
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    LetteredText(
+                        stringResource(R.string.duel_rematch_action),
+                        (46f * u.value / fontScale0).sp, outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f
+                    )
+                }
+            }
         }
     }
 }

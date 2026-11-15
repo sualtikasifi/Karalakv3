@@ -581,6 +581,8 @@ class GameViewModel @Inject constructor(
             // they drew them — never a fresh random set.
             val duel = duelRepository.getDuel(duelIdToComplete).getOrNull()
             duelToComplete = duel
+            // The challenger's own drawings travel with the duel: the result screen shows them like a quick match's opponent gallery.
+            if (duel != null) _ghostItems.value = duel.items
             if (duel != null && duel.wordIds.isNotEmpty()) getWordsByIdsUseCase(duel.wordIds) else emptyList()
         } else if (ghost != null) {
             // Exactly the words the opponent drew, in the order they drew

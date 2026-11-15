@@ -46,6 +46,7 @@ on:
           - chestinfopreview.sh
           - rankladderpreview.sh
           - doublexppreview.sh
+          - duelresultpreview.sh
           - lobbypreview.sh
           - waitingpreview.sh
           - penthumbs.sh
