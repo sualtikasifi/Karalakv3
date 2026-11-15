@@ -582,7 +582,7 @@ internal fun PaintedHome(
             FitLettered(label, 31f, Color(0xFF241408), 2, box(lx0, ly0, lx1, ly1).then(follow(sink, (x0 + x1) / 2f, (y0 + y1) / 2f, lx0, ly0, lx1, ly1)))
             content()
         }
-        Tile(30f, 776f, 288f, 1012f, 50f, 928f, 274f, 1006f, stringResource(R.string.menu_play_online), onPlayOnline, needsNet = true)
+        Tile(30f, 776f, 288f, 1012f, 50f, 928f, 274f, 1006f, stringResource(R.string.menu_play_online).replaceFirst(' ', '\n'), onPlayOnline, needsNet = true)
         Tile(294f, 776f, 552f, 1012f, 330f, 940f, 520f, 986f, stringResource(R.string.quick_match_title), onQuickMatch, needsNet = true) {
             val boosted = xpEvent != null && xpEvent.endsAtMillis > System.currentTimeMillis()
             if (boosted && xpEvent != null) {
