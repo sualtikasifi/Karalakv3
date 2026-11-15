@@ -30,6 +30,7 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val wordPoolSynchronizer: WordPoolSynchronizer,
     private val couponRepository: CouponRepository,
+    private val adManager: com.sualtikasifi.cizimhafiza.ads.AdManager,
     authRepository: AuthRepository
 ) : ViewModel() {
 
@@ -86,6 +87,19 @@ class SettingsViewModel @Inject constructor(
     }
 
     /** The chest on screen has finished opening: the next one (if the code gave several) comes up. */
+    /** A coupon's chest may be doubled like a slot chest's: only when it holds gold and an ad is already loaded (see ChestDoubleOffer). */
+    fun canOfferCouponDouble(reward: com.sualtikasifi.cizimhafiza.domain.model.ChestReward): Boolean =
+        reward.gold > 0 && adManager.placementEnabled(COUPON_DOUBLE_PLACEMENT) && adManager.rewardedReady()
+
+    /** Watches the rewarded ad; if it is earned the chest's gold is paid once more. [onResult] says whether it was. */
+    fun doubleCouponGold(activity: android.app.Activity, reward: com.sualtikasifi.cizimhafiza.domain.model.ChestReward, onResult: (Boolean) -> Unit) {
+        adManager.maybeShowRewarded(activity, COUPON_DOUBLE_PLACEMENT) { outcome ->
+            val earned = outcome == com.sualtikasifi.cizimhafiza.ads.RewardedOutcome.EARNED
+            if (earned) settingsRepository.earnGold(reward.gold, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.AD)
+            onResult(earned)
+        }
+    }
+
     fun consumeCouponChest() = _coupon.update { it.copy(chestRewards = it.chestRewards.drop(1)) }
 
     private fun miss(@androidx.annotation.StringRes res: Int): CouponMessage {
@@ -174,3 +188,6 @@ sealed interface CouponMessage {
     data class Ok(val gold: Int, val xp: Int, val chests: Int) : CouponMessage
     data class Error(@androidx.annotation.StringRes val res: Int) : CouponMessage
 }
+
+/** Analytics / remote-switch name of the coupon chest's "altın ×2" ad (a slot chest's is "chest_double"). */
+private const val COUPON_DOUBLE_PLACEMENT = "coupon_chest_double"
