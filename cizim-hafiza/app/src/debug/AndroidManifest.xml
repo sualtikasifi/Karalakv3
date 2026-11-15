@@ -81,6 +81,10 @@
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.FrameDialogPreviewActivity"
             android:exported="true" />
+        <!-- Debug builds only: the painted rank ladder (see RankLadderPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.RankLadderPreviewActivity"
+            android:exported="true" />
         <!-- Debug builds only: the painted chest guide (see ChestInfoPreviewActivity). -->
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.ChestInfoPreviewActivity"
