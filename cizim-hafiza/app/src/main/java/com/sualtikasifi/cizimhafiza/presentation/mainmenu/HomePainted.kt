@@ -582,7 +582,7 @@ internal fun PaintedHome(
             FitLettered(label, 31f, Color(0xFF241408), 2, box(lx0, ly0, lx1, ly1).then(follow(sink, (x0 + x1) / 2f, (y0 + y1) / 2f, lx0, ly0, lx1, ly1)))
             content()
         }
-        Tile(30f, 776f, 288f, 1012f, 50f, 918f, 274f, 1002f, stringResource(R.string.menu_play_online), onPlayOnline, needsNet = true)
+        Tile(30f, 776f, 288f, 1012f, 50f, 928f, 274f, 1006f, stringResource(R.string.menu_play_online), onPlayOnline, needsNet = true)
         Tile(294f, 776f, 552f, 1012f, 330f, 940f, 520f, 986f, stringResource(R.string.quick_match_title), onQuickMatch, needsNet = true) {
             val boosted = xpEvent != null && xpEvent.endsAtMillis > System.currentTimeMillis()
             if (boosted && xpEvent != null) {
@@ -593,7 +593,7 @@ internal fun PaintedHome(
         }
         // two lines like the card beside it ("Arkadaşınla / Yarış"): the first word on top, the rest below (a language
         // whose name for it is one word stays on one line)
-        Tile(558f, 776f, 816f, 1012f, 578f, 918f, 798f, 1002f, stringResource(R.string.menu_play).replaceFirst(' ', '\n'), onPlay)
+        Tile(558f, 776f, 816f, 1012f, 578f, 928f, 798f, 1006f, stringResource(R.string.menu_play).replaceFirst(' ', '\n'), onPlay)
         Tile(30f, 1018f, 288f, 1204f, 50f, 1142f, 268f, 1188f, stringResource(R.string.menu_levels), onLevels)
         Tile(294f, 1018f, 552f, 1204f, 320f, 1142f, 526f, 1188f, stringResource(R.string.menu_friends), onFriends, needsNet = true) {
             if (pendingFriendRequests > 0) CornerCount(box(484f, 1024f, 548f, 1072f), pendingFriendRequests)
