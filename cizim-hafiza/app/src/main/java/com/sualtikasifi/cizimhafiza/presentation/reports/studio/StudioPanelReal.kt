@@ -509,7 +509,7 @@ internal fun LazyListScope.stepCard(st: StudioState, vm: StudioViewModel) {
                 SmallLink("Üstte") { vm.setCaptionY(0.12f) }
                 SmallLink("Ortada") { vm.setCaptionY(0.5f) }
                 SmallLink("Altta") { vm.setCaptionY(CaptionPlace.DEFAULT) }
-                SmallLink("Varsayılana dön") { vm.resetCaptionY() }
+                SmallLink("Sıfırla") { vm.resetCaptionY() }
             }
         }
     }
