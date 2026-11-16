@@ -220,22 +220,53 @@ fun AccountScreen(
         ) {
             Icon(Icons.Filled.Edit, contentDescription = null, tint = Color(0xFFD9701F), modifier = Modifier.size(unit * 38f))
         }
-        // The rank on its painted pill.
+        // The rank: the same glossy purple pill as on the home screen, laid over the painted tan one to its rim.
         val tier = com.sualtikasifi.cizimhafiza.domain.model.LevelTier.forLevel(uiState.level)
-        Row(
-            box(330f, 563f, 537f, 605f).padding(horizontal = unit * 14f),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        val chip = RoundedCornerShape(50)
+        Box(
+            box(330f, 563f, 537f, 605f)
+                .shadow(2.dp, chip)
+                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF9D7EFF), Color(0xFF6B4CDA), Color(0xFF4A30AE))), chip)
+                .border(1.5.dp, Color(0xFF3A2590), chip)
+                .padding(horizontal = unit * 14f),
+            contentAlignment = Alignment.Center
         ) {
-            Text(tier.rank.emoji, fontSize = fs(28f))
-            Spacer(Modifier.size(unit * 8f))
-            FitText(
-                text = stringResource(tier.rank.nameRes),
-                style = PaintedStyle(color = Color(0xFF5A3418), fontSize = fs(33f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-                maxLines = 1,
-                minScale = 0.55f,
-                modifier = Modifier.weight(1f, fill = false)
+            // the gloss along the top
+            Box(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(0.9f)
+                    .fillMaxHeight(0.42f)
+                    .padding(top = 1.5.dp)
+                    .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0x59FFFFFF), Color(0x00FFFFFF))), chip)
             )
+            val trim = androidx.compose.ui.text.style.LineHeightStyle(
+                androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(unit * 8f)) {
+                Text(
+                    text = tier.rank.emoji,
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontSize = fs(28f),
+                        platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                        lineHeight = fs(31f),
+                        lineHeightStyle = trim
+                    )
+                )
+                FitText(
+                    text = stringResource(tier.rank.nameRes),
+                    style = PaintedStyle(
+                        color = Color.White, fontSize = fs(31f), textAlign = TextAlign.Center, lineHeight = fs(31f),
+                        shadow = androidx.compose.ui.graphics.Shadow(Color(0x88241068), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
+                    ).copy(
+                        platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                        lineHeightStyle = trim
+                    ),
+                    maxLines = 1,
+                    minScale = 0.55f,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+            }
         }
         // Who the profile belongs to. The painted pill is green (a linked Google account); a guest's is covered by a plain one.
         // A linked pill has two lines, so a long address has the whole width of its own line: it shrinks, and when that is not
