@@ -196,6 +196,11 @@
     <string name="friends_list_title">Seus Amigos</string>
     <string name="friends_empty">Você ainda não tem amigos. Compartilhe seu código ou digite um!</string>
     <string name="friends_invite_action">Convidar</string>
+    <string name="friends_pick_title">Como vamos jogar?</string>
+    <string name="friends_pick_room">Convidar para a sala</string>
+    <string name="friends_pick_room_desc">Agora mesmo, ao vivo! Mesma sala, mesmo momento: veja quem tem a memória mais afiada.</string>
+    <string name="friends_pick_duel">Duelo</string>
+    <string name="friends_pick_duel_desc">Você joga e o rival rebate quando quiser! Mesmas palavras, pontos justos: o vencedor aparece no final. E ainda alimenta a sua sequência 🔥.</string>
     <string name="friends_incoming_invite">%1$s te convidou!</string>
     <string name="friends_accept_invite">Entrar</string>
     <string name="friends_decline_invite">Recusar</string>

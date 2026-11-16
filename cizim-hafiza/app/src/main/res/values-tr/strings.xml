@@ -201,6 +201,11 @@
     <string name="friends_list_title">Arkadaşların</string>
     <string name="friends_empty">Henüz arkadaşın yok. Kodunu paylaş ya da bir kod gir!</string>
     <string name="friends_invite_action">Davet Et</string>
+    <string name="friends_pick_title">Nasıl oynayalım?</string>
+    <string name="friends_pick_room">Odaya Davet Et</string>
+    <string name="friends_pick_room_desc">Hemen şimdi, canlı! Aynı odada aynı anda çizin, hafızası daha keskin olan çıksın ortaya.</string>
+    <string name="friends_pick_duel">Düello</string>
+    <string name="friends_pick_duel_desc">Sen çiz, rakip istediği an gelsin! Aynı kelimeler, adil puan: kazanan sonunda belli olur. Serini de 🔥 büyütür.</string>
     <string name="friends_incoming_invite">%1$s seni davet etti!</string>
     <string name="friends_accept_invite">Katıl</string>
     <string name="friends_decline_invite">Reddet</string>
