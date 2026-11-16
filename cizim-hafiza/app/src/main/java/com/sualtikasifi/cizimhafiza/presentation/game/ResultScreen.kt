@@ -1001,34 +1001,39 @@ internal fun ArtButton(
     }
 }
 /**
- * The face of the "x2 XP" ad button: the doubled amount big on top, "Reklam izle" under it with the clapper, both lettered the same way
- * (white, brown outline) and centred together on the button's orange face. The face is the picture's orange part only: its dark rim is thicker
- * under it than over it, so the block is kept in that band, the amount getting a little more than half of it and the call to action the rest
- * (big enough to read as the thing to tap, not a footnote); each line shrinks to its room, so neither can run onto the rim.
+ * The face of the "x2 XP" ad button: a big "x2" on the left (the lure), and on the right what it pays ("+342 XP") over "Reklam izle" with the
+ * clapper. All lettered the same way (white, brown outline) and centred together on the button's orange face, which is the picture's orange
+ * part only: its dark rim is thicker under it than over it, so the block keeps to that band. Every line shrinks to its room, so none can run onto the rim.
  */
 @Composable
 internal fun DoubleXpFace(amount: Int, u: androidx.compose.ui.unit.Dp, fs: (Float) -> androidx.compose.ui.unit.TextUnit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxSize().padding(top = u * 5f, bottom = u * 10f)
+    val outline = Color(0xFF8A3A00)
+    // Left: a big "x2", the thing that sells the button. Right: what it pays and what to do, one above the other, both centred on the face.
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxSize().padding(top = u * 4f, bottom = u * 9f)
     ) {
-        // the amount is the lure: the biggest words on the button (gold on this orange was tried and read worse than white)
-        LetteredText(
-            stringResource(R.string.result_x2_amount, amount), fs(52f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f,
-            modifier = Modifier.fillMaxWidth().weight(0.57f)
-        )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth().weight(0.43f)
+        LetteredText("x2", fs(88f), outline = outline, maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxHeight().weight(0.38f))
+        Spacer(Modifier.width(u * 6f))
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxHeight().weight(0.62f)
         ) {
-            Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 30f))
-            Spacer(Modifier.width(u * 8f))
-            LetteredText(
-                stringResource(R.string.result_watch_ad), fs(34f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f,
-                modifier = Modifier.weight(1f, fill = false)
-            )
+            LetteredText("+$amount XP", fs(46f), outline = outline, maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth().weight(0.55f))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth().weight(0.45f)
+            ) {
+                Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 28f))
+                Spacer(Modifier.width(u * 6f))
+                LetteredText(
+                    stringResource(R.string.result_watch_ad), fs(32f), outline = outline, maxLines = 1, minScale = 0.5f,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+            }
         }
     }
 }
