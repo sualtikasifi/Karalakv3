@@ -504,7 +504,7 @@ fun AccountScreen(
                     style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(37f), textAlign = TextAlign.Center),
                     maxLines = 1,
                     minScale = 0.55f,
-                    modifier = Modifier.sinkWith(delSink, 0.5f, 0.5f).padding(start = unit * 125f, end = unit * 17f).fillMaxWidth().height(unit * 68f)
+                    modifier = Modifier.sinkWith(delSink, 0.5f, 0.5f).padding(horizontal = unit * 105f).fillMaxWidth().height(unit * 68f)
                 )
             }
         }
