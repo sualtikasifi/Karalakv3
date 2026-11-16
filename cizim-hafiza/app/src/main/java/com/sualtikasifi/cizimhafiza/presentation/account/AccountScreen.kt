@@ -94,7 +94,6 @@ import coil3.compose.AsyncImage
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.repository.AuthState
 import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
-import com.sualtikasifi.cizimhafiza.presentation.common.GoogleSignInButton
 import com.sualtikasifi.cizimhafiza.presentation.common.IconWell
 import com.sualtikasifi.cizimhafiza.presentation.common.LevelAvatar
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
@@ -167,6 +166,7 @@ fun AccountScreen(
         val pxY = (sceneBitmap?.height ?: 1) / ArtH
         val outSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.94f)
         val delSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.95f)
+        val inSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.94f)
         if (offX > 1.dp || offY > 1.dp) {
             com.sualtikasifi.cizimhafiza.presentation.common.BlurredSceneFill(R.drawable.bg_account, scene, 20.dp)
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
@@ -220,22 +220,53 @@ fun AccountScreen(
         ) {
             Icon(Icons.Filled.Edit, contentDescription = null, tint = Color(0xFFD9701F), modifier = Modifier.size(unit * 38f))
         }
-        // The rank on its painted pill.
+        // The rank: the same glossy purple pill as on the home screen, laid over the painted tan one to its rim.
         val tier = com.sualtikasifi.cizimhafiza.domain.model.LevelTier.forLevel(uiState.level)
-        Row(
-            box(330f, 563f, 537f, 605f).padding(horizontal = unit * 14f),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        val chip = RoundedCornerShape(50)
+        Box(
+            box(330f, 563f, 537f, 605f)
+                .shadow(2.dp, chip)
+                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF9D7EFF), Color(0xFF6B4CDA), Color(0xFF4A30AE))), chip)
+                .border(1.5.dp, Color(0xFF3A2590), chip)
+                .padding(horizontal = unit * 14f),
+            contentAlignment = Alignment.Center
         ) {
-            Text(tier.rank.emoji, fontSize = fs(28f))
-            Spacer(Modifier.size(unit * 8f))
-            FitText(
-                text = stringResource(tier.rank.nameRes),
-                style = PaintedStyle(color = Color(0xFF5A3418), fontSize = fs(33f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
-                maxLines = 1,
-                minScale = 0.55f,
-                modifier = Modifier.weight(1f, fill = false)
+            // the gloss along the top
+            Box(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(0.9f)
+                    .fillMaxHeight(0.42f)
+                    .padding(top = 1.5.dp)
+                    .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0x59FFFFFF), Color(0x00FFFFFF))), chip)
             )
+            val trim = androidx.compose.ui.text.style.LineHeightStyle(
+                androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(unit * 8f)) {
+                Text(
+                    text = tier.rank.emoji,
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontSize = fs(28f),
+                        platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                        lineHeight = fs(31f),
+                        lineHeightStyle = trim
+                    )
+                )
+                FitText(
+                    text = stringResource(tier.rank.nameRes),
+                    style = PaintedStyle(
+                        color = Color.White, fontSize = fs(31f), textAlign = TextAlign.Center, lineHeight = fs(31f),
+                        shadow = androidx.compose.ui.graphics.Shadow(Color(0x88241068), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
+                    ).copy(
+                        platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                        lineHeightStyle = trim
+                    ),
+                    maxLines = 1,
+                    minScale = 0.55f,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+            }
         }
         // Who the profile belongs to. The painted pill is green (a linked Google account); a guest's is covered by a plain one.
         // A linked pill has two lines, so a long address has the whole width of its own line: it shrinks, and when that is not
@@ -447,14 +478,37 @@ fun AccountScreen(
                     )
                 }
             }
-            // A guest: Google's own white button sits over the painted orange one (it covers it to the rim).
-            else -> Box(box(141f, 1453f, 694f, 1599f), contentAlignment = Alignment.Center) {
-                GoogleSignInButton(
-                    onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::signIn),
-                    modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = if (online) 1f else 0.55f },
-                    height = unit * 146f,
-                    corner = unit * 73f
-                )
+            // A guest: the painted orange button, the same one the busy spinner and the sign-out button sit on, so all three
+            // look alike. The Google mark rides in a white disc so it stays legible on the orange.
+            else -> Box(
+                box(150f, 1462f, 685f, 1590f)
+                    .graphicsLayer { alpha = if (online) 1f else 0.55f }
+                    .sunkenFace(inSink, sceneBitmap, 150f * pxX, 1462f * pxY, 535f * pxX, 128f * pxY, (15f * us).dp, (50f * us).dp)
+                    .clickable(
+                        interactionSource = inSink.source, indication = null,
+                        onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::signIn)
+                    )
+                    .a11yButton(stringResource(R.string.account_sign_in_google)),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    Modifier.sinkWith(inSink, 0.5f, 0.5f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Box(Modifier.size(unit * 78f).background(Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                        Image(
+                            painter = painterResource(R.drawable.ic_google_g),
+                            contentDescription = null,
+                            modifier = Modifier.size(unit * 52f)
+                        )
+                    }
+                    Spacer(Modifier.size(unit * 18f))
+                    LetteredText(
+                        stringResource(R.string.account_sign_in_google), fs(60f), outline = Color(0xFF8A3A00),
+                        modifier = Modifier.height(unit * 90f).weight(1f, fill = false), minScale = 0.5f
+                    )
+                }
             }
         }
 
@@ -481,7 +535,7 @@ fun AccountScreen(
                     style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(37f), textAlign = TextAlign.Center),
                     maxLines = 1,
                     minScale = 0.55f,
-                    modifier = Modifier.sinkWith(delSink, 0.5f, 0.5f).padding(start = unit * 125f, end = unit * 17f).fillMaxWidth().height(unit * 68f)
+                    modifier = Modifier.sinkWith(delSink, 0.5f, 0.5f).padding(horizontal = unit * 105f).fillMaxWidth().height(unit * 68f)
                 )
             }
         }

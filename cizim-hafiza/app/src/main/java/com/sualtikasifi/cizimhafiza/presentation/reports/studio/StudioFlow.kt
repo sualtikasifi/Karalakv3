@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -54,6 +55,8 @@ internal class FlowStep(
     val done: Boolean = false,
     val hint: String? = null,
     val blocksNext: Boolean = false,
+    /** Stays in view while the content scrolls, in a narrow column at the left of it (an adjustment screen: the preview must be seen while its sliders move). */
+    val pinned: (@androidx.compose.runtime.Composable () -> Unit)? = null,
     val content: LazyListScope.() -> Unit
 )
 
@@ -83,11 +86,20 @@ internal fun StepFlow(steps: List<FlowStep>, index: Int, onIndex: (Int) -> Unit,
         }
         // re-created for each step, so every step opens at its top
         key(i) {
-            LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(top = 4.dp, bottom = 12.dp)
-            ) { step.content(this) }
+            val list: @Composable (Modifier) -> Unit = { m ->
+                LazyColumn(
+                    modifier = m,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(top = 4.dp, bottom = 12.dp)
+                ) { step.content(this) }
+            }
+            val pinned = step.pinned
+            if (pinned == null) list(Modifier.weight(1f).fillMaxWidth())
+            else Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // the picture stays at the left, the controls scroll at its right: the side space of a tall video is put to use
+                Box(Modifier.width(150.dp).padding(top = 4.dp)) { pinned() }
+                list(Modifier.weight(1f).fillMaxHeight())
+            }
         }
         step.hint?.let { Text(it, style = Console.Small.copy(color = Console.Critical), modifier = Modifier.padding(top = 4.dp)) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {

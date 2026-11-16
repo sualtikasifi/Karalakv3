@@ -264,7 +264,7 @@ internal fun LazyListScope.previewItems(st: StudioState, vm: StudioViewModel) {
 
 /** The preview frame with its time slider. */
 @Composable
-internal fun PreviewCard(st: StudioState, vm: StudioViewModel) {
+internal fun PreviewCard(st: StudioState, vm: StudioViewModel, compact: Boolean = false) {
     ConsoleCard(Modifier.fillMaxWidth()) {
         if (st.preview == null && st.totalMs == 0L) {
             Text(
@@ -277,10 +277,12 @@ internal fun PreviewCard(st: StudioState, vm: StudioViewModel) {
             )
         } else {
             val ratio = 9f / 20f
+            // compact: fills the narrow column left of a step's sliders, so a change is seen as it is made
+            val frame = if (compact) Modifier.fillMaxWidth() else Modifier.width(220.dp)
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 val img = st.preview
-                if (img != null) Image(img, contentDescription = "Önizleme", contentScale = ContentScale.Fit, modifier = Modifier.width(220.dp).aspectRatio(ratio).clip(RoundedCornerShape(12.dp)))
-                else Box(Modifier.width(220.dp).aspectRatio(ratio).background(Console.Grid, RoundedCornerShape(12.dp)))
+                if (img != null) Image(img, contentDescription = "Önizleme", contentScale = ContentScale.Fit, modifier = frame.aspectRatio(ratio).clip(RoundedCornerShape(12.dp)))
+                else Box(frame.aspectRatio(ratio).background(Console.Grid, RoundedCornerShape(12.dp)))
             }
             if (st.totalMs > 0) {
                 Slider(
@@ -293,7 +295,7 @@ internal fun PreviewCard(st: StudioState, vm: StudioViewModel) {
                 val seconds = ((st.totalMs + 999) / 1000).toInt()
                 // viewers drop off past ~20 s: "Çizen Bile Bilemedi" says so as soon as the video runs over
                 val tooLong = st.format == StudioFormat.Forgot && seconds > FORGOT_TARGET_SECONDS
-                Text(
+                if (!compact) Text(
                     when {
                         st.format == StudioFormat.RealLife -> "≈ $seconds sn · kanca, video (üstünde Karalak kartı), kapanış, tanıtım ve bitiş görseli."
                         st.format == StudioFormat.Forgot && tooLong -> "≈ $seconds sn · $FORGOT_TARGET_SECONDS saniyeyi geçti, izlenme oranı düşebilir. Tahmin sayısını ya da cümleleri kısalt. Sesli videoda süre sesin uzunluğuna göre ayarlanır."

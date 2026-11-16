@@ -171,7 +171,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = padding.calculateBottomPadding())
-                    .padding(top = (540f * artScale).dp)
+                    .padding(top = (484f * artScale).dp)
             ) {
                 // the three tabs are big and close: nearly the screen's whole width, no gap between them (the chosen one grows over its neighbours' leaves)
                 Row(horizontalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
@@ -1253,37 +1253,38 @@ private fun PaintedPurchaseDialog(
                 if (altCancel == null) PaintedButton(spec.cancel, 76f, true, onDismiss) else {
                     // The painted "Vazgeç" is covered whole by a live button of the same footprint (a little larger, for the picture's edge).
                     val (x0, y0, x1, y1) = spec.cancel
-                    val shape = RoundedCornerShape(u * 80f)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
+                    // The green painted pill; the label and the arrow (or the tick, once armed) ride on it in white with a dark shadow.
+                    val face = androidx.compose.ui.text.TextStyle(
+                        fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, color = Color.White,
+                        shadow = androidx.compose.ui.graphics.Shadow(Color(0xCC0B3A00), androidx.compose.ui.geometry.Offset(0f, 3f), 4f)
+                    )
+                    Box(
+                        contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .offset(u * (x0 - 8f), u * (y0 - 8f))
                             .size(u * (x1 - x0 + 16f), u * (y1 - y0 + 16f))
-                            .clip(shape)
-                            .background(
-                                androidx.compose.ui.graphics.Brush.verticalGradient(
-                                    if (altCancel.armed) listOf(Color(0xFF6FD97A), Color(0xFF2FA248)) else listOf(Color(0xFFFFFFFF), Color(0xFFFFE9C9))
-                                )
-                            )
-                            .border(u * 9f, if (altCancel.armed) Color(0xFF14602A) else Color(0xFFE23B2A), shape)
                             .then(if (altCancel.armed) Modifier else Modifier.clickable(onClick = altCancel.onClick))
-                            .padding(horizontal = u * 28f)
                     ) {
-                        Text(
-                            text = if (altCancel.armed) "✓" else "▶",
-                            style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(58f), color = if (altCancel.armed) Color.White else Color(0xFFE23B2A))
+                        Image(
+                            painter = painterResource(R.drawable.btn_green),
+                            contentDescription = null,
+                            contentScale = ContentScale.FillBounds,
+                            modifier = Modifier.fillMaxSize()
                         )
-                        Spacer(Modifier.width(u * 16f))
-                        com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                            text = altCancel.label,
-                            style = androidx.compose.ui.text.TextStyle(
-                                fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(52f),
-                                color = if (altCancel.armed) Color.White else Color(0xFFC23A1E), textAlign = TextAlign.Center, lineHeight = fs(56f)
-                            ),
-                            maxLines = 2, minScale = 0.55f,
-                            modifier = Modifier.weight(1f)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxSize().padding(horizontal = u * 40f)
+                        ) {
+                            Text(text = if (altCancel.armed) "✓" else "▶", style = face.copy(fontSize = fs(52f)))
+                            Spacer(Modifier.width(u * 14f))
+                            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                                text = altCancel.label,
+                                style = face.copy(fontSize = fs(50f), textAlign = TextAlign.Center, lineHeight = fs(54f)),
+                                maxLines = 2, minScale = 0.55f,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
                 // Always the normal colour and always pressable: when the gold is short, onConfirm answers with the "not enough gold" warning

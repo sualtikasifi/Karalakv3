@@ -49,17 +49,12 @@ fun CreateRoomScreen(
         title = stringResource(R.string.online_create_room),
         onBack = onBack,
         action = { modifier ->
-            if (uiState.isCreating) {
-                Box(modifier = modifier.aspectRatio(1015f / 246f), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(modifier = Modifier.size(36.dp))
-                }
-            } else {
-                StartButton(
-                    text = stringResource(R.string.online_create_room_action),
-                    onClick = { viewModel.createRoom(onRoomCreated) },
-                    modifier = modifier
-                )
-            }
+            StartButton(
+                text = stringResource(R.string.online_create_room_action),
+                onClick = { viewModel.createRoom(onRoomCreated) },
+                modifier = modifier,
+                loading = uiState.isCreating
+            )
         }
     ) {
         CompactPanel(paper = true) {

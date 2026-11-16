@@ -104,7 +104,7 @@ export async function renderCreate(c, keepScale = false) {
   const { $, lang } = c, x = T[lang()], C = (k) => chatText(k, lang());
   await loadChat();
   if (!catList.length || catList.lang !== lang()) { try { const w = await (await fetch(`words_${lang()}.json`)).json(); catList = [...new Set(w.map((q) => q.category))].sort((a, b) => a.localeCompare(b, lang())); catList.lang = lang(); opts.cats = new Set(); } catch { catList = []; } }
-  $("oc-title").textContent = x.cTitle; $("oc-make-t").textContent = x.make; $("oc-msg").textContent = "";
+  $("oc-title").textContent = x.cTitle; $("oc-make-t").textContent = x.make; $("oc-make").disabled = false; $("oc-msg").textContent = "";
   const body = $("oc-body"); body.replaceChildren();
   // The same wooden setup rows as Play Offline (CreateRoomScreen on the shared WoodScreen).
   const u = c.u(), group = (label, items, cols, h, size) => setupGroup(body, u, label, items, cols, h * ocF, size * ocF), again = () => renderCreate(c, true);
@@ -118,14 +118,17 @@ export async function renderCreate(c, keepScale = false) {
   if (overflows(body) && ocF > 0.6) { ocF -= 0.07; return renderCreate(c, true); }
   c.fit && c.fit();
   $("oc-make").onclick = async () => {
-    $("oc-msg").textContent = "…";
+    if ($("oc-make").disabled) return;
+    // the label turns into a spinner inside the button while the room is made
+    $("oc-msg").textContent = ""; $("oc-make").disabled = true; $("oc-make-t").innerHTML = '<i class="spin"></i>';
+    const idle = () => { $("oc-make").disabled = false; $("oc-make-t").textContent = x.make; };
     try {
       const lv = c.levelOf(c.P.xp).level;
       const all = opts.diffs.size === 3 ? null : [...opts.diffs].sort((a, b) => ["EASY", "MEDIUM", "HARD"].indexOf(a) - ["EASY", "MEDIUM", "HARD"].indexOf(b)).join(",");
       const cat = opts.cats.size ? [...opts.cats].sort().join(",") : null;
       const cd = await net.createRoom(c.P.nick, lv, c.P.frame, { wordCount: opts.wordCount, difficulty: all, mode: opts.mode, category: cat, teamMode: opts.team });
       enterLobby(c, cd);
-    } catch { $("oc-msg").textContent = x.err; }
+    } catch { $("oc-msg").textContent = x.err; idle(); }
   };
 }
 export function renderJoin(c) {

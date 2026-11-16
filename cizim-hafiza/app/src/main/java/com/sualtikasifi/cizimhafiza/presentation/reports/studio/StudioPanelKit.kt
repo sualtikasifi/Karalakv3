@@ -217,16 +217,36 @@ internal fun PreciseSlider(label: String, value: Float, range: ClosedFloatingPoi
         val next = ((current * 100f).let { kotlin.math.round(it) } + direction) / 100f
         change(next.coerceIn(range.start, range.endInclusive))
     }
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-        Text(label, style = Console.Small, modifier = Modifier.width(78.dp))
-        StepButton("−") { nudge(-1) }
-        Slider(
-            value = value, onValueChange = { change((kotlin.math.round(it * 100f)) / 100f) }, valueRange = range,
-            colors = SliderDefaults.colors(thumbColor = Console.Accent, activeTrackColor = Console.Accent),
-            modifier = Modifier.weight(1f)
-        )
-        StepButton("+") { nudge(1) }
-        Text(String.format(Locale.US, "%.2f", value), style = Console.Small, modifier = Modifier.width(38.dp), textAlign = TextAlign.End)
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        val shown = String.format(Locale.US, "%.2f", value)
+        if (maxWidth < 300.dp) {
+            // narrow (beside a pinned preview): the name and the number over the bar, the buttons at its ends
+            Column {
+                Row(Modifier.fillMaxWidth()) {
+                    Text(label, style = Console.Small, modifier = Modifier.weight(1f))
+                    Text(shown, style = Console.Small, textAlign = TextAlign.End)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StepButton("−") { nudge(-1) }
+                    Slider(
+                        value = value, onValueChange = { change((kotlin.math.round(it * 100f)) / 100f) }, valueRange = range,
+                        colors = SliderDefaults.colors(thumbColor = Console.Accent, activeTrackColor = Console.Accent),
+                        modifier = Modifier.weight(1f)
+                    )
+                    StepButton("+") { nudge(1) }
+                }
+            }
+        } else Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(label, style = Console.Small, modifier = Modifier.width(78.dp))
+            StepButton("−") { nudge(-1) }
+            Slider(
+                value = value, onValueChange = { change((kotlin.math.round(it * 100f)) / 100f) }, valueRange = range,
+                colors = SliderDefaults.colors(thumbColor = Console.Accent, activeTrackColor = Console.Accent),
+                modifier = Modifier.weight(1f)
+            )
+            StepButton("+") { nudge(1) }
+            Text(shown, style = Console.Small, modifier = Modifier.width(38.dp), textAlign = TextAlign.End)
+        }
     }
 }
 
