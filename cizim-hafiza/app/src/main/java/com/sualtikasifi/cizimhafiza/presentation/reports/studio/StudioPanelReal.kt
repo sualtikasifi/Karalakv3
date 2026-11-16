@@ -521,48 +521,14 @@ internal fun LazyListScope.stepCard(st: StudioState, vm: StudioViewModel) {
 }
 
 
-/** The cut: where the used part of the clip begins and ends (seconds into the file), with a bar that shows it. */
+/** The cut: the clip itself, with a strip of its frames and a handle at each end of the part that is used (see [ClipTrimmer]). */
 @androidx.compose.runtime.Composable
 private fun ClipCutter(f: RealReveal, vm: StudioViewModel) {
+    val name = f.clip ?: return
     val full = maxOf(f.clipFullMs, f.clipStartMs + f.clipMs)
-    fun sec(ms: Long) = String.format(Locale("tr"), "%.1f", ms / 1000.0)
-    var startText by remember(f.sampleId, f.clip, f.clipStartMs) { mutableStateOf(sec(f.clipStartMs)) }
-    var endText by remember(f.sampleId, f.clip, f.clipStartMs, f.clipMs) { mutableStateOf(sec(f.clipStartMs + f.clipMs)) }
-    fun parse(t: String) = t.replace(',', '.').toDoubleOrNull()
-    fun apply(start: String, end: String) {
-        val s = parse(start) ?: return
-        val e = parse(end) ?: return
-        if (e - s >= 1.0) vm.setClipRange(f.sampleId, s, e)
-    }
-    Text(
-        "Kullanılacak kısım: ${sec(f.clipStartMs)} – ${sec(f.clipStartMs + f.clipMs)} sn (${sec(f.clipMs)} sn) · videonun tamamı ${sec(full)} sn",
-        style = Console.Small, modifier = Modifier.padding(top = 10.dp)
-    )
-    if (full > 0) {
-        val before = f.clipStartMs.toFloat().coerceAtLeast(0f)
-        val used = f.clipMs.toFloat().coerceAtLeast(1f)
-        val after = (full - f.clipStartMs - f.clipMs).toFloat().coerceAtLeast(0f)
-        Row(Modifier.fillMaxWidth().padding(top = 6.dp).height(10.dp).clip(RoundedCornerShape(5.dp)).background(Console.Surface)) {
-            if (before > 0f) Spacer(Modifier.weight(before))
-            Box(Modifier.weight(used).fillMaxHeight().background(Console.Accent, RoundedCornerShape(5.dp)))
-            if (after > 0f) Spacer(Modifier.weight(after))
-        }
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(Modifier.weight(1f)) {
-            Field("Başlangıç (sn): baştan kırp", startText, { raw ->
-                val t = raw.filter { it.isDigit() || it == ',' || it == '.' }.take(5)
-                startText = t
-                apply(t, endText)
-            })
-        }
-        Box(Modifier.weight(1f)) {
-            Field("Bitiş (sn): sondan kırp", endText, { raw ->
-                val t = raw.filter { it.isDigit() || it == ',' || it == '.' }.take(5)
-                endText = t
-                apply(startText, t)
-            })
-        }
-    }
-    Text("En az 1 sn, en çok ${RealTimeline.CLIP_MAX / 1000} sn kullanılır.", style = Console.Small, modifier = Modifier.padding(top = 4.dp))
+    if (full <= 0L) return
+    ClipTrimmer(
+        file = vm.realStore.file(name), fullMs = full,
+        startMs = f.clipStartMs, endMs = f.clipStartMs + f.clipMs
+    ) { start, end -> vm.setClipRange(f.sampleId, start / 1000.0, end / 1000.0) }
 }
