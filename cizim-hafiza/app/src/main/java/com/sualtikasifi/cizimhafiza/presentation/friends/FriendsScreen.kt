@@ -228,16 +228,12 @@ fun FriendsScreen(
                 contentDescription = stringResource(R.string.duel_list_title),
                 modifier = Modifier.fillMaxSize()
             )
+            // the count sits over the clipboard's corner, big and moving: a duel waiting for an answer must not be missed
             if (duelBadgeCount > 0) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .background(MaterialTheme.colorScheme.error, CircleShape)
-                        .border(2.dp, Color.White, CircleShape)
-                        .padding(horizontal = 6.dp, vertical = 1.dp)
-                ) {
-                    Text(text = duelBadgeCount.toString(), style = PaintedStyle(color = Color.White, fontSize = 12.sp))
-                }
+                com.sualtikasifi.cizimhafiza.presentation.common.AttentionBadge(
+                    count = duelBadgeCount,
+                    modifier = Modifier.align(Alignment.TopEnd).offset(x = 12.dp, y = (-10).dp)
+                )
             }
         }
         // The clipboard alone did not say where it leads.
