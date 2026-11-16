@@ -239,13 +239,12 @@ private fun WellField(
             enabled = enabled,
             singleLine = true,
             keyboardOptions = keyboardOptions,
-            // One fixed line box, centred in the well: an empty field and a typed one then draw the same cursor, at the middle of the
-            // well (with the default metrics the empty field's cursor sat high and grew once a digit was typed).
-            textStyle = PaintedStyle(color = Ink, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 26.sp).copy(
-                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
-                    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
-                    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.None
-                )
+            // The font's own line metrics, no fixed line height: an empty field has no glyphs to take a line box from, and with a fixed
+            // height its cursor was laid out differently from the typed one's (high, then jumping once a digit came). Natural metrics
+            // are the same with or without text, and the decoration box below centres that line in the well.
+            textStyle = PaintedStyle(color = Ink, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold).copy(
+                lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified,
+                lineHeightStyle = null
             ),
             cursorBrush = SolidColor(Ink),
             modifier = Modifier.fillMaxSize().padding(horizontal = 22.dp)
