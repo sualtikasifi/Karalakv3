@@ -657,29 +657,6 @@ private fun FriendRow(
     }
 }
 
-/** The two ways to play with a friend, each with a line on what it is like; the choice is made on a painted button under it. */
-@Composable
-private fun PlayChoiceDialog(onRoom: () -> Unit, onDuel: () -> Unit, onDismiss: () -> Unit) {
-    com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(title = stringResource(R.string.friends_pick_title), onDismiss = onDismiss) {
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
-            PlayChoice(stringResource(R.string.friends_pick_room), stringResource(R.string.friends_pick_room_desc), onRoom)
-            PlayChoice(stringResource(R.string.friends_pick_duel), stringResource(R.string.friends_pick_duel_desc), onDuel)
-        }
-    }
-}
-
-@Composable
-private fun PlayChoice(label: String, description: String, onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-        com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(text = label, onClick = onClick, modifier = Modifier.fillMaxWidth())
-        Text(
-            text = description,
-            style = PaintedStyle(color = InkBrown, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp)
-        )
-    }
-}
-
 /** One pending request; accepting is the highlighted answer, declining a quiet text action. */
 @Composable
 private fun FriendRequestRow(request: FriendRequest, busy: Boolean, onAccept: () -> Unit, onDecline: () -> Unit) {
