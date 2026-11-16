@@ -11,6 +11,8 @@
     <string name="share_friend_reward_hint">🎁 İkimiz de kazanıyoruz: Benim kodumla katılıp seviye 5\'e ulaşınca ikimiz de 500 altın alıyoruz!</string>
     <string name="share_friend_code">Arkadaşlık kodum: %1$s</string>
     <string name="share_friend_code_instructions">Link açılmazsa: Karalak\'ı yükle, Arkadaşlar bölümünde \"Arkadaş ekle\" kısmına bu kodu gir.</string>
+    <string name="gift_reward_gold_format">Karalak\'tan hediye: %1$d altın hesabına eklendi! 🎁</string>
+    <string name="gift_reward_xp_format">Karalak\'tan hediye: %1$d XP hesabına eklendi! 🎁</string>
     <string name="referral_reward_gold_earned_format">Davet ödülün geldi: %1$d altın kazandın! 🎉</string>
     <string name="referral_reward_earned_format">Davet ödülün geldi: %1$d XP kazandın! 🎉</string>
     <string name="app_name">Karalak</string>

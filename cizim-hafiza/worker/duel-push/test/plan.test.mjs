@@ -20,3 +20,27 @@ test("firestore values become plain numbers and strings", () => {
   assert.equal(plain({ stringValue: "x" }), "x");
   assert.equal(plain({ nullValue: null }), undefined);
 });
+
+import { planBroadcast, weekTopic } from "../src/admin.js";
+import { decode, encode } from "../src/google.js";
+
+test("a plain broadcast goes to the news topic", () => {
+  const sends = planBroadcast({ title: "Merhaba", body: "Yeni bir güncelleme var" }, new Date("2026-11-16T12:00:00Z"));
+  assert.deepEqual(sends.map((s) => [s.topic, s.title]), [["news", "Merhaba"]]);
+});
+test("per-language texts go to their own topic, with the Turkish one as the fallback", () => {
+  const sends = planBroadcast({ texts: { tr: { title: "T", body: "b" }, en: { title: "E", body: "e" } } }, new Date("2026-11-16T12:00:00Z"));
+  assert.deepEqual(sends.map((s) => s.label), ["tr", "en", "fallback"]);
+  assert.match(sends[2].condition, /!\('news_tr' in topics\)/);
+});
+test("a lapsed audience has no fallback", () => {
+  const sends = planBroadcast({ title: "T", body: "b", audience: "lapsed" }, new Date("2026-11-16T12:00:00Z"));
+  assert.deepEqual(sends.map((s) => s.label), ["tr"]);
+  assert.match(sends[0].condition, /seen_v1/);
+});
+test("a broadcast without text sends nothing", () => assert.deepEqual(planBroadcast({}, new Date()), []));
+test("the ISO week topic", () => assert.equal(weekTopic(new Date("2026-11-16T12:00:00Z")), "seen_2026w47"));
+test("values survive an encode and decode", () => {
+  const x = { a: 5, b: "s", c: true, d: null, e: [1, "z"], f: { g: 2.5 } };
+  assert.deepEqual(decode(encode(x)), x);
+});

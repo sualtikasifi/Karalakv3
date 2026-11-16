@@ -12,6 +12,8 @@
     <string name="share_friend_reward_hint">🎁 Ganamos los dos: entra con mi código y, cuando llegues al nivel 5, ¡cada uno recibe 500 de oro!</string>
     <string name="share_friend_code">Mi código de amigo: %1$s</string>
     <string name="share_friend_code_instructions">Si el enlace no se abre: instala Karalak e ingresa este código en \"Agregar amigo\", dentro de Amigos.</string>
+    <string name="gift_reward_gold_format">Un regalo de Karalak: ¡recibiste %1$d de oro! 🎁</string>
+    <string name="gift_reward_xp_format">Un regalo de Karalak: ¡recibiste %1$d de XP! 🎁</string>
     <string name="referral_reward_gold_earned_format">Llegó tu recompensa por invitar: ¡ganaste %1$d de oro! 🎉</string>
     <string name="referral_reward_earned_format">Llegó tu recompensa por invitar: ¡ganaste %1$d XP! 🎉</string>
     <string name="app_name">Karalak</string>

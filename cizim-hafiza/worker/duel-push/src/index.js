@@ -1,6 +1,8 @@
 // Duel push notifications on a free Cloudflare Worker cron, replacing the GitHub Actions cron (which GitHub delays by hours).
 // Same job as functions/src/duelPush.ts: find duels nobody was told about, send a data-only FCM push, stamp the document.
 // Talks to Firestore and FCM over REST with the Firebase service account (secret FIREBASE_SERVICE_ACCOUNT); no dependencies.
+import { accessToken, decode } from "./google.js";
+import { runProcessAdminCommands, recordRun } from "./admin.js";
 
 /** A duel older than this when the job finally sees it is no longer news: stamped as done without a push. */
 export const DUEL_PUSH_WINDOW_MS = 6 * 3_600_000;
@@ -38,28 +40,6 @@ export function plain(v) {
   if ("integerValue" in v) return Number(v.integerValue);
   if ("doubleValue" in v) return v.doubleValue;
   return undefined;
-}
-
-const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-const enc = (o) => b64url(new TextEncoder().encode(JSON.stringify(o)));
-
-async function accessToken(sa) {
-  const now = Math.floor(Date.now() / 1000);
-  const head = enc({ alg: "RS256", typ: "JWT" });
-  const body = enc({
-    iss: sa.client_email, scope: "https://www.googleapis.com/auth/cloud-platform",
-    aud: "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600,
-  });
-  const der = Uint8Array.from(atob(sa.private_key.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "")), (c) => c.charCodeAt(0));
-  const key = await crypto.subtle.importKey("pkcs8", der, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
-  const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(`${head}.${body}`));
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: `${head}.${body}.${b64url(sig)}` }),
-  });
-  if (!res.ok) throw new Error(`token ${res.status}: ${await res.text()}`);
-  return (await res.json()).access_token;
 }
 
 const FIELDS = ["challengerUid", "challengerName", "opponentUid", "opponentName", "status", "createdAt", "completedAt"];
@@ -136,12 +116,22 @@ export async function runNotifyDuels(env) {
   }
 }
 
+/** Runs one job, and leaves its result for the developer panel's "Arka plan işleri" tab. */
+async function job(env, name, fn) {
+  try { await fn(env); await recordRun(env, name, true); }
+  catch (e) { console.error(`${name} failed`, e); await recordRun(env, name, false, e); }
+}
+
 export default {
-  async scheduled(_event, env, ctx) { ctx.waitUntil(runNotifyDuels(env)); },
+  // Every five minutes: the duel pushes, and what the panel asked for (gifts, pushes, planned XP events).
+  async scheduled(_event, env, ctx) {
+    ctx.waitUntil(Promise.all([job(env, "notify-duels", runNotifyDuels), job(env, "process-admin-commands", runProcessAdminCommands)]));
+  },
   // Open the worker's URL to run it by hand and read the log; only answers with a secret in the query: ?key=<DUEL_PUSH_KEY>
   async fetch(request, env) {
     if (!env.DUEL_PUSH_KEY || new URL(request.url).searchParams.get("key") !== env.DUEL_PUSH_KEY) return new Response("ok");
-    await runNotifyDuels(env);
+    await job(env, "notify-duels", runNotifyDuels);
+    await job(env, "process-admin-commands", runProcessAdminCommands);
     return new Response("ran");
   },
 };

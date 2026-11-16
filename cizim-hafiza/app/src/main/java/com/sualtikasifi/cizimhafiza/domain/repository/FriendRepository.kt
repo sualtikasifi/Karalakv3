@@ -155,7 +155,10 @@ class FriendRequestLimitException : Exception("Bugün çok fazla arkadaşlık is
  */
 class BotFriendRequestPendingException : Exception("İstek gönderildi, henüz cevap yok")
 
-/** What [FriendRepository.claimPendingRewards] brought in: entries tagged `currency: "gold"` count as gold, older untagged ones as XP. */
-data class PendingRewardTotals(val xp: Int = 0, val gold: Int = 0) {
-    val isEmpty get() = xp <= 0 && gold <= 0
+/**
+ * What [FriendRepository.claimPendingRewards] brought in: entries tagged `currency: "gold"` count as gold, older untagged ones as XP.
+ * The entries the developer panel sent (reason "admin": a gift or a make-up) are counted apart, [giftXp] and [giftGold].
+ */
+data class PendingRewardTotals(val xp: Int = 0, val gold: Int = 0, val giftXp: Int = 0, val giftGold: Int = 0) {
+    val isEmpty get() = xp <= 0 && gold <= 0 && giftXp <= 0 && giftGold <= 0
 }
