@@ -1008,29 +1008,31 @@ internal fun ArtButton(
 @Composable
 internal fun DoubleXpFace(amount: Int, u: androidx.compose.ui.unit.Dp, fs: (Float) -> androidx.compose.ui.unit.TextUnit) {
     val outline = Color(0xFF8A3A00)
-    // Left: a big "x2", the thing that sells the button. Right: what it pays and what to do, one above the other, both centred on the face.
+    // One block, centred on the face as a whole: a big "x2" and, right of it, what it pays over "Reklam izle" with the clapper. The
+    // pieces have fixed widths (the lettering shrinks inside them) so the block is the same width in every language and sits in the
+    // middle instead of drifting right; the two lines are kept close, their centres only 38 units apart.
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxSize().padding(top = u * 4f, bottom = u * 9f)
     ) {
-        LetteredText("x2", fs(88f), outline = outline, maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxHeight().weight(0.38f))
-        Spacer(Modifier.width(u * 6f))
+        LetteredText("x2", fs(88f), outline = outline, maxLines = 1, minScale = 0.5f, modifier = Modifier.width(u * 90f).fillMaxHeight())
+        Spacer(Modifier.width(u * 8f))
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxHeight().weight(0.62f)
+            modifier = Modifier.width(u * 176f)
         ) {
-            LetteredText("+$amount XP", fs(46f), outline = outline, maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth().weight(0.55f))
+            LetteredText("+$amount XP", fs(46f), outline = outline, maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth().height(u * 40f))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth().weight(0.45f)
+                modifier = Modifier.fillMaxWidth().height(u * 36f)
             ) {
-                Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 28f))
-                Spacer(Modifier.width(u * 6f))
+                Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 26f))
+                Spacer(Modifier.width(u * 5f))
                 LetteredText(
-                    stringResource(R.string.result_watch_ad), fs(32f), outline = outline, maxLines = 1, minScale = 0.5f,
+                    stringResource(R.string.result_watch_ad), fs(30f), outline = outline, maxLines = 1, minScale = 0.5f,
                     modifier = Modifier.weight(1f, fill = false)
                 )
             }
