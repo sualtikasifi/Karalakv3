@@ -12,7 +12,7 @@ import * as admin from "firebase-admin";
  * right channel). The `type` is "duel" or "duel_result".
  */
 
-/** How far back a duel still counts as news. Longer than the cron interval many times over, so a run GitHub delays or drops is made up for. */
+/** A duel older than this when the job finally sees it is no longer news: it is stamped as done without a push. */
 export const DUEL_PUSH_WINDOW_MS = 6 * 3_600_000;
 
 export interface DuelPush {
@@ -22,70 +22,91 @@ export interface DuelPush {
   /** Who the notification names. */
   fromNickname: string;
   type: "duel" | "duel_result";
-  /** The document field stamped once it is sent. */
+  /** The document field stamped once it is dealt with. */
   stamp: "pushedAt" | "resultPushedAt";
+  /** False for a duel that is stamped but not announced (too old, already played, nobody to name). */
+  send: boolean;
 }
 
 interface DuelData {
   challengerUid?: unknown; challengerName?: unknown; opponentUid?: unknown; opponentName?: unknown;
-  status?: unknown; createdAt?: unknown; completedAt?: unknown; pushedAt?: unknown; resultPushedAt?: unknown;
+  status?: unknown; createdAt?: unknown; completedAt?: unknown;
 }
 
 const text = (v: unknown): string => (typeof v === "string" ? v.trim().slice(0, 40) : "");
 const num = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? v : 0);
 
-/** The pushes still owed for these duels (pure: no I/O, so it can be tested). */
-export function planDuelPushes(duels: { id: string; data: DuelData }[], nowMs: number): DuelPush[] {
+/**
+ * What to do with duels the job found unannounced: [waiting] are pending duels with no `pushedAt` yet, [played] are completed
+ * ones with no `resultPushedAt` yet. Each one leaves its query the moment it is stamped, so a run reads only what is owed
+ * (pure: no I/O, so it can be tested).
+ */
+export function planDuelPushes(
+  waiting: { id: string; data: DuelData }[],
+  played: { id: string; data: DuelData }[],
+  nowMs: number
+): DuelPush[] {
   const cutoff = nowMs - DUEL_PUSH_WINDOW_MS;
   const out: DuelPush[] = [];
-  for (const { id, data } of duels) {
-    const complete = data.status === "COMPLETE";
-    const challenger = text(data.challengerUid);
+  for (const { id, data } of waiting) {
     const opponent = text(data.opponentUid);
-    // The challenge: only while it is still waiting — if the opponent already played, the only news is the result.
-    if (!complete && !data.pushedAt && opponent && num(data.createdAt) >= cutoff) {
-      out.push({ duelId: id, toUid: opponent, fromNickname: text(data.challengerName), type: "duel", stamp: "pushedAt" });
-    }
-    if (complete && !data.resultPushedAt && challenger && num(data.completedAt) >= cutoff) {
-      out.push({ duelId: id, toUid: challenger, fromNickname: text(data.opponentName), type: "duel_result", stamp: "resultPushedAt" });
-    }
+    const name = text(data.challengerName);
+    out.push({
+      duelId: id, toUid: opponent, fromNickname: name, type: "duel", stamp: "pushedAt",
+      send: !!opponent && !!name && data.status !== "COMPLETE" && num(data.createdAt) >= cutoff,
+    });
+  }
+  for (const { id, data } of played) {
+    const challenger = text(data.challengerUid);
+    const name = text(data.opponentName);
+    out.push({
+      duelId: id, toUid: challenger, fromNickname: name, type: "duel_result", stamp: "resultPushedAt",
+      send: !!challenger && !!name && num(data.completedAt) >= cutoff,
+    });
   }
   return out;
 }
 
-/** Sends every push still owed and stamps each one. */
+/** Sends every push still owed and stamps each duel. */
 export async function runNotifyDuels(): Promise<void> {
   const db = admin.firestore();
-  const cutoff = Date.now() - DUEL_PUSH_WINDOW_MS;
-  // Two single-field range queries (no composite index needed); select() leaves out the drawings, which are most of a duel's size.
-  const fields = ["challengerUid", "challengerName", "opponentUid", "opponentName", "status", "createdAt", "completedAt", "pushedAt", "resultPushedAt"];
-  const [fresh, played] = await Promise.all([
-    db.collection("duels").where("createdAt", ">=", cutoff).select(...fields).get(),
-    db.collection("duels").where("completedAt", ">=", cutoff).select(...fields).get(),
+  // Only duels created with the two markers set to null (the app writes them) can match: an equality on null finds exactly the
+  // unannounced ones, and no composite index is needed. Equality-only filters, and select() leaves out the drawings.
+  const fields = ["challengerUid", "challengerName", "opponentUid", "opponentName", "status", "createdAt", "completedAt"];
+  const [waiting, played] = await Promise.all([
+    db.collection("duels").where("status", "==", "AWAITING_OPPONENT").where("pushedAt", "==", null).select(...fields).get(),
+    db.collection("duels").where("status", "==", "COMPLETE").where("resultPushedAt", "==", null).select(...fields).get(),
   ]);
-  const byId = new Map<string, DuelData>();
-  for (const d of [...fresh.docs, ...played.docs]) byId.set(d.id, d.data() as DuelData);
-  const owed = planDuelPushes([...byId].map(([id, data]) => ({ id, data })), Date.now());
-  console.log(`duels in window: ${byId.size}, pushes owed: ${owed.length}`);
+  const owed = planDuelPushes(
+    waiting.docs.map((d) => ({ id: d.id, data: d.data() as DuelData })),
+    played.docs.map((d) => ({ id: d.id, data: d.data() as DuelData })),
+    Date.now()
+  );
+  console.log(`unannounced duels: ${owed.length}, to push: ${owed.filter((p) => p.send).length}`);
 
-  for (const push of owed) {
-    // Stamped first-ish: a failed send for a missing token is not worth retrying every run, so it is stamped either way.
-    const stampRef = db.collection("duels").doc(push.duelId);
-    const device = await db.doc(`users/${push.toUid}/private/device`).get();
-    let token = device.get("fcmToken") as string | undefined;
-    if (!token) token = (await db.doc(`users/${push.toUid}`).get()).get("fcmToken") as string | undefined;
-    if (token && push.fromNickname) {
-      try {
-        await admin.messaging().send({
-          token,
-          data: { type: push.type, duelId: push.duelId, fromNickname: push.fromNickname },
-          android: { priority: "high" },
-        });
-      } catch (e) {
-        // an uninstalled app's token goes stale: expected over time, not a bug
-        console.warn(`push for duel ${push.duelId} failed:`, e instanceof Error ? e.message : e);
+  // In batches, so a burst of duels is not sent one at a time.
+  const BATCH = 25;
+  for (let i = 0; i < owed.length; i += BATCH) {
+    await Promise.all(owed.slice(i, i + BATCH).map(async (push) => {
+      if (push.send) {
+        const device = await db.doc(`users/${push.toUid}/private/device`).get();
+        let token = device.get("fcmToken") as string | undefined;
+        if (!token) token = (await db.doc(`users/${push.toUid}`).get()).get("fcmToken") as string | undefined;
+        if (token) {
+          try {
+            await admin.messaging().send({
+              token,
+              data: { type: push.type, duelId: push.duelId, fromNickname: push.fromNickname },
+              android: { priority: "high" },
+            });
+          } catch (e) {
+            // an uninstalled app's token goes stale: expected over time, not a bug
+            console.warn(`push for duel ${push.duelId} failed:`, e instanceof Error ? e.message : e);
+          }
+        }
       }
-    }
-    await stampRef.update({ [push.stamp]: Date.now() });
+      // Stamped either way: a missing token or a stale one is not worth retrying every ten minutes.
+      await db.collection("duels").doc(push.duelId).update({ [push.stamp]: Date.now() });
+    }));
   }
 }
