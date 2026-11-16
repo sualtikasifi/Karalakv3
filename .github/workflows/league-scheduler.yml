@@ -32,9 +32,6 @@ on:
     - cron: "47 * * * *"
     # Statistics roll-up for the panel: Istanbul ~03:53, after the UTC day has closed.
     - cron: "53 0 * * *"
-    # Duel pushes (a friend challenged you / played your duel): every 10 minutes, off the :00 mark GitHub delays. Replaces a Cloud
-    # Function that would need Blaze; a push is a few minutes late, never lost (it looks back six hours).
-    - cron: "4-59/10 * * * *"
   workflow_dispatch:
     inputs:
       task:
@@ -95,7 +92,6 @@ jobs:
             "37 2 * * *") echo "task=process-deletions" >> "$GITHUB_OUTPUT" ;;
             "47 * * * *") echo "task=process-admin-commands" >> "$GITHUB_OUTPUT" ;;
             "53 0 * * *") echo "task=rollup-stats" >> "$GITHUB_OUTPUT" ;;
-            "4-59/10 * * * *") echo "task=notify-duels" >> "$GITHUB_OUTPUT" ;;
             *) echo "Unrecognized schedule: ${{ github.event.schedule }}"; exit 1 ;;
           esac
 
