@@ -126,7 +126,7 @@ internal fun realFlow(st: StudioState, vm: StudioViewModel, context: Context): L
         FlowStep("Sahne", "Video senaryosunu seç", f?.motion?.isNotBlank() == true, content = forDrawing { rv, _ -> stepScene(st, vm, rv) }),
         FlowStep("Gemini", "Gemini'ye gönder", f?.clip != null, content = forDrawing { rv, _ -> stepGemini(vm, rv, context) }),
         FlowStep("Klip", "Gemini videosunu yükle", f?.clip != null, content = forDrawing { rv, _ -> stepClip(st, vm, rv) }),
-        FlowStep("Kart", "Karalak kartını yerleştir", f?.clip != null, content = forDrawing { _, _ -> stepCard(st, vm) }),
+        FlowStep("Kart", "Karalak kartını yerleştir", f?.clip != null, pinned = { PreviewCard(st, vm, compact = true) }, content = forDrawing { _, _ -> stepCard(st, vm) }),
         FlowStep("Kanca", "Kanca cümlesi", voiceDone(1, f), content = forDrawing { rv, pr -> voiceStepItems(st, vm, rv, pr, 1) }),
         FlowStep("Anlatıcı", "Anlatıcı cümlesi", voiceDone(2, f), content = forDrawing { rv, pr -> voiceStepItems(st, vm, rv, pr, 2) }),
         FlowStep("Kapanış", "Kapanış cümlesi", voiceDone(3, f), content = forDrawing { rv, pr -> voiceStepItems(st, vm, rv, pr, 3) }),
@@ -489,7 +489,7 @@ internal fun LazyListScope.stepClip(st: StudioState, vm: StudioViewModel, f: Rea
 /** Screen 9: the Karalak card is placed on the clip, with a live preview. */
 internal fun LazyListScope.stepCard(st: StudioState, vm: StudioViewModel) {
     val r = st.real
-    item { PreviewCard(st, vm) }
+    // the preview itself is pinned above this list by the step (FlowStep.pinned), so it stays in view while the sliders are moved
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Karalak kartının yeri ve boyu", style = Console.Label)

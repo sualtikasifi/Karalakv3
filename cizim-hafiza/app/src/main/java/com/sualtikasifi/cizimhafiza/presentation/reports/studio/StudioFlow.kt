@@ -54,6 +54,8 @@ internal class FlowStep(
     val done: Boolean = false,
     val hint: String? = null,
     val blocksNext: Boolean = false,
+    /** Stays fixed above the scrolling content (an adjustment screen: the preview must be seen while its sliders move). */
+    val pinned: (@androidx.compose.runtime.Composable () -> Unit)? = null,
     val content: LazyListScope.() -> Unit
 )
 
@@ -81,6 +83,7 @@ internal fun StepFlow(steps: List<FlowStep>, index: Int, onIndex: (Int) -> Unit,
                 modifier = Modifier.fillMaxWidth()
             )
         }
+        step.pinned?.let { pinned -> Box(Modifier.fillMaxWidth().padding(bottom = 6.dp)) { pinned() } }
         // re-created for each step, so every step opens at its top
         key(i) {
             LazyColumn(
