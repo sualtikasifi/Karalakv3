@@ -801,10 +801,10 @@
     <!-- Asynchronous duels (C2) -->
     <string name="duel_challenge_action">Desafiar</string>
     <string name="duel_rematch_action">Devolver Desafío</string>
-    <string name="duel_challenge_sent">¡Desafío enviado a %1$s!</string>
+    <string name="duel_challenge_sent">¡Desafío enviado a %1$s! Puede responder cuando quiera; verás el resultado en Duelos.</string>
     <string name="duel_create_title">Desafío</string>
     <string name="duel_create_opponent">Duelo con %1$s</string>
-    <string name="duel_create_explainer">Juega una ronda normal ahora — cuando termines de dibujar, se enviará automáticamente a %1$s como desafío. La próxima vez que abra la app, dibujará y adivinará las mismas palabras, y se compararán los resultados.</string>
+    <string name="duel_create_explainer">No hace falta jugar a la vez: %1$s puede responder cuando quiera, incluso horas después. Juega una ronda normal ahora — cuando termines de dibujar, se le enviará automáticamente como desafío. Dibujará y adivinará las mismas palabras, y se compararán los resultados.</string>
     <string name="duel_create_start">Empezar Ronda</string>
     <string name="duel_list_title">Duelos</string>
     <string name="duel_list_incoming_title">Te Esperan</string>
@@ -819,7 +819,7 @@
     <string name="duel_list_new_result">Nuevo</string>
     <string name="duel_list_sent_empty">Aún no has desafiado a nadie.</string>
     <string name="duel_list_word_count">%1$d palabras</string>
-    <string name="duel_list_status_waiting">Esperando…</string>
+    <string name="duel_list_status_waiting">Esperando respuesta…</string>
     <string name="duel_list_status_won">¡Ganaste! 🎉</string>
     <string name="duel_list_status_lost">Perdiste</string>
     <string name="duel_list_status_tied">Empate</string>

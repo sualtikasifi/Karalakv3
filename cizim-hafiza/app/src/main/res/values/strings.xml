@@ -800,10 +800,10 @@
     <!-- Asynchronous duels (C2) -->
     <string name="duel_challenge_action">Challenge</string>
     <string name="duel_rematch_action">Challenge Back</string>
-    <string name="duel_challenge_sent">Sent to %1$s as a challenge!</string>
+    <string name="duel_challenge_sent">Sent to %1$s as a challenge! They can answer whenever they like — you\'ll see the result in Duels.</string>
     <string name="duel_create_title">Challenge</string>
     <string name="duel_create_opponent">Duel with %1$s</string>
-    <string name="duel_create_explainer">Play a normal round now — once you finish drawing, it\'ll automatically be sent to %1$s as a challenge. Next time they open the app, they\'ll draw and guess the same words themselves, and your results will be compared.</string>
+    <string name="duel_create_explainer">You don\'t have to play at the same time: %1$s can answer whenever they like, even hours later. Play a normal round now — once you finish drawing, it\'ll be sent to them automatically as a challenge. They\'ll draw and guess the same words themselves, and your results will be compared.</string>
     <string name="duel_create_start">Start Round</string>
     <string name="duel_list_title">Duels</string>
     <string name="duel_list_incoming_title">Waiting For You</string>
@@ -818,7 +818,7 @@
     <string name="duel_list_new_result">New</string>
     <string name="duel_list_sent_empty">You haven\'t challenged anyone yet.</string>
     <string name="duel_list_word_count">%1$d words</string>
-    <string name="duel_list_status_waiting">Waiting…</string>
+    <string name="duel_list_status_waiting">Waiting for reply…</string>
     <string name="duel_list_status_won">You won! 🎉</string>
     <string name="duel_list_status_lost">You lost</string>
     <string name="duel_list_status_tied">Tied</string>

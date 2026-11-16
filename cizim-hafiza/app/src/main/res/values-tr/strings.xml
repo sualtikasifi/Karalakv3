@@ -815,10 +815,10 @@
     <!-- Asynchronous duels (C2) -->
     <string name="duel_challenge_action">Meydan Oku</string>
     <string name="duel_rematch_action">Geri Meydan Oku</string>
-    <string name="duel_challenge_sent">%1$s kişisine meydan okuma olarak gönderildi!</string>
+    <string name="duel_challenge_sent">%1$s kişisine meydan okuma olarak gönderildi! İstediği zaman cevaplayabilir, sonucu Düellolar sayfasında göreceksin.</string>
     <string name="duel_create_title">Meydan Oku</string>
     <string name="duel_create_opponent">%1$s ile Düello</string>
-    <string name="duel_create_explainer">Şimdi normal bir tur oyna — çizimlerin bittiğinde otomatik olarak %1$s kişisine bir meydan okuma olarak gönderilecek. O, uygulamayı bir sonraki açtığında aynı kelimelerle kendi çizimlerini yapıp tahmin edecek; sonuçlarınız karşılaştırılacak.</string>
+    <string name="duel_create_explainer">Aynı anda oynamanız gerekmez: %1$s istediği zaman, saatler sonra bile cevaplayabilir. Şimdi normal bir tur oyna — çizimlerin bittiğinde otomatik olarak ona bir meydan okuma olarak gönderilecek. O da aynı kelimelerle kendi çizimlerini yapıp tahmin edecek; sonuçlarınız karşılaştırılacak.</string>
     <string name="duel_create_start">Turu Başlat</string>
     <string name="duel_list_title">Düellolar</string>
     <string name="duel_list_incoming_title">Sana Gelenler</string>
@@ -833,7 +833,7 @@
     <string name="duel_list_new_result">Yeni</string>
     <string name="duel_list_sent_empty">Henüz kimseye meydan okumadın.</string>
     <string name="duel_list_word_count">%1$d kelime</string>
-    <string name="duel_list_status_waiting">Bekleniyor…</string>
+    <string name="duel_list_status_waiting">Cevap bekleniyor…</string>
     <string name="duel_list_status_won">Kazandın! 🎉</string>
     <string name="duel_list_status_lost">Kaybettin</string>
     <string name="duel_list_status_tied">Berabere</string>
