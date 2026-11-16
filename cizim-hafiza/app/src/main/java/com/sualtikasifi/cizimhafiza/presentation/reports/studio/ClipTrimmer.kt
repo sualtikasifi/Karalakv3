@@ -64,9 +64,14 @@ internal fun ClipTrimmer(file: File, fullMs: Long, startMs: Long, endMs: Long, o
     val context = LocalContext.current
     val minLen = RealTimeline.CLIP_MIN
     val maxLen = RealTimeline.CLIP_MAX
-    var s by remember(file, startMs) { mutableStateOf(startMs) }
-    var e by remember(file, endMs) { mutableStateOf(endMs) }
+    // One state object for the life of the clip: the drag handlers below are made once and keep writing to the state they first saw,
+    // so the values must not be re-created when the project reports the new cut (that is what froze the handles after one drag).
+    var s by remember(file) { mutableStateOf(startMs) }
+    var e by remember(file) { mutableStateOf(endMs) }
+    LaunchedEffect(startMs, endMs) { s = startMs; e = endMs }
     var playing by remember(file) { mutableStateOf(false) }
+    // where the video is while the chosen part plays (-1: not playing): the white line and the counter follow it
+    var playMs by remember(file) { mutableStateOf(-1L) }
 
     val exo = remember(file) {
         ExoPlayer.Builder(context).build().apply {
@@ -80,15 +85,16 @@ internal fun ClipTrimmer(file: File, fullMs: Long, startMs: Long, endMs: Long, o
     val startNow by rememberUpdatedState(s)
     val endNow by rememberUpdatedState(e)
     LaunchedEffect(playing) {
-        if (!playing) { exo.pause(); return@LaunchedEffect }
+        if (!playing) { exo.pause(); playMs = -1L; return@LaunchedEffect }
         exo.seekTo(startNow)
         exo.play()
         while (playing) {
-            kotlinx.coroutines.delay(40)
+            kotlinx.coroutines.delay(33)
+            playMs = exo.currentPosition
             if (exo.currentPosition >= endNow) { exo.pause(); exo.seekTo(startNow); playing = false }
         }
     }
-    fun showAt(ms: Long) { playing = false; exo.pause(); exo.seekTo(ms.coerceIn(0L, fullMs)) }
+    fun showAt(ms: Long) { playing = false; playMs = -1L; exo.pause(); exo.seekTo(ms.coerceIn(0L, fullMs)) }
 
     // the strip of frames, read once off the main thread
     val frames = remember(file) { mutableStateListOf<Bitmap?>() }
@@ -176,6 +182,11 @@ internal fun ClipTrimmer(file: File, fullMs: Long, startMs: Long, endMs: Long, o
                         }
                     }
             )
+            // the white line that runs along the strip while the chosen part plays
+            if (playMs >= 0L) Box(
+                Modifier.offset { IntOffset((pxOf(playMs) - 1.5f * density.density).roundToInt(), 0) }
+                    .width(3.dp).fillMaxHeight().background(Color.White)
+            )
         }
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -183,7 +194,10 @@ internal fun ClipTrimmer(file: File, fullMs: Long, startMs: Long, endMs: Long, o
                 if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (playing) "Durdur" else "Seçili kısmı oynat",
                 Console.Accent, Color.White, Modifier.weight(1f)
             ) { playing = !playing }
-            Text("${sec(s)} – ${sec(e)} sn (${sec(e - s)} sn)", style = Console.Small, modifier = Modifier.weight(1f))
+            Text(
+                if (playMs >= 0L) "▶ ${sec(playMs)} sn  ·  ${sec(s)} – ${sec(e)}" else "${sec(s)} – ${sec(e)} sn (${sec(e - s)} sn)",
+                style = Console.Small, modifier = Modifier.weight(1f)
+            )
         }
         // fine tuning, a tenth of a second at a time
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
