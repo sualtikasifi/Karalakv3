@@ -140,6 +140,9 @@ class StudioViewModel @Inject constructor(
     @Volatile internal var previewHowto: ClipFrames? = null
 
     init {
+        // the reading step used Claude Sonnet by default; the panel now uses Gemini 3.1 Flash Lite everywhere, a saved Sonnet included
+        prefs().takeIf { it.getString(OpenRouterClient.ANALYSIS_MODEL_PREF, null)?.trim() == OpenRouterClient.OLD_ANALYSIS_MODEL }
+            ?.edit()?.remove(OpenRouterClient.ANALYSIS_MODEL_PREF)?.apply()
         loadDrawings()
         loadMascot()
         loadReal()
