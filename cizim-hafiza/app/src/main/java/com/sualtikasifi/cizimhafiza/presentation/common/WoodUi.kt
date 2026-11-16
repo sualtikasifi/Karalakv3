@@ -563,7 +563,7 @@ fun ChoicePill(
 }
 
 @Composable
-fun StartButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun StartButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, loading: Boolean = false) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.92f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f, stiffness = 650f), label = "start")
@@ -574,10 +574,12 @@ fun StartButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
             .breathing(0.022f, 1400)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .glint(3200, 0.38f, 30.dp)
-            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .clickable(interactionSource = interaction, indication = null, enabled = !loading, onClick = onClick)
     ) {
         Image(painter = painterResource(R.drawable.offline_start), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-        LetteredText(text, 30.sp, outline = Color(0xFF0B4F5C))
+        // While the work runs the label turns into the spinner: the button stays where it is, only its content changes.
+        if (loading) androidx.compose.material3.CircularProgressIndicator(modifier = Modifier.size(36.dp), color = Color.White, strokeWidth = 4.dp)
+        else LetteredText(text, 30.sp, outline = Color(0xFF0B4F5C))
     }
 }
 
