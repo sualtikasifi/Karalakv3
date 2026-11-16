@@ -1018,16 +1018,17 @@ internal fun DoubleXpFace(amount: Int, u: androidx.compose.ui.unit.Dp, fs: (Floa
     ) {
         LetteredText("x2", fs(88f), outline = outline, maxLines = 1, minScale = 0.5f, modifier = Modifier.width(u * 90f).fillMaxHeight())
         Spacer(Modifier.width(u * 8f))
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.width(u * 176f)
-        ) {
-            LetteredText("+$amount XP", fs(46f), outline = outline, maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth().height(u * 40f))
+        // The two lines overlap their boxes (the amount's box is tall enough for its full size, so it is not shrunk to fit a short one):
+        // their centres are 35 units apart.
+        Box(modifier = Modifier.width(u * 176f).height(u * 80f)) {
+            LetteredText(
+                "+$amount XP", fs(46f), outline = outline, maxLines = 1, minScale = 0.5f,
+                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(u * 56f)
+            )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth().height(u * 36f)
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(u * 34f)
             ) {
                 Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 26f))
                 Spacer(Modifier.width(u * 5f))
