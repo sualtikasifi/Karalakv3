@@ -171,7 +171,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = padding.calculateBottomPadding())
-                    .padding(top = (540f * artScale).dp)
+                    .padding(top = (484f * artScale).dp)
             ) {
                 // the three tabs are big and close: nearly the screen's whole width, no gap between them (the chosen one grows over its neighbours' leaves)
                 Row(horizontalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
