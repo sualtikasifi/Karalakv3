@@ -1,0 +1,7 @@
+name = "karalak-duel-push"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Every 5 minutes. Cloudflare's own cron is exact (GitHub Actions' is not) and free: 288 runs a day against a 100,000-request allowance.
+[triggers]
+crons = ["*/5 * * * *"]
