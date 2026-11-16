@@ -234,13 +234,14 @@ class OpenRouterClient(private val apiKey: String) {
         const val DEFAULT_MODEL = "google/gemini-3.1-flash-lite"
 
         /**
-         * Reading a drawing (what its parts are, what real thing each one stands for) needs a model that sees well and
-         * follows a long brief; the Lite model miscounts lines. Claude Sonnet 5.5 through OpenRouter is the studio's choice
-         * for that one step ("Gerçek Olsaydı": the shapes, the parts, the real material and scene, the video scene). It can be
-         * changed in the panel; if the model is refused or renamed the client still falls back (see [FALLBACK_MODELS]), and the
-         * panel says which model really wrote.
+         * The model that reads a drawing and writes the studio's copy ("Gerçek Olsaydı": the shapes, the parts, the scene, the
+         * hook, the narrator and the closing). It is Gemini 3.1 Flash Lite like every other place in the panel: one model
+         * everywhere. It can still be changed by hand in the panel; if the model is refused or renamed the client falls
+         * back (see [FALLBACK_MODELS]), and the panel says which model really wrote.
+         * [OLD_ANALYSIS_MODEL] was this step's default before; a phone that still has it saved is moved to the default.
          */
-        const val ANALYSIS_MODEL = "anthropic/claude-sonnet-5.5"
+        const val ANALYSIS_MODEL = DEFAULT_MODEL
+        const val OLD_ANALYSIS_MODEL = "anthropic/claude-sonnet-5.5"
         const val ANALYSIS_MODEL_PREF = "studio_analysis_model"
         /** The model that writes the scene flow and the voiced lines of "Ödüllü Karalak Düellosu" (fast and cheap, sees the drawing). */
         const val FORGOT_MODEL = "google/gemini-3.1-flash-lite"

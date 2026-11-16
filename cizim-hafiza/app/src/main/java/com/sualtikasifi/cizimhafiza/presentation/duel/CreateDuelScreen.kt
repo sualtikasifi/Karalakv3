@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -52,7 +53,6 @@ import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenFace
 import com.sualtikasifi.cizimhafiza.presentation.common.rememberFitScale
-import com.sualtikasifi.cizimhafiza.presentation.game.ResultBackButton
 import com.sualtikasifi.cizimhafiza.presentation.common.scaledBy
 import com.sualtikasifi.cizimhafiza.util.GameConstants
 
@@ -100,9 +100,18 @@ fun CreateDuelScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // The back button: the same one as on the result page, below the status bar (the picture's own, painted into its corner, sat
-        // under the clock; it has been painted out of the scene).
-        ResultBackButton(onBack = onBack, modifier = Modifier.align(Alignment.TopStart).statusBarsPadding())
+        // The back button: exactly where the friends page has it (the same picture, 16 dp in from the left, 12 dp below the status bar,
+        // 56 dp square). The one painted into the scene sat under the clock, so it has been painted out of it.
+        Image(
+            painter = painterResource(R.drawable.join_back),
+            contentDescription = stringResource(R.string.cd_back),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 12.dp)
+                .size(56.dp)
+                .pressable(pressedScale = 0.88f, onClick = onBack)
+        )
 
         // The sign: the dog covers its right end, so the title keeps to the left of him.
         LetteredText(

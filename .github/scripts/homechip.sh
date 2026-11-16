@@ -71,8 +71,7 @@ done
 for try in 1 2 3; do
   [ -n "$(find_xy "What's new")" ] && { adb shell input tap 974 510; sleep 3; } || break
 done
-for try in 1 2 3 4 5 6; do
-  [ -n "$(find_xy Pens)" ] && break
-sleep 2
+sleep 3
+clear_overlays
 shot home_chip
 ls -la "$OUT"
