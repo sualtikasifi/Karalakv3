@@ -51,6 +51,20 @@ class LobbyPreviewActivity : ComponentActivity() {
                         }
                         return@Box
                     }
+                    if (intent.getBooleanExtra("team", false)) {
+                        // a 2v2 room: you in team A with one seat open, team B empty, in a column of the height the real lobby leaves
+                        val me = slots[0]
+                        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+                            Spacer(Modifier.height(378.dp))
+                            androidx.compose.foundation.layout.Row(
+                                Modifier.height(gridDp.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                com.sualtikasifi.cizimhafiza.presentation.online.TeamColumn("Takım A", listOf(me, null), emptyMap(), onInvite = {}, modifier = Modifier.weight(1f))
+                                com.sualtikasifi.cizimhafiza.presentation.online.TeamColumn("Takım B", listOf(null, null), emptyMap(), onInvite = {}, modifier = Modifier.weight(1f))
+                            }
+                        }
+                        return@Box
+                    }
                     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                         Spacer(Modifier.height(378.dp))
                         PlayerSlotsGrid(slots = slots, activeReactionsByUid = mapOf("u0" to com.sualtikasifi.cizimhafiza.domain.model.Reaction(uid = "u0", emoji = "", messageKey = "chat_hazir_misin", sentAtMillis = 0L)), onInvite = {}, compact = false, modifier = Modifier.height(gridDp.dp))

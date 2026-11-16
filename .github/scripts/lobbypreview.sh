@@ -29,3 +29,8 @@ adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.LobbyPreviewAc
 sleep 6
 adb exec-out screencap -p > "$OUT/lobby_button.png"
 ls -la "$OUT"
+# A 2v2 room: you in team A with an open seat, team B empty.
+adb shell am force-stop "$PKG"
+adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.LobbyPreviewActivity" --ez team true --ei players 1
+sleep 6
+adb exec-out screencap -p > "$OUT/lobby_team.png"
