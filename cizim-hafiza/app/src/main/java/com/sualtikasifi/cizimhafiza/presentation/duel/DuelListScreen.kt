@@ -163,7 +163,7 @@ fun DuelListScreen(
     }
 
     // Closing a result is only closing it: not a game's end, so no ad follows.
-    resultDuel?.let { recent -> DuelResultDialog(recent = recent, onDismiss = { resultDuel = null }) }
+    resultDuel?.let { recent -> DuelResultDialog(recent = recent, myName = viewModel.myNickname, onDismiss = { resultDuel = null }) }
 }
 
 /**

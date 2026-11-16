@@ -95,9 +95,11 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CaptionPlace
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.CARD_SCALE
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.CARD_X
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.CARD_Y
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.CAPTION_Y
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.POST_SAME_MS
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.ENDING
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.StudioViewModel.Companion.TAB
@@ -166,7 +168,7 @@ internal fun StudioViewModel.loadReal() {
         val ending = runCatching { RealEnding.valueOf(prefs.getString(ENDING, null).orEmpty()) }.getOrDefault(RealEnding.Card)
         val platform = SocialPlatform.of(prefs.getString(PLATFORM, null))
         val tab = runCatching { RealTab.valueOf(prefs.getString(TAB, null).orEmpty()) }.getOrDefault(RealTab.Prepare)
-        updateReal { it.copy(tab = tab, step = prefs.getInt(FLOW_STEP, 1).coerceIn(1, REAL_STEPS), voiceStep = prefs.getInt(VOICE_STEP, 1).coerceIn(1, 5), project = p, recent = recent, card = saved, library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform, customMusic = RealMusic.custom(context)) }
+        updateReal { it.copy(tab = tab, step = prefs.getInt(FLOW_STEP, 1).coerceIn(1, REAL_STEPS), voiceStep = prefs.getInt(VOICE_STEP, 1).coerceIn(1, 5), project = p, recent = recent, card = saved, captionY = CaptionPlace.clamp(prefs.getFloat(CAPTION_Y, CaptionPlace.DEFAULT)), library = library, libraryBytes = realStore.sizeOf(library.flatMap { i -> i.media }), ending = ending, musicOn = prefs.getBoolean(MUSIC_ON, true), platform = platform, customMusic = RealMusic.custom(context)) }
         restoreForgotMusic(RealMusic.custom(context))
         p?.let { loadRealMedia(it) }
         loadPromo()
@@ -354,6 +356,17 @@ fun StudioViewModel.setCard(layout: CardLayout) {
 
 fun StudioViewModel.resetCard() = setCard(CardLayout())
 
+/** Moves the subtitles up or down on the video; the preview follows at once and the choice is kept on this phone. */
+fun StudioViewModel.setCaptionY(y: Float) {
+    val v = CaptionPlace.clamp(y)
+    updateReal { it.copy(captionY = v) }
+    _state.update { it.copy(video = null) }
+    prefs().edit().putFloat(CAPTION_Y, v).apply()
+    refreshPreview()
+}
+
+fun StudioViewModel.resetCaptionY() = setCaptionY(CaptionPlace.DEFAULT)
+
 /** Clears the choice and every picture and clip, after asking when there are any. */
 fun StudioViewModel.resetReal(confirmed: Boolean = false) {
     val current = _state.value.real.project ?: return
@@ -526,6 +539,19 @@ internal fun StudioViewModel.previewVoiceStep(n: Int) = when (n) {
     3 -> previewLine(RealLine.Outro)
     5 -> previewLine(RealLine.End)
     else -> setPreviewTime(0L)
+}
+
+/** Moves the preview to a moment where the subtitle of [kind] is up and mostly read in, to judge where it sits. */
+internal fun StudioViewModel.previewCaption(kind: RealLine) {
+    val featured = _state.value.real.project?.featured ?: return
+    val events = RealTimeline.build(featured, 0L, featured.endCardMs)
+    val at = when (kind) {
+        RealLine.Hook -> events.firstOrNull { it.phase == RealPhase.Hook }?.let { minOf(it.startMs + RealTimeline.VOICE_AT + 3000L, it.endMs - 100L) }
+        RealLine.Narration -> events.firstOrNull { it.phase == RealPhase.Clip }?.let { minOf(it.clipAtMs + RealTimeline.NARRATION_AT + 3000L, it.endMs - 100L) }
+        RealLine.Outro -> events.firstOrNull { it.phase == RealPhase.Outro }?.let { minOf(it.startMs + RealTimeline.VOICE_AT + 3000L, it.endMs - 100L) }
+        RealLine.End -> null
+    }
+    setPreviewTime(at ?: 0L)
 }
 
 internal fun StudioViewModel.previewLine(kind: RealLine) {

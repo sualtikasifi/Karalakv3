@@ -222,6 +222,8 @@ data class RealUi(
     val confirmReset: Boolean = false,
     /** Where the Karalak card sits on the video and how big it is, kept on this phone. */
     val card: CardLayout = CardLayout(),
+    /** Where the subtitles sit on the video (see [CaptionPlace]), kept on this phone. */
+    val captionY: Float = com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CaptionPlace.DEFAULT,
     /** The app's promo video (one, kept on this phone) and its length; whether it closes the videos is [ending]'s. */
     val promo: File? = null,
     val promoMs: Long = 0L,

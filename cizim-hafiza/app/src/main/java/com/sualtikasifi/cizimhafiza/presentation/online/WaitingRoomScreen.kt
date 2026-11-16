@@ -952,9 +952,13 @@ internal data class PlayerSlotUiState(
     val onTap: (() -> Unit)? = null
 )
 
-/** One 2v2 team's column: a header and its (padded-to-TEAM_SIZE) slots stacked vertically. */
+/**
+ * One 2v2 team's column: a header and its (padded-to-TEAM_SIZE) slots stacked vertically. Every seat has the same fixed height: left to
+ * size itself, a taken seat filled all the room the page had left (it fills its parent), grew into a tall blank card and pushed its
+ * team's empty seat out of sight.
+ */
 @Composable
-private fun TeamColumn(
+internal fun TeamColumn(
     title: String,
     slots: List<PlayerSlotUiState?>,
     activeReactionsByUid: Map<String, Reaction>,
@@ -971,11 +975,14 @@ private fun TeamColumn(
                 slot = slot,
                 activeReaction = slot?.let { activeReactionsByUid[it.uid] },
                 onInvite = onInvite,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(TEAM_SEAT_HEIGHT)
             )
         }
     }
 }
+
+/** One seat of a team column: tall enough for the avatar and the three lines, the same for a taken and an empty seat. */
+private val TEAM_SEAT_HEIGHT = 58.dp
 
 /**
  * The lobby's seats: [slots] in two columns, the rows sharing the height this is given equally (so 8 seats fit

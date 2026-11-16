@@ -88,7 +88,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #h-name{font-size:calc(var(--u)*36)}
 #h-name small{font-size:calc(var(--u)*26);font-weight:600;color:#7a5a40}
 #h-rank{justify-content:flex-start}
-#h-rank span{background:linear-gradient(90deg,#8a62f0,#5b3fc4);color:#fff;border-radius:99px;padding:calc(var(--u)*4) calc(var(--u)*22);font-size:calc(var(--u)*31);white-space:nowrap;display:inline-block;max-width:100%;overflow:hidden;box-sizing:border-box}
+#h-rank span{background:linear-gradient(180deg,#9d7eff,#6b4cda 55%,#4a30ae);color:#fff;border:1.5px solid #3a2590;border-radius:99px;box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 2px 3px rgba(0,0,0,.28);text-shadow:0 2px 3px rgba(36,16,104,.55);height:calc(var(--u)*38);padding:0 calc(var(--u)*17);font-size:calc(var(--u)*30);line-height:1;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;max-width:100%;overflow:hidden;box-sizing:border-box}
 #h-avatar{position:absolute}
 #h-avatar img{position:absolute;display:block}
 #h-bar{border-radius:99px;background:#3a2a22;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 2px 0 #0006}

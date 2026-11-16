@@ -1,6 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.reports.studio
 
 import com.sualtikasifi.cizimhafiza.domain.model.DrawingPoint
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CaptionPlace
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealCopy
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealDrawing
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealLine
@@ -583,5 +584,14 @@ class RealTest {
         assertEquals(4_000L, RealTimeline.build(r, 0L, 4_000L).last().durationMs)
         // an own promo takes the place of the card
         assertTrue(RealTimeline.build(r, 5_000L, 4_000L, 6_300L).none { it.phase == RealPhase.EndCard })
+    }
+
+    @Test
+    fun `the subtitles' place stays inside what the slider allows and defaults to where they always were`() {
+        // 2010 px of the 2400 px frame, as before the place could be set
+        assertEquals(2010f / 2400f, CaptionPlace.DEFAULT, 0.0001f)
+        assertEquals(CaptionPlace.MIN, CaptionPlace.clamp(-1f), 0f)
+        assertEquals(CaptionPlace.MAX, CaptionPlace.clamp(7f), 0f)
+        assertEquals(0.5f, CaptionPlace.clamp(0.5f), 0f)
     }
 }

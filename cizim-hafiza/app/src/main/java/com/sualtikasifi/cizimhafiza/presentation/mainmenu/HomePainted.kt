@@ -29,6 +29,9 @@ import com.sualtikasifi.cizimhafiza.presentation.common.glint
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
@@ -393,20 +396,54 @@ internal fun PaintedHome(
             box(222f, 400f, 488f, 447f).clickable(interactionSource = noRipple, indication = null, onClick = onRankClick),
             contentAlignment = Alignment.CenterStart
         ) {
-            Row(
+            // The rank chip: a glossy purple pill with a thin darker rim, the emblem and the name as one block centred in it with the
+            // same room on both sides (line boxes trimmed, so the letters themselves sit in the middle, not their padding).
+            val chip = RoundedCornerShape(50)
+            Box(
                 modifier = Modifier
-                    .background(Brush.horizontalGradient(listOf(Color(0xFF8A62F0), Color(0xFF5B3FC4))), RoundedCornerShape(50))
-                    .padding(horizontal = (18f * us).dp, vertical = (4f * us).dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    .height((38f * us).dp)
+                    .shadow(2.dp, chip)
+                    .background(Brush.verticalGradient(listOf(Color(0xFF9D7EFF), Color(0xFF6B4CDA), Color(0xFF4A30AE))), chip)
+                    .border(1.5.dp, Color(0xFF3A2590), chip)
+                    .padding(horizontal = (17f * us).dp),
+                contentAlignment = Alignment.Center
             ) {
-                Text(text = shownProgress.tier.rank.emoji, fontSize = fs(28f))
-                FitText(
-                    text = stringResource(shownProgress.tier.rank.nameRes),
-                    style = PaintedStyle(color = Color.White, fontSize = fs(31f), textAlign = TextAlign.Start),
-                    minScale = 0.7f,
-                    modifier = Modifier.weight(1f, fill = false)
+                // the gloss along the top
+                Box(
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth(0.9f)
+                        .fillMaxHeight(0.42f)
+                        .padding(top = 1.5.dp)
+                        .background(Brush.verticalGradient(listOf(Color(0x59FFFFFF), Color(0x00FFFFFF))), chip)
                 )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((7f * us).dp)) {
+                    Text(
+                        text = shownProgress.tier.rank.emoji,
+                        style = androidx.compose.ui.text.TextStyle(
+                            fontSize = fs(27f),
+                            platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                            lineHeight = fs(30f),
+                            lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                                androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+                            )
+                        )
+                    )
+                    FitText(
+                        text = stringResource(shownProgress.tier.rank.nameRes),
+                        style = PaintedStyle(
+                            color = Color.White, fontSize = fs(30f), textAlign = TextAlign.Center, lineHeight = fs(30f),
+                            shadow = androidx.compose.ui.graphics.Shadow(Color(0x88241068), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
+                        ).copy(
+                            platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                            lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                                androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+                            )
+                        ),
+                        minScale = 0.7f,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                }
             }
         }
         FitText(

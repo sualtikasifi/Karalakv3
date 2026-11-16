@@ -51,6 +51,8 @@ class RealRenderer(
     /** How loud the clips' own sound is. */
     private val clipGain: Float,
     layout: CardLayout = CardLayout(),
+    /** Where the subtitles sit: the top edge of their lines as a share of the frame's height (see [CaptionPlace]). */
+    private val captionY: Float = CaptionPlace.DEFAULT,
     /** Pictures picked by hand for the round slot, by drawing id; any drawing without one gets the default picture. */
     private val photoFiles: Map<String, File> = emptyMap(),
     /** The featured reveal's lines said aloud: the hook's voice, laid at the start of the opening, and the closing's, at its start. */
@@ -258,8 +260,10 @@ class RealRenderer(
             if (t < c.fromMs || t > c.untilMs + CAPTION_FADE) return@forEach
             val alpha = if (t <= c.untilMs) 1f else 1f - (t - c.untilMs).toFloat() / CAPTION_FADE
             val (_, h) = text.measure(c.text, CAPTION_W, CAPTION_SIZE, 2, assets.display, C.WHITE, spacing = CAPTION_SPACING, balanced = true)
+            // the chosen top, kept inside the frame: the lines never run off the bottom whatever is asked
+            val top = minOf(CaptionPlace.clamp(captionY) * H, H - h - CAPTION_EDGE)
             text.reveal(
-                canvas, c.text, c.starts, t - c.fromMs, W / 2f, CAPTION_TOP + h / 2f, CAPTION_W, CAPTION_SIZE, 2,
+                canvas, c.text, c.starts, t - c.fromMs, W / 2f, top + h / 2f, CAPTION_W, CAPTION_SIZE, 2,
                 assets.display, captionLettering, alpha, CAPTION_SPACING, balanced = true
             )
         }
@@ -886,7 +890,7 @@ class RealRenderer(
          * their two lines sit, and their timing: a silent line starts a beat in, the hook stays a moment once said, and
          * a subtitle fades out over [CAPTION_FADE].
          */
-        private const val CAPTION_TOP = 2010f
+        private const val CAPTION_EDGE = 36f
         private const val CAPTION_SIZE = 66f
         private const val CAPTION_W = 880
         private const val CAPTION_SPACING = 0.86f
