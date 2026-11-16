@@ -32,9 +32,9 @@ import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.springIn
 
-/** The window is one painted picture (duel_result_window, 1098 x 1222 units); every box below is a rectangle of it. */
+/** The window is one painted picture (duel_result_window, 1098 x 1225 units); every box below is a rectangle of it. */
 private const val ArtW = 1098f
-private const val ArtH = 1222f
+private const val ArtH = 1225f
 private val GoldInk = Color(0xFF4A2A0C)
 private val SilverInk = Color(0xFF3F3F44)
 private val RibbonOutline = Color(0xFF3A0F5E)
@@ -90,18 +90,18 @@ internal fun DuelResultDialog(recent: RecentDuel, onDismiss: () -> Unit) {
                     text = verdict,
                     size = fs(92f),
                     outline = RibbonOutline,
-                    modifier = Modifier.art(250f, 166f, 600f, 108f),
+                    modifier = Modifier.art(250f, 169f, 600f, 108f),
                     minScale = 0.45f,
                     title = true
                 )
 
                 // The two bars: a name on the left, the score on the right (both scores end at the same place).
-                Bar(topName, topScore, 594f, GoldInk, u, ::fs)
-                Bar(bottomName, bottomScore, 739f, SilverInk, u, ::fs)
+                Bar(topName, topScore, 597f, GoldInk, u, ::fs)
+                Bar(bottomName, bottomScore, 742f, SilverInk, u, ::fs)
 
                 // The orange button.
                 Box(
-                    Modifier.art(170f, 911f, 760f, 135f).pressable(pressedScale = 0.96f, onClick = onDismiss),
+                    Modifier.art(170f, 914f, 760f, 135f).pressable(pressedScale = 0.96f, onClick = onDismiss),
                     contentAlignment = Alignment.Center
                 ) {
                     LetteredText(
