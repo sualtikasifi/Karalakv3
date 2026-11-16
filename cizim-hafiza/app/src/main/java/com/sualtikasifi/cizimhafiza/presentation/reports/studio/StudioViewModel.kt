@@ -285,6 +285,7 @@ class StudioViewModel @Inject constructor(
                 clipFiles = mapOf(f.sampleId to realStore.file(clip)),
                 clipGain = CLIP_GAIN,
                 layout = s.real.card,
+                captionY = s.real.captionY,
                 photoFiles = p.drawings.mapNotNull { d -> d.photo?.let { d.id to realStore.file(it) } }.toMap(),
                 hookVoiceFile = f.hook.voice?.let { realStore.file(it) },
                 narrationVoiceFile = f.narration.voice?.let { realStore.file(it) },
@@ -500,6 +501,7 @@ class StudioViewModel @Inject constructor(
         const val FORGOT_TURN = "studio_forgot_style_turn"
         const val CARD_X = "studio_real_card_x"
         const val CARD_Y = "studio_real_card_y"
+        const val CAPTION_Y = "studio_real_caption_y"
         const val POST_SAME_MS = 30 * 60_000L
         const val ENDING = "studio_real_ending"
         const val TAB = "studio_real_tab"

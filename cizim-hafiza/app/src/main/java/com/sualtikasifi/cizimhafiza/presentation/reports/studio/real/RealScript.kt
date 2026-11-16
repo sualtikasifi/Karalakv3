@@ -227,6 +227,18 @@ data class CardLayout(val scale: Float = DEFAULT_SCALE, val x: Float = DEFAULT_X
 }
 
 /**
+ * Where Karalak's subtitles sit on the video, set by hand in the panel: the top edge of the lines as a share of the frame's
+ * height (0 = flush with the top, 1 = the very bottom). The renderer never lets the lines run out of the frame, whatever
+ * is asked. [DEFAULT] is where they have always been (just under the joker board).
+ */
+object CaptionPlace {
+    const val DEFAULT = 0.8375f
+    const val MIN = 0.04f
+    const val MAX = 0.96f
+    fun clamp(v: Float) = v.coerceIn(MIN, MAX)
+}
+
+/**
  * One finished piece kept in the library on this phone: a drawing with everything the card shows (name, frame, picture),
  * its realistic picture, its clip and Karalak's lines with their voices: a video ready to be made again. [id] is the drawing's id, so saving the same drawing again updates its entry.
  * The [reveal]'s files live in the project's media folder, which nothing in the library is ever pruned from.

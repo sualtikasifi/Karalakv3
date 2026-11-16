@@ -60,6 +60,7 @@ import com.sualtikasifi.cizimhafiza.presentation.reports.console.OpenRouterClien
 import com.sualtikasifi.cizimhafiza.presentation.reports.console.Segmented
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.audio.ElevenLabs
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CardLayout
+import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.CaptionPlace
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealProject
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealReveal
 import com.sualtikasifi.cizimhafiza.presentation.reports.studio.real.RealTimeline
@@ -497,6 +498,24 @@ internal fun LazyListScope.stepCard(st: StudioState, vm: StudioViewModel) {
             PreciseSlider("Sağa–sola", r.card.x, 0f..1f) { vm.setCard(r.card.copy(x = it)) }
             PreciseSlider("Yukarı–aşağı", r.card.y, 0f..1f) { vm.setCard(r.card.copy(y = it)) }
             SmallLink("Varsayılana dön") { vm.resetCard() }
+        }
+    }
+    item {
+        ConsoleCard(Modifier.fillMaxWidth()) {
+            Text("Altyazının yeri", style = Console.Label)
+            Text("Kanca, anlatıcı ve kapanış altyazıları bu yükseklikte görünür. Önizlemede hangisini görmek istediğini seç; kaydırıcı ya da − ve + ile ayarla.", style = Console.Small)
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(top = 6.dp)) {
+                SmallLink("Kancayı göster") { vm.previewCaption(RealLine.Hook) }
+                SmallLink("Anlatıcıyı göster") { vm.previewCaption(RealLine.Narration) }
+                SmallLink("Kapanışı göster") { vm.previewCaption(RealLine.Outro) }
+            }
+            PreciseSlider("Yukarı–aşağı", r.captionY, CaptionPlace.MIN..CaptionPlace.MAX) { vm.setCaptionY(it) }
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                SmallLink("Üstte") { vm.setCaptionY(0.12f) }
+                SmallLink("Ortada") { vm.setCaptionY(0.5f) }
+                SmallLink("Altta") { vm.setCaptionY(CaptionPlace.DEFAULT) }
+                SmallLink("Varsayılana dön") { vm.resetCaptionY() }
+            }
         }
     }
 }
