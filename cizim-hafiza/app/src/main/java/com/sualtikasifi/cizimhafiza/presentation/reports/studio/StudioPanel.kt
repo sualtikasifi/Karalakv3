@@ -277,12 +277,12 @@ internal fun PreviewCard(st: StudioState, vm: StudioViewModel, compact: Boolean 
             )
         } else {
             val ratio = 9f / 20f
-            // compact: a smaller frame, kept pinned above a step's sliders so a change is seen without scrolling
-            val frameW = if (compact) 120.dp else 220.dp
+            // compact: fills the narrow column left of a step's sliders, so a change is seen as it is made
+            val frame = if (compact) Modifier.fillMaxWidth() else Modifier.width(220.dp)
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 val img = st.preview
-                if (img != null) Image(img, contentDescription = "Önizleme", contentScale = ContentScale.Fit, modifier = Modifier.width(frameW).aspectRatio(ratio).clip(RoundedCornerShape(12.dp)))
-                else Box(Modifier.width(frameW).aspectRatio(ratio).background(Console.Grid, RoundedCornerShape(12.dp)))
+                if (img != null) Image(img, contentDescription = "Önizleme", contentScale = ContentScale.Fit, modifier = frame.aspectRatio(ratio).clip(RoundedCornerShape(12.dp)))
+                else Box(frame.aspectRatio(ratio).background(Console.Grid, RoundedCornerShape(12.dp)))
             }
             if (st.totalMs > 0) {
                 Slider(
