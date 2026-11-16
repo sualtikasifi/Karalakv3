@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -51,6 +52,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenFace
 import com.sualtikasifi.cizimhafiza.presentation.common.rememberFitScale
+import com.sualtikasifi.cizimhafiza.presentation.game.ResultBackButton
 import com.sualtikasifi.cizimhafiza.presentation.common.scaledBy
 import com.sualtikasifi.cizimhafiza.util.GameConstants
 
@@ -98,8 +100,9 @@ fun CreateDuelScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // The painted back button in the corner.
-        Box(Modifier.art(10f, 14f, 120f, 110f).pressable(pressedScale = 0.9f, onClick = onBack))
+        // The back button: the same one as on the result page, below the status bar (the picture's own, painted into its corner, sat
+        // under the clock; it has been painted out of the scene).
+        ResultBackButton(onBack = onBack, modifier = Modifier.align(Alignment.TopStart).statusBarsPadding())
 
         // The sign: the dog covers its right end, so the title keeps to the left of him.
         LetteredText(
