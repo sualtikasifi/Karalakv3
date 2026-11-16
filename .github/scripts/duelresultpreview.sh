@@ -31,7 +31,9 @@ except Exception:
 PY
 )
 echo "chip at: $XY"
-[ -n "$XY" ] && adb shell input tap $XY
+# the tree has no text for the painted chip, so fall back to where it sits on the 1080x2400 emulator
+[ -z "$XY" ] && XY="707 1477"
+adb shell input tap $XY
 sleep 2
 adb exec-out screencap -p > "$OUT/duel_result_2.png"
 adb logcat -d | grep -E "FATAL|AndroidRuntime" | head -40 > "$OUT/crash.txt" || true
