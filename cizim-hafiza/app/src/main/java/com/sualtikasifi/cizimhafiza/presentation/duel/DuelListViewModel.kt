@@ -69,6 +69,9 @@ class DuelListViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
+    /** The player's own username, shown on their bar of a result. */
+    val myNickname: String get() = settingsRepository.nicknameOrDefault
+
     val myUid: String? get() = duelRepository.currentUid
 
     private val answeringUid = MutableStateFlow<String?>(null)

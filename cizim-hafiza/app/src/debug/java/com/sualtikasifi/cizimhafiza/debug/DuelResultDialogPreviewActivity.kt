@@ -17,7 +17,7 @@ class DuelResultDialogPreviewActivity : ComponentActivity() {
         val (mine, theirs) = when (mode) { "lost" -> 41 to 64; "tie" -> 50 to 50; else -> 64 to 41 }
         val entry = DuelHistoryEntry("d1", true, name, mine, theirs, 10, 7, 10, 0L)
         setContent {
-            CizimHafizaTheme { DuelResultDialog(recent = RecentDuel(entry), onDismiss = { finish() }) }
+            CizimHafizaTheme { DuelResultDialog(recent = RecentDuel(entry), myName = intent.getStringExtra("me") ?: "karalakci", onDismiss = { finish() }) }
         }
     }
 }

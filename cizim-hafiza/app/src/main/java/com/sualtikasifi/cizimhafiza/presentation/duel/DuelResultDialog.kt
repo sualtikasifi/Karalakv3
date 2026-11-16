@@ -46,8 +46,9 @@ private val ButtonOutline = Color(0xFF8A3A00)
  * are laid over it. Closing it is only closing: no ad follows, as this is not the end of a game.
  */
 @Composable
-internal fun DuelResultDialog(recent: RecentDuel, onDismiss: () -> Unit) {
-    val me = stringResource(R.string.quick_match_you)
+internal fun DuelResultDialog(recent: RecentDuel, myName: String, onDismiss: () -> Unit) {
+    // the player's own username ("You" only for an account that has none yet)
+    val me = myName.ifBlank { stringResource(R.string.quick_match_you) }
     // the winner is on top, on the gold bar; a draw keeps the player there
     val meOnTop = recent.iWon != false
     val topName = if (meOnTop) me else recent.otherName
