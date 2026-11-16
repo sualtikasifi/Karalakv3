@@ -76,6 +76,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
@@ -172,7 +173,8 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                     .padding(bottom = padding.calculateBottomPadding())
                     .padding(top = (540f * artScale).dp)
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                // the three tabs are big and close: nearly the screen's whole width, no gap between them (the chosen one grows over its neighbours' leaves)
+                Row(horizontalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
                     TabChip(stringResource(R.string.store_tab_jokers), R.drawable.st_tab_jokers, selected = tab == 0, modifier = Modifier.weight(1f)) { selectTab(0) }
                     TabChip(stringResource(R.string.store_tab_pens), R.drawable.st_tab_pens, selected = tab == 1, modifier = Modifier.weight(1f)) { selectTab(1) }
                     TabChip(stringResource(R.string.store_tab_frames), R.drawable.st_tab_frames, selected = tab == 2, modifier = Modifier.weight(1f)) { selectTab(2) }
@@ -659,8 +661,10 @@ private fun TabChip(label: String, art: Int, selected: Boolean, modifier: Modifi
     BoxWithConstraints(
         modifier = modifier
             .aspectRatio(TAB_ART_W / TAB_ART_H)
+            // the chosen tab is drawn over its neighbours, not under them
+            .zIndex(if (selected) 1f else 0f)
             .graphicsLayer {
-                val size = 0.93f + 0.15f * lit
+                val size = 0.98f + 0.16f * lit
                 scaleX = size
                 scaleY = size
             }
