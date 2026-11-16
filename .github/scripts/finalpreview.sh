@@ -32,7 +32,19 @@ for name in "Bob Ross" "Maximilian Alexander von Hohenzollern"; do
   adb exec-out screencap -p > "$OUT/fin_create_${tag}.png"
 done
 
-# 3. the x2 XP button
+# 3. the finished-duel result window: won, lost (the winner is on the gold bar), and a long name
+for mode in won lost; do
+  adb shell am force-stop "$PKG"
+  adb shell am start -W -n "$PKG/$DBG.DuelResultDialogPreviewActivity" --es mode "$mode"
+  sleep 4
+  adb exec-out screencap -p > "$OUT/fin_result_$mode.png"
+done
+adb shell am force-stop "$PKG"
+adb shell am start -W -n "$PKG/$DBG.DuelResultDialogPreviewActivity" --es mode won --es name "Maximilian Alexander von Hohenzollern"
+sleep 4
+adb exec-out screencap -p > "$OUT/fin_result_long.png"
+
+# 4. the x2 XP button
 for xp in 171 5230; do
   adb shell am force-stop "$PKG"
   adb shell am start -W -n "$PKG/$DBG.DoubleXpPreviewActivity" --ei xp "$xp"
