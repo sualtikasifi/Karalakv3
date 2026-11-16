@@ -198,9 +198,9 @@
     <string name="friends_invite_action">Invitar</string>
     <string name="friends_pick_title">¿Cómo quieres jugar?</string>
     <string name="friends_pick_room">Invitar a la sala</string>
-    <string name="friends_pick_room_desc">¡Ahora mismo, en vivo! Misma sala, mismo momento: a ver quién tiene mejor memoria.</string>
+    <string name="friends_pick_room_desc">¡Ahora mismo, en vivo! Misma sala, mismo momento: ¡a ver quién dibuja y recuerda mejor!</string>
     <string name="friends_pick_duel">Duelo</string>
-    <string name="friends_pick_duel_desc">¡Tú juegas y tu rival responde cuando quiera! Mismas palabras, puntos justos: el ganador se sabe al final. Y alimenta tu racha 🔥.</string>
+    <string name="friends_pick_duel_desc">¡Tú juegas y tu rival responde cuando quiera! Mismas palabras, puntos justos: el ganador se sabe al final.</string>
     <string name="friends_incoming_invite">¡%1$s te invitó!</string>
     <string name="friends_accept_invite">Unirse</string>
     <string name="friends_decline_invite">Rechazar</string>

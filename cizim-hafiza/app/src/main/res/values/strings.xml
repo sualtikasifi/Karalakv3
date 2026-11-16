@@ -197,9 +197,9 @@
     <string name="friends_invite_action">Invite</string>
     <string name="friends_pick_title">How do you want to play?</string>
     <string name="friends_pick_room">Invite to Room</string>
-    <string name="friends_pick_room_desc">Right now, live! Same room, same time — see whose memory is sharper.</string>
+    <string name="friends_pick_room_desc">Right now, live! Same room, same time — let\'s see whose drawing and memory are better!</string>
     <string name="friends_pick_duel">Duel</string>
-    <string name="friends_pick_duel_desc">You play, they strike back whenever they like! Same words, fair scores — the winner is revealed at the end. Feeds your 🔥 streak too.</string>
+    <string name="friends_pick_duel_desc">You play, they strike back whenever they like! Same words, fair scores — the winner is revealed at the end.</string>
     <string name="friends_incoming_invite">%1$s invited you!</string>
     <string name="friends_accept_invite">Join</string>
     <string name="friends_decline_invite">Decline</string>
