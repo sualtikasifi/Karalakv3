@@ -94,7 +94,6 @@ import coil3.compose.AsyncImage
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.repository.AuthState
 import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
-import com.sualtikasifi.cizimhafiza.presentation.common.GoogleSignInButton
 import com.sualtikasifi.cizimhafiza.presentation.common.IconWell
 import com.sualtikasifi.cizimhafiza.presentation.common.LevelAvatar
 import com.sualtikasifi.cizimhafiza.presentation.common.PrimaryButton
@@ -167,6 +166,7 @@ fun AccountScreen(
         val pxY = (sceneBitmap?.height ?: 1) / ArtH
         val outSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.94f)
         val delSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.95f)
+        val inSink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink(0.94f)
         if (offX > 1.dp || offY > 1.dp) {
             com.sualtikasifi.cizimhafiza.presentation.common.BlurredSceneFill(R.drawable.bg_account, scene, 20.dp)
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
@@ -447,14 +447,37 @@ fun AccountScreen(
                     )
                 }
             }
-            // A guest: Google's own white button sits over the painted orange one (it covers it to the rim).
-            else -> Box(box(141f, 1453f, 694f, 1599f), contentAlignment = Alignment.Center) {
-                GoogleSignInButton(
-                    onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::signIn),
-                    modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = if (online) 1f else 0.55f },
-                    height = unit * 146f,
-                    corner = unit * 73f
-                )
+            // A guest: the painted orange button, the same one the busy spinner and the sign-out button sit on, so all three
+            // look alike. The Google mark rides in a white disc so it stays legible on the orange.
+            else -> Box(
+                box(150f, 1462f, 685f, 1590f)
+                    .graphicsLayer { alpha = if (online) 1f else 0.55f }
+                    .sunkenFace(inSink, sceneBitmap, 150f * pxX, 1462f * pxY, 535f * pxX, 128f * pxY, (15f * us).dp, (50f * us).dp)
+                    .clickable(
+                        interactionSource = inSink.source, indication = null,
+                        onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::signIn)
+                    )
+                    .a11yButton(stringResource(R.string.account_sign_in_google)),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    Modifier.sinkWith(inSink, 0.5f, 0.5f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Box(Modifier.size(unit * 78f).background(Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                        Image(
+                            painter = painterResource(R.drawable.ic_google_g),
+                            contentDescription = null,
+                            modifier = Modifier.size(unit * 52f)
+                        )
+                    }
+                    Spacer(Modifier.size(unit * 18f))
+                    LetteredText(
+                        stringResource(R.string.account_sign_in_google), fs(60f), outline = Color(0xFF8A3A00),
+                        modifier = Modifier.height(unit * 90f).weight(1f, fill = false), minScale = 0.5f
+                    )
+                }
             }
         }
 
