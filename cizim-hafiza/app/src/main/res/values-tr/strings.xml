@@ -464,6 +464,10 @@
     <string name="notification_channel_news_description">Karalak ekibinden duyurular ve kampanyalar.</string>
     <string name="friend_invite_notification_title">%1$s seni davet etti!</string>
     <string name="friend_invite_notification_body">Karalak\'ta birlikte oynamak için dokun.</string>
+    <string name="duel_notification_title">%1$s sana meydan okudu!</string>
+    <string name="duel_notification_body">Düelloyu oynamak için Karalak\'a dokun.</string>
+    <string name="duel_result_notification_title">%1$s düellonu oynadı!</string>
+    <string name="duel_result_notification_body">Kimin kazandığını görmek için dokun.</string>
     <string name="settings_language">Dil</string>
     <string name="settings_language_turkish">Türkçe</string>
     <string name="settings_language_english">English</string>

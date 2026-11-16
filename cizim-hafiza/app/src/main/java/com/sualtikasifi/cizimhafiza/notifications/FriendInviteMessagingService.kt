@@ -63,6 +63,18 @@ class FriendInviteMessagingService : FirebaseMessagingService() {
             showBroadcast(message.data["title"].orEmpty(), message.data["body"].orEmpty())
             return
         }
+        // A duel: someone challenged this player, or the one they challenged has played (sent by the scheduled job, see
+        // functions/src/duelPush.ts). Like an invite, the thing itself waits in Firestore and the app shows it when opened.
+        if (message.data["type"] == "duel" || message.data["type"] == "duel_result") {
+            val who = message.data["fromNickname"].orEmpty().ifBlank { return }
+            val answered = message.data["type"] == "duel_result"
+            showNotification(
+                getString(if (answered) R.string.duel_result_notification_title else R.string.duel_notification_title, who),
+                getString(if (answered) R.string.duel_result_notification_body else R.string.duel_notification_body),
+                message.data["duelId"]
+            )
+            return
+        }
         val fromNickname = message.data["fromNickname"] ?: return
         val inviteId = message.data["inviteId"]
         val title = getString(R.string.friend_invite_notification_title, fromNickname)

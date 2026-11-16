@@ -11,6 +11,7 @@ ikiye ayrılıyor:
 | `finalizeLeaguePeriod` | zamanlanmış (günlük) | ✅ — GitHub Actions cron |
 | `cleanupAbandonedRooms` | zamanlanmış (günlük) | ✅ — GitHub Actions cron |
 | `grantReferralRewards` | zamanlanmış (günlük) | ✅ — GitHub Actions cron |
+| `notify-duels` (`duelPush.ts`) | zamanlanmış (10 dakikada bir) | ✅ — GitHub Actions cron; düello daveti ve sonucu push'u, birkaç dakika gecikmeli |
 | `onInviteCreated` | Firestore'a canlı yazma (arkadaş daveti) | ❌ — imkansız |
 | `clampImpossibleScores` | Firestore'a canlı yazma (skor hile önleme) | ❌ — imkansız |
 

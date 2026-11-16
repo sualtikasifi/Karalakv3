@@ -457,6 +457,10 @@
     <string name="notification_channel_news_description">Avisos y campañas del equipo de Karalak.</string>
     <string name="friend_invite_notification_title">¡%1$s te invitó!</string>
     <string name="friend_invite_notification_body">Toca para jugar juntos en Karalak.</string>
+    <string name="duel_notification_title">¡%1$s te desafió!</string>
+    <string name="duel_notification_body">Toca para jugar el duelo en Karalak.</string>
+    <string name="duel_result_notification_title">¡%1$s jugó tu duelo!</string>
+    <string name="duel_result_notification_body">Toca para ver quién ganó.</string>
     <string name="settings_language">Idioma</string>
     <string name="settings_language_turkish">Türkçe</string>
     <string name="settings_language_english">English</string>
