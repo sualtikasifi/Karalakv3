@@ -141,8 +141,12 @@ const store = (page) => page.evaluate(() => window.__store);
   const plain = await open(chromium, { userAgent: ua, viewport: { width: 400, height: 800 } }, "/indir/");
   try {
     await plain.page.waitForSelector(".pg a.web", { state: "attached", timeout: 6000 });
-    const dead = await plain.page.$eval(".pg a.web", (a) => !a.hasAttribute("href") && getComputedStyle(a).pointerEvents === "none");
-    if (!dead) fail("Android without the test door: the browser game button is live");
+    const inert = await plain.page.$eval(".pg a.web", (a) => !a.hasAttribute("href"));
+    if (!inert) fail("Android without the test door: the browser game button is live");
+    // tapping it explains itself instead of doing nothing
+    await plain.page.click(".pg a.web");
+    await plain.page.waitForFunction(() => document.getElementById("nb")?.classList.contains("on") && /iPhone/.test(document.getElementById("nb").textContent), null, { timeout: 3000 });
+    if (!/\/indir/.test(plain.page.url())) fail(`Android tap on the iOS button left the page (${plain.page.url()})`);
   } catch (e) { fail(`download page without the door: ${e.message.split("\n")[0]}`); }
   await plain.browser.close();
 }

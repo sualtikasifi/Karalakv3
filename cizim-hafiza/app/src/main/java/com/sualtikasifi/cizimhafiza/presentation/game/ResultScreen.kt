@@ -65,6 +65,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.InkBrown
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.breathing
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.a11yButton
 import androidx.compose.foundation.layout.wrapContentSize
@@ -294,10 +295,12 @@ fun ResultScreen(
                         )
                     }
 
+                    // A quick match's recorded opponent or a duel's challenger: either way their ten drawings can be looked at.
                     val ghost = state.ghost
-                    val boardItems = if (showingOpponentGallery && ghost != null) ghostItems else state.items
+                    val opponentName = ghost?.nickname ?: state.duelChallenger?.challengerName
+                    val boardItems = if (showingOpponentGallery && opponentName != null) ghostItems else state.items
                     ResultWordsBoard(
-                        title = if (showingOpponentGallery && ghost != null) ghost.nickname
+                        title = if (showingOpponentGallery && opponentName != null) opponentName
                         else stringResource(R.string.result_words_title, state.items.size),
                         items = boardItems,
                         placeholders = state.items.size,
@@ -305,7 +308,7 @@ fun ResultScreen(
                         onPreview = { previewItem = it },
                         // The daily challenge has its own share button on its card, and the opponent's drawings are
                         // not the player's to pass on.
-                        onShareAll = if (ghost == null && state.daily == null) {
+                        onShareAll = if (ghost == null && state.daily == null && !showingOpponentGallery) {
                             {
                                 DrawingShareUtil.shareAllResults(
                                     context = context,
@@ -317,11 +320,11 @@ fun ResultScreen(
                                 )
                             }
                         } else null,
-                        header = if (ghost != null) {
+                        header = if (opponentName != null) {
                             {
                                 GalleryToggle(
                                     yourName = myName.ifBlank { stringResource(R.string.quick_match_gallery_yours) },
-                                    opponentName = ghost.nickname,
+                                    opponentName = opponentName,
                                     opponentReady = ghostItems.isNotEmpty(),
                                     showingOpponent = showingOpponentGallery,
                                     onSelect = { showingOpponentGallery = it }
@@ -406,35 +409,10 @@ fun ResultScreen(
                             enabled = canDouble,
                             veiled = !com.sualtikasifi.cizimhafiza.presentation.common.LocalOnline.current,
                             onClick = com.sualtikasifi.cizimhafiza.presentation.common.adOnly { onDoubleXp?.invoke() },
-                            modifier = Modifier.weight(1f)
+                            // a slow breath while it can be used: the eye goes to the offer first
+                            modifier = Modifier.weight(1f).then(if (canDouble) Modifier.breathing(0.022f, 1400) else Modifier)
                         ) {
-                            // Both lines centred on the button's face, the clapper beside the small line's left. The face is
-                            // the orange part only: the picture's dark rim is thicker under it (about 16 units of 100) than
-                            // over it (about 12), so the two lines are kept inside that band and share it 64/36 (the amount is the lure, so it gets the room; the small line sits a little low); each line
-                            // shrinks to its room, so neither can run onto the rim.
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.fillMaxSize().padding(top = u * 6f, bottom = u * 12f)
-                            ) {
-                                LetteredText(stringResource(R.string.result_x2_amount, com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(state.xpEarned) * 2), fs(48f), outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f, modifier = Modifier.fillMaxWidth().weight(0.68f))
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxWidth().weight(0.32f).offset(y = u * 3f)
-                                ) {
-                                    Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 22f))
-                                    Spacer(Modifier.width(u * 6f))
-                                    FitText(
-                                        text = stringResource(R.string.result_watch_ad),
-                                        style = PaintedStyle(color = Color.White, fontSize = fs(23f), fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
-                                        maxLines = 1,
-                                        minScale = 0.5f,
-                                        contentAlignment = Alignment.CenterStart,
-                                        modifier = Modifier.weight(1f, fill = false)
-                                    )
-                                }
-                            }
+                            DoubleXpFace(amount = com.sualtikasifi.cizimhafiza.domain.model.RuneLive.xp(state.xpEarned) * 2, u = u, fs = ::fs)
                         }
                     }
                     // Where the player's thumb lands, so the XP can fly from exactly there to the home bar.
@@ -500,7 +478,7 @@ fun ResultScreen(
             properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
         ) {
             BackHandler { previewItem = null }
-            val galleryItems = if (showingOpponentGallery && state.ghost != null) ghostItems else state.items
+            val galleryItems = if (showingOpponentGallery && (state.ghost != null || state.duelChallenger != null)) ghostItems else state.items
             val position = galleryItems.indexOf(itemToPreview)
             DrawingPreviewScene(
                 item = itemToPreview,
@@ -509,12 +487,14 @@ fun ResultScreen(
                 onPrevious = if (position > 0) ({ previewItem = galleryItems[position - 1] }) else null,
                 onNext = if (position in 0 until galleryItems.size - 1) ({ previewItem = galleryItems[position + 1] }) else null,
                 wordLanguage = wordLanguage,
-                reporting = showingOpponentGallery && onReportOpponentDrawing != null,
+                reporting = showingOpponentGallery && onReportOpponentDrawing != null && state.ghost != null,
                 onClose = { previewItem = null },
                 // Share your own, report somebody else's. The header already withholds sharing for the opponent's gallery on
                 // the grounds that their drawings are not the player's to pass on.
                 onAction = {
-                    if (showingOpponentGallery && onReportOpponentDrawing != null) reportItem = itemToPreview
+                    if (showingOpponentGallery && onReportOpponentDrawing != null && state.ghost != null) reportItem = itemToPreview
+                    // A friend's drawing from a duel: nothing to share (not the player's) and no pooled run to report.
+                    else if (showingOpponentGallery) Unit
                     // An empty canvas would go out as a card with nothing on it.
                     else if (itemToPreview.strokes.none { it.isNotEmpty() }) {
                         android.widget.Toast.makeText(context, R.string.share_empty_drawing, android.widget.Toast.LENGTH_SHORT).show()
@@ -715,11 +695,22 @@ private fun DuelChallengerVersusCard(
             u = u
         )
         if (onRematch != null) {
-            SecondaryButton(
-                text = stringResource(R.string.duel_rematch_action),
+            // The game's own painted button (the one the claim buttons use), lettered like them, with a breath so it invites a tap.
+            val fontScale0 = LocalDensity.current.fontScale
+            ArtButton(
+                res = R.drawable.rs_btn_claim,
+                u = u,
+                iconRoom = 0f,
                 onClick = onRematch,
-                modifier = Modifier.fillMaxWidth()
-            )
+                modifier = Modifier.fillMaxWidth().breathing(0.012f, 1600)
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    LetteredText(
+                        stringResource(R.string.duel_rematch_action),
+                        (46f * u.value / fontScale0).sp, outline = Color(0xFF8A3A00), maxLines = 1, minScale = 0.5f
+                    )
+                }
+            }
         }
     }
 }
@@ -1009,6 +1000,47 @@ internal fun ArtButton(
         Box(Modifier.fillMaxSize().padding(start = u * (if (iconRoom > 0f) iconRoom else 38f), end = u * 38f), content = content)
     }
 }
+/**
+ * The face of the "x2 XP" ad button: a big "x2" on the left (the lure), and on the right what it pays ("+342 XP") over "Reklam izle" with the
+ * clapper. All lettered the same way (white, brown outline) and centred together on the button's orange face, which is the picture's orange
+ * part only: its dark rim is thicker under it than over it, so the block keeps to that band. Every line shrinks to its room, so none can run onto the rim.
+ */
+@Composable
+internal fun DoubleXpFace(amount: Int, u: androidx.compose.ui.unit.Dp, fs: (Float) -> androidx.compose.ui.unit.TextUnit) {
+    val outline = Color(0xFF8A3A00)
+    // One block, centred on the face as a whole: a big "x2" and, right of it, what it pays over "Reklam izle" with the clapper. The
+    // pieces have fixed widths (the lettering shrinks inside them) so the block is the same width in every language and sits in the
+    // middle instead of drifting right; the two lines are kept close, their centres only 38 units apart.
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxSize().padding(top = u * 4f, bottom = u * 9f)
+    ) {
+        LetteredText("x2", fs(88f), outline = outline, maxLines = 1, minScale = 0.5f, modifier = Modifier.width(u * 90f).fillMaxHeight())
+        Spacer(Modifier.width(u * 8f))
+        // The two lines overlap their boxes (the amount's box is tall enough for its full size, so it is not shrunk to fit a short one):
+        // their centres are 35 units apart.
+        Box(modifier = Modifier.width(u * 176f).height(u * 80f)) {
+            LetteredText(
+                "+$amount XP", fs(46f), outline = outline, maxLines = 1, minScale = 0.5f,
+                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().height(u * 56f)
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(u * 34f)
+            ) {
+                Icon(Icons.Filled.Movie, contentDescription = null, tint = Color.White, modifier = Modifier.size(u * 26f))
+                Spacer(Modifier.width(u * 5f))
+                LetteredText(
+                    stringResource(R.string.result_watch_ad), fs(30f), outline = outline, maxLines = 1, minScale = 0.5f,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+            }
+        }
+    }
+}
+
 /** A parchment panel for the extra cards (quick match, duel, daily challenge). */
 @Composable
 internal fun PaperPanel(modifier: Modifier = Modifier, content: @Composable () -> Unit) {

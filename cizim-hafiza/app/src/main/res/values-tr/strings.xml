@@ -201,6 +201,11 @@
     <string name="friends_list_title">Arkadaşların</string>
     <string name="friends_empty">Henüz arkadaşın yok. Kodunu paylaş ya da bir kod gir!</string>
     <string name="friends_invite_action">Davet Et</string>
+    <string name="friends_pick_title">Nasıl oynayalım?</string>
+    <string name="friends_pick_room">Odaya Davet Et</string>
+    <string name="friends_pick_room_desc">Hemen şimdi, canlı! Aynı odada aynı anda çizin, kimin çizimi ve hafızası daha iyi görelim!</string>
+    <string name="friends_pick_duel">Düello</string>
+    <string name="friends_pick_duel_desc">Sen çiz, rakip istediği an gelsin! Aynı kelimeler, adil puan: kazanan sonunda belli olur.</string>
     <string name="friends_incoming_invite">%1$s seni davet etti!</string>
     <string name="friends_accept_invite">Katıl</string>
     <string name="friends_decline_invite">Reddet</string>
@@ -464,6 +469,10 @@
     <string name="notification_channel_news_description">Karalak ekibinden duyurular ve kampanyalar.</string>
     <string name="friend_invite_notification_title">%1$s seni davet etti!</string>
     <string name="friend_invite_notification_body">Karalak\'ta birlikte oynamak için dokun.</string>
+    <string name="duel_notification_title">%1$s sana meydan okudu!</string>
+    <string name="duel_notification_body">Düelloyu oynamak için Karalak\'a dokun.</string>
+    <string name="duel_result_notification_title">%1$s düellonu oynadı!</string>
+    <string name="duel_result_notification_body">Kimin kazandığını görmek için dokun.</string>
     <string name="settings_language">Dil</string>
     <string name="settings_language_turkish">Türkçe</string>
     <string name="settings_language_english">English</string>
@@ -811,10 +820,10 @@
     <!-- Asynchronous duels (C2) -->
     <string name="duel_challenge_action">Meydan Oku</string>
     <string name="duel_rematch_action">Geri Meydan Oku</string>
-    <string name="duel_challenge_sent">%1$s kişisine meydan okuma olarak gönderildi!</string>
+    <string name="duel_challenge_sent">%1$s kişisine meydan okuma olarak gönderildi! İstediği zaman cevaplayabilir, sonucu Düellolar sayfasında göreceksin.</string>
     <string name="duel_create_title">Meydan Oku</string>
     <string name="duel_create_opponent">%1$s ile Düello</string>
-    <string name="duel_create_explainer">Şimdi normal bir tur oyna — çizimlerin bittiğinde otomatik olarak %1$s kişisine bir meydan okuma olarak gönderilecek. O, uygulamayı bir sonraki açtığında aynı kelimelerle kendi çizimlerini yapıp tahmin edecek; sonuçlarınız karşılaştırılacak.</string>
+    <string name="duel_create_explainer">Aynı anda oynamanız gerekmez: %1$s istediği zaman, saatler sonra bile cevaplayabilir. Şimdi normal bir tur oyna — çizimlerin bittiğinde otomatik olarak ona bir meydan okuma olarak gönderilecek. O da aynı kelimelerle kendi çizimlerini yapıp tahmin edecek; sonuçlarınız karşılaştırılacak.</string>
     <string name="duel_create_start">Turu Başlat</string>
     <string name="duel_list_title">Düellolar</string>
     <string name="duel_list_incoming_title">Sana Gelenler</string>
@@ -829,7 +838,7 @@
     <string name="duel_list_new_result">Yeni</string>
     <string name="duel_list_sent_empty">Henüz kimseye meydan okumadın.</string>
     <string name="duel_list_word_count">%1$d kelime</string>
-    <string name="duel_list_status_waiting">Bekleniyor…</string>
+    <string name="duel_list_status_waiting">Cevap bekleniyor…</string>
     <string name="duel_list_status_won">Kazandın! 🎉</string>
     <string name="duel_list_status_lost">Kaybettin</string>
     <string name="duel_list_status_tied">Berabere</string>

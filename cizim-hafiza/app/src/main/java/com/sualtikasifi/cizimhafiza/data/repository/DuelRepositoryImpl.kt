@@ -92,7 +92,10 @@ class DuelRepositoryImpl @Inject constructor(
                 "completedAt" to null,
                 // The challenger created it, so there is nothing about their
                 // own duel they haven't already seen.
-                "seenByChallenger" to true
+                "seenByChallenger" to true,
+                // Markers for the scheduled push job (functions/src/duelPush.ts): null = "not announced yet", which is what it queries for.
+                "pushedAt" to null,
+                "resultPushedAt" to null
             )
         ).await()
         Unit

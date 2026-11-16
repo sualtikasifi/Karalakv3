@@ -24,6 +24,7 @@ import {
 } from "./index";
 import * as admin from "firebase-admin";
 import { runProcessAdminCommands, runRollupStats } from "./adminTasks";
+import { runNotifyDuels } from "./duelPush";
 import { runMigrateWebEmails, runProcessDeletions } from "./maintenance";
 
 const tasks: Record<string, () => Promise<void>> = {
@@ -37,6 +38,8 @@ const tasks: Record<string, () => Promise<void>> = {
   "migrate-web-emails": runMigrateWebEmails,
   // Hourly: what the developer panel asked for (gifts, broadcasts) and XP events planned ahead (see adminTasks.ts).
   "process-admin-commands": runProcessAdminCommands,
+  // Every few minutes: tells a friend about a duel sent to them, and the challenger when it has been played (see duelPush.ts).
+  "notify-duels": runNotifyDuels,
   // Nightly: folds the day's statistics rows into one adminSummary document.
   "rollup-stats": runRollupStats,
 };

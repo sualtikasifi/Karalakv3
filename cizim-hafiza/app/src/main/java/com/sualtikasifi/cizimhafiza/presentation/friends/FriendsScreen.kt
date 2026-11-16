@@ -42,7 +42,6 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.SportsMma
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -614,13 +613,22 @@ private fun FriendRow(
     streakWaitingOnFriend: Boolean = false
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    // "Meydan Oku" asks how to play first: a live room right now, or a duel the friend answers whenever they like.
+    var choosing by remember { mutableStateOf(false) }
+    if (choosing) {
+        PlayChoiceDialog(
+            onRoom = { choosing = false; onInvite() },
+            onDuel = { choosing = false; onDuel() },
+            onDismiss = { choosing = false }
+        )
+    }
     ListRow {
         RowName(friend.nickname, Modifier.weight(1f))
         if (streak != null) StreakChip(streak, streakWaitingOnFriend, onRescue = { onRescueStreak(streak) })
         if (inviting || busy) {
             CircularProgressIndicator(modifier = Modifier.size(22.dp).padding(end = 6.dp), color = ButtonOrange, strokeWidth = 2.5.dp)
         } else {
-            OrangePill(stringResource(R.string.friends_invite_action), onInvite)
+            OrangePill(stringResource(R.string.duel_challenge_action)) { choosing = true }
             Box {
                 Box(
                     Modifier.size(34.dp).pressable(pressedScale = 0.85f) { menuExpanded = true },
@@ -634,11 +642,6 @@ private fun FriendRow(
                 }
                 DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.duel_challenge_action)) },
-                        leadingIcon = { Icon(Icons.Filled.SportsMma, contentDescription = null) },
-                        onClick = { menuExpanded = false; onDuel() }
-                    )
-                    DropdownMenuItem(
                         text = { Text(stringResource(R.string.friends_remove_action)) },
                         leadingIcon = { Icon(Icons.Filled.PersonRemove, contentDescription = null) },
                         onClick = { menuExpanded = false; onRemove() }
@@ -651,6 +654,29 @@ private fun FriendRow(
                 }
             }
         }
+    }
+}
+
+/** The two ways to play with a friend, each with a line on what it is like; the choice is made on a painted button under it. */
+@Composable
+private fun PlayChoiceDialog(onRoom: () -> Unit, onDuel: () -> Unit, onDismiss: () -> Unit) {
+    com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(title = stringResource(R.string.friends_pick_title), onDismiss = onDismiss) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
+            PlayChoice(stringResource(R.string.friends_pick_room), stringResource(R.string.friends_pick_room_desc), onRoom)
+            PlayChoice(stringResource(R.string.friends_pick_duel), stringResource(R.string.friends_pick_duel_desc), onDuel)
+        }
+    }
+}
+
+@Composable
+private fun PlayChoice(label: String, description: String, onClick: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(text = label, onClick = onClick, modifier = Modifier.fillMaxWidth())
+        Text(
+            text = description,
+            style = PaintedStyle(color = InkBrown, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp)
+        )
     }
 }
 

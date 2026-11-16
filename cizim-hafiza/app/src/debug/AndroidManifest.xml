@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
+        <!-- Debug builds only: an answered duel's result screen (see DuelResultPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.DuelResultPreviewActivity"
+            android:exported="true" />
         <!-- Debug builds only: pages with a painted sign title, one at a time (see TitlesPreviewActivity). -->
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.TitlesPreviewActivity"
@@ -80,6 +84,10 @@
         <!-- Debug builds only: the vine-and-parchment window with its painted button (see FrameDialogPreviewActivity). -->
         <activity
             android:name="com.sualtikasifi.cizimhafiza.debug.FrameDialogPreviewActivity"
+            android:exported="true" />
+        <!-- Debug builds only: the result screen's "x2 XP" ad button (see DoubleXpPreviewActivity). -->
+        <activity
+            android:name="com.sualtikasifi.cizimhafiza.debug.DoubleXpPreviewActivity"
             android:exported="true" />
         <!-- Debug builds only: the painted rank ladder (see RankLadderPreviewActivity). -->
         <activity
