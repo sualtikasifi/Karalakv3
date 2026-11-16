@@ -162,10 +162,8 @@ fun DuelListScreen(
         )
     }
 
-    resultDuel?.let { recent ->
-        val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
-        DuelResultDialog(recent = recent, onDismiss = { resultDuel = null; activity?.let(viewModel::afterResultClosed) })
-    }
+    // Closing a result is only closing it: not a game's end, so no ad follows.
+    resultDuel?.let { recent -> DuelResultDialog(recent = recent, onDismiss = { resultDuel = null }) }
 }
 
 /**
@@ -337,21 +335,5 @@ private fun PendingSentRow(duel: Duel, onDelete: () -> Unit) {
             contentDescription = stringResource(R.string.duel_list_delete),
             modifier = Modifier.size(32.dp).pressable(pressedScale = 0.85f, onClick = onDelete)
         )
-    }
-}
-
-@Composable
-private fun DuelResultDialog(recent: RecentDuel, onDismiss: () -> Unit) {
-    com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(
-        title = when (recent.iWon) {
-            true -> stringResource(R.string.duel_list_status_won)
-            false -> stringResource(R.string.duel_list_status_lost)
-            null -> stringResource(R.string.duel_list_status_tied)
-        },
-        onDismiss = onDismiss,
-        buttons = { com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(text = stringResource(R.string.close), onClick = onDismiss, modifier = Modifier.fillMaxWidth()) }
-    ) {
-        com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialogText(stringResource(R.string.duel_result_score_format, stringResource(R.string.quick_match_you), recent.myScore))
-        com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialogText(stringResource(R.string.duel_result_score_format, recent.otherName, recent.otherScore))
     }
 }
