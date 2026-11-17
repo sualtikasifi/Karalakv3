@@ -1253,11 +1253,8 @@ private fun PaintedPurchaseDialog(
                 if (altCancel == null) PaintedButton(spec.cancel, 76f, true, onDismiss) else {
                     // The painted "Vazgeç" is covered whole by a live button of the same footprint (a little larger, for the picture's edge).
                     val (x0, y0, x1, y1) = spec.cancel
-                    // The green painted pill; the label and the arrow (or the tick, once armed) ride on it in white with a dark shadow.
-                    val face = androidx.compose.ui.text.TextStyle(
-                        fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, color = Color.White,
-                        shadow = androidx.compose.ui.graphics.Shadow(Color(0xCC0B3A00), androidx.compose.ui.geometry.Offset(0f, 3f), 4f)
-                    )
+                    // The green painted pill; the label and the arrow (or the tick, once armed) are lettered like "Satın Al": white, with a dark rim and a soft shadow.
+                    val rim = Color(0xFF14602A)
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
@@ -1276,12 +1273,13 @@ private fun PaintedPurchaseDialog(
                             horizontalArrangement = Arrangement.Center,
                             modifier = Modifier.fillMaxSize().padding(horizontal = u * 40f)
                         ) {
-                            Text(text = if (altCancel.armed) "✓" else "▶", style = face.copy(fontSize = fs(52f)))
+                            com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                                text = if (altCancel.armed) "✓" else "▶", size = fs(52f), outline = rim, maxLines = 1,
+                                modifier = Modifier.width(u * 60f)
+                            )
                             Spacer(Modifier.width(u * 14f))
-                            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
-                                text = altCancel.label,
-                                style = face.copy(fontSize = fs(50f), textAlign = TextAlign.Center, lineHeight = fs(54f)),
-                                maxLines = 2, minScale = 0.55f,
+                            com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                                text = altCancel.label, size = fs(50f), outline = rim, maxLines = 2, minScale = 0.55f,
                                 modifier = Modifier.weight(1f)
                             )
                         }

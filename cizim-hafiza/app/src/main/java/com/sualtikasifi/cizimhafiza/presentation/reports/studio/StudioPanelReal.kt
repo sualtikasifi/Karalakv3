@@ -491,9 +491,10 @@ internal fun LazyListScope.stepCard(st: StudioState, vm: StudioViewModel) {
     val r = st.real
     // the preview itself is pinned above this list by the step (FlowStep.pinned), so it stays in view while the sliders are moved
     item {
+        // the preview opens on a moment where a subtitle is up, so the subtitle's place can be judged at once
+        androidx.compose.runtime.LaunchedEffect(Unit) { vm.previewCaption(RealLine.Narration) }
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Karalak kartının yeri ve boyu", style = Console.Label)
-            Text("Kaydırıcıyla kabaca, − ve + ile hassas ayarla; yukarıdaki önizleme anında değişir.", style = Console.Small)
             PreciseSlider("Boyut", r.card.scale, CardLayout.MIN_SCALE..CardLayout.MAX_SCALE) { vm.setCard(r.card.copy(scale = it)) }
             PreciseSlider("Sağa–sola", r.card.x, 0f..1f) { vm.setCard(r.card.copy(x = it)) }
             PreciseSlider("Yukarı–aşağı", r.card.y, 0f..1f) { vm.setCard(r.card.copy(y = it)) }
@@ -503,18 +504,12 @@ internal fun LazyListScope.stepCard(st: StudioState, vm: StudioViewModel) {
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
             Text("Altyazının yeri", style = Console.Label)
-            Text("Kanca, anlatıcı ve kapanış altyazıları bu yükseklikte görünür. Önizlemede hangisini görmek istediğini seç; kaydırıcı ya da − ve + ile ayarla.", style = Console.Small)
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(top = 6.dp)) {
-                SmallLink("Kancayı göster") { vm.previewCaption(RealLine.Hook) }
-                SmallLink("Anlatıcıyı göster") { vm.previewCaption(RealLine.Narration) }
-                SmallLink("Kapanışı göster") { vm.previewCaption(RealLine.Outro) }
-            }
             PreciseSlider("Yukarı–aşağı", r.captionY, CaptionPlace.MIN..CaptionPlace.MAX) { vm.setCaptionY(it) }
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 SmallLink("Üstte") { vm.setCaptionY(0.12f) }
                 SmallLink("Ortada") { vm.setCaptionY(0.5f) }
                 SmallLink("Altta") { vm.setCaptionY(CaptionPlace.DEFAULT) }
-                SmallLink("Varsayılana dön") { vm.resetCaptionY() }
+                SmallLink("Sıfırla") { vm.resetCaptionY() }
             }
         }
     }

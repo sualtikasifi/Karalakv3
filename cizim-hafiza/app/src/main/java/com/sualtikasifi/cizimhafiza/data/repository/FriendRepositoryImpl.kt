@@ -651,11 +651,14 @@ class FriendRepositoryImpl @Inject constructor(
                 // that one reward rather than risking it being read (and
                 // applied) twice on the next attempt.
                 tx.update(rewardsRef, "pending", emptyList<Map<String, Any?>>())
-                fun sum(gold: Boolean) = pending
-                    .filter { ((it["currency"] as? String) == "gold") == gold }
+                fun sum(gold: Boolean, gift: Boolean) = pending
+                    .filter { ((it["currency"] as? String) == "gold") == gold && ((it["reason"] as? String) == "admin") == gift }
                     .sumOf { (it["amount"] as? Number)?.toLong() ?: 0L }
                     .coerceIn(0L, 1_000_000L).toInt()
-                PendingRewardTotals(xp = sum(gold = false), gold = sum(gold = true))
+                PendingRewardTotals(
+                    xp = sum(gold = false, gift = false), gold = sum(gold = true, gift = false),
+                    giftXp = sum(gold = false, gift = true), giftGold = sum(gold = true, gift = true)
+                )
             }.await()
         }.getOrDefault(PendingRewardTotals())
     }

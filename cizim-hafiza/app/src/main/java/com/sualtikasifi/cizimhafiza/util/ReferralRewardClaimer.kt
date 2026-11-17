@@ -52,15 +52,22 @@ class ReferralRewardClaimer @Inject constructor(
     /** The gold just claimed (the invite reward is 500 gold), for the same one-time toast. */
     val lastClaimedGold: StateFlow<Int> = _lastClaimedGold.asStateFlow()
 
+    private val _lastGiftXp = MutableStateFlow(0)
+    /** XP just claimed that the developer panel sent (a gift or a make-up), for its own toast. */
+    val lastGiftXp: StateFlow<Int> = _lastGiftXp.asStateFlow()
+
+    private val _lastGiftGold = MutableStateFlow(0)
+    val lastGiftGold: StateFlow<Int> = _lastGiftGold.asStateFlow()
+
     /** Safe to call repeatedly; only the first call actually claims. */
     fun start() {
         if (started) return
         started = true
         scope.launch {
             attributeInstallInvite()
-            // A reward is only ever added by a once-a-day server job, so looking on every single
-            // start is a server read that almost always finds nothing. Once per few hours is
-            // plenty; a reward simply waits until the next check.
+            // Rewards are added by server jobs (the invite reward daily, a gift from the developer panel within minutes),
+            // so a look on every single start would be a server read that mostly finds nothing: at most one per ten
+            // minutes; a reward simply waits until the next check.
             val now = System.currentTimeMillis()
             if (now - settingsRepository.lastRewardCheckMillis < REWARD_CHECK_INTERVAL_MILLIS) return@launch
             settingsRepository.lastRewardCheckMillis = now
@@ -74,6 +81,14 @@ class ReferralRewardClaimer @Inject constructor(
                         settingsRepository.earnGold(totals.gold, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.REFERRAL)
                         _lastClaimedGold.value = totals.gold
                     }
+                    if (totals.giftXp > 0) {
+                        settingsRepository.addXp(totals.giftXp, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.REFERRAL)
+                        _lastGiftXp.value = totals.giftXp
+                    }
+                    if (totals.giftGold > 0) {
+                        settingsRepository.earnGold(totals.giftGold, com.sualtikasifi.cizimhafiza.domain.model.EarnSource.REFERRAL)
+                        _lastGiftGold.value = totals.giftGold
+                    }
                 }
                 .onFailure { NonFatal.report(TAG, "Pending reward claim failed", it) }
         }
@@ -82,6 +97,8 @@ class ReferralRewardClaimer @Inject constructor(
     fun consumeClaimedNotice() {
         _lastClaimedXp.value = 0
         _lastClaimedGold.value = 0
+        _lastGiftXp.value = 0
+        _lastGiftGold.value = 0
     }
 
     /**
@@ -106,6 +123,7 @@ class ReferralRewardClaimer @Inject constructor(
 
     private companion object {
         const val TAG = "ReferralRewardClaimer"
-        const val REWARD_CHECK_INTERVAL_MILLIS = 4 * 60 * 60 * 1000L
+        // A gift from the developer panel waits at most this long after the app is opened (one document read per check)
+        const val REWARD_CHECK_INTERVAL_MILLIS = 10 * 60 * 1000L
     }
 }

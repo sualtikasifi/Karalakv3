@@ -190,6 +190,8 @@ fun MainMenuScreen(
     val streakToast by viewModel.streakToast.collectAsState()
     val referralRewardXp by viewModel.referralRewardXp.collectAsState()
     val referralRewardGold by viewModel.referralRewardGold.collectAsState()
+    val giftRewardXp by viewModel.giftRewardXp.collectAsState()
+    val giftRewardGold by viewModel.giftRewardGold.collectAsState()
     // The system back gesture on the menu used to close the app outright,
     // with no way to take it back — easy to trigger by accident mid-swipe
     // and, on a game, more destructive than it looks.
@@ -359,8 +361,8 @@ fun MainMenuScreen(
             }
         }
 
-        if (referralRewardXp > 0 || referralRewardGold > 0) {
-            LaunchedEffect(referralRewardXp, referralRewardGold) {
+        if (referralRewardXp > 0 || referralRewardGold > 0 || giftRewardXp > 0 || giftRewardGold > 0) {
+            LaunchedEffect(referralRewardXp, referralRewardGold, giftRewardXp, giftRewardGold) {
                 delay(3_500)
                 viewModel.consumeReferralRewardNotice()
             }
@@ -369,8 +371,12 @@ fun MainMenuScreen(
                 contentAlignment = Alignment.BottomCenter
             ) {
                 TintedBadge(
-                    text = if (referralRewardGold > 0) stringResource(R.string.referral_reward_gold_earned_format, referralRewardGold)
-                    else stringResource(R.string.referral_reward_earned_format, referralRewardXp),
+                    text = when {
+                        giftRewardGold > 0 -> stringResource(R.string.gift_reward_gold_format, giftRewardGold)
+                        giftRewardXp > 0 -> stringResource(R.string.gift_reward_xp_format, giftRewardXp)
+                        referralRewardGold > 0 -> stringResource(R.string.referral_reward_gold_earned_format, referralRewardGold)
+                        else -> stringResource(R.string.referral_reward_earned_format, referralRewardXp)
+                    },
                     container = MaterialTheme.colorScheme.surface,
                     content = MaterialTheme.colorScheme.primary
                 )
