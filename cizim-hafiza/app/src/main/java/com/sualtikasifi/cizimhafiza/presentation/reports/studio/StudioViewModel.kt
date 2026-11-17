@@ -188,7 +188,7 @@ class StudioViewModel @Inject constructor(
         _state.update { it.copy(format = f, video = null, renderError = null, previewMs = 0L) }
         // Karalak speaks here with the voice "Gerçek Olsaydı" uses (the settings are shared): ElevenLabs, its last chosen voice
         if (f == StudioFormat.Forgot && _state.value.eleven.keySet && _state.value.voiceEngine != VoiceEngine.ElevenLabs) setVoiceEngine(VoiceEngine.ElevenLabs)
-        if (f == StudioFormat.RealLife && _state.value.real.recent.isEmpty()) refreshRecent()
+        if ((f == StudioFormat.RealLife || f == StudioFormat.Riddle) && _state.value.real.recent.isEmpty()) refreshRecent()
         refreshPreview()
     }
 
@@ -316,7 +316,7 @@ class StudioViewModel @Inject constructor(
                     musicFile = s.forgot.music?.let { RealMusic.target(context, it) }, musicVolume = s.forgot.musicVolume
                 )
             }
-            StudioFormat.RealLife -> null
+            StudioFormat.RealLife, StudioFormat.Riddle -> null
         }
     }
 
@@ -324,7 +324,7 @@ class StudioViewModel @Inject constructor(
     internal fun linesFor(s: StudioState): List<SpokenLine>? = when (s.format) {
         StudioFormat.Forgot -> s.forgot.script?.lines()
         // the video has no voice, no subtitles: nothing to say
-        StudioFormat.RealLife -> emptyList()
+        StudioFormat.RealLife, StudioFormat.Riddle -> emptyList()
     }
 
     fun render() {

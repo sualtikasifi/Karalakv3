@@ -131,6 +131,7 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
             StudioPage.Make -> when (st.format) {
                 StudioFormat.Forgot -> StepFlow(forgotFlow(st, viewModel, context), st.forgot.step - 1, { viewModel.setForgotStep(it + 1) })
                 StudioFormat.RealLife -> StepFlow(realFlow(st, viewModel, context), st.real.step - 1, { viewModel.setRealStep(it + 1) })
+                StudioFormat.Riddle -> PageList { riddleTab(st, viewModel, context) }
             }
             StudioPage.Library -> PageList { libraryTab(st, viewModel) }
             StudioPage.Log -> PageList { trackingItems(st, viewModel) }
@@ -271,6 +272,7 @@ internal fun PreviewCard(st: StudioState, vm: StudioViewModel, compact: Boolean 
                 when (st.format) {
                     StudioFormat.RealLife -> "Önizleme için çizim seç ve Gemini videosunu yükle."
                     StudioFormat.Forgot -> "Önizleme için kendi çizimini tanıyamadığın bir çizim seç."
+                    StudioFormat.Riddle -> "Bu formatın görseli kendi sayfasında."
                     else -> "Önizleme için bir kelime seç."
                 },
                 style = Console.Small

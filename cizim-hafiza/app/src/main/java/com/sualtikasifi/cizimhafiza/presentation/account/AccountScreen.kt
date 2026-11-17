@@ -536,8 +536,9 @@ fun AccountScreen(
             } else {
                 FitText(
                     text = stringResource(R.string.account_delete_action),
-                    // the painted bin sits at the pill's left end: the words start just right of it and shrink to the rim
-                    style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(37f), textAlign = TextAlign.Start),
+                    // the painted bin sits at the pill's left end: the words start just right of it; at this size the bin and the words together
+                    // are centred on the pill (the bin cannot move, the words can be made shorter)
+                    style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(33f), textAlign = TextAlign.Start),
                     maxLines = 1,
                     minScale = 0.55f,
                     contentAlignment = Alignment.CenterStart,
