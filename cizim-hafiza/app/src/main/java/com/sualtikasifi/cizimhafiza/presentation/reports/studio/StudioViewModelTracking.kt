@@ -36,6 +36,7 @@ internal fun StudioViewModel.recordMadeVideo(s: StudioState) {
             val words = p.shown.mapNotNull { r -> p.drawing(r.sampleId)?.word }.take(3).joinToString(", ")
             PublishEntry(id = now, format = "Gerçek Olsaydı", label = words.ifBlank { "çizimler" }, madeAt = now)
         }
+        StudioFormat.Riddle -> null
     } ?: return
     val draftId = if (s.format == StudioFormat.Forgot) s.forgot.draftId else null
     if (draftId != null) {

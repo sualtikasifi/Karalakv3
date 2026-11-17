@@ -99,8 +99,26 @@ import javax.inject.Inject
 /** The studio's video formats. */
 enum class StudioFormat(val title: String, val blurb: String) {
     Forgot("Ödüllü Karalak Düellosu", "Çizenin bile tanıyamadığı çizim; doğru cevap kupon kodu"),
-    RealLife("Gerçek Olsaydı", "Çizimler gerçek hayata dönüşüyor")
+    RealLife("Gerçek Olsaydı", "Çizimler gerçek hayata dönüşüyor"),
+    /** A picture for an Instagram story with a drawing in it; the poll is made in Instagram from the question and four answers written here. */
+    Riddle("Bil Bakalım Story", "Çizim, soru ve 4 şık: story için")
 }
+
+/** "Bil Bakalım Story": the drawing, the question and the four answers (one of them right), and the picture made from them. */
+data class RiddleUi(
+    val source: ForgotSource = ForgotSource.Phone,
+    val drawingId: Long? = null,
+    val shown: Int = 12,
+    val question: String = "",
+    val options: List<String> = emptyList(),
+    /** Which of the four ([options] index 0..3) is right; -1 before it is written. */
+    val correct: Int = -1,
+    val writing: Boolean = false,
+    val error: String? = null,
+    /** The finished story picture (a file in the cache) and a counter that changes when it is made again. */
+    val image: java.io.File? = null,
+    val imageVersion: Int = 0
+)
 
 /** Who gives Karalak its voice: the phone's own text-to-speech, or ElevenLabs. */
 enum class VoiceEngine { Phone, ElevenLabs }
@@ -302,6 +320,7 @@ data class StudioState(
     val message: String? = null,
     val forgot: ForgotUi = ForgotUi(),
     val real: RealUi = RealUi(),
+    val riddle: RiddleUi = RiddleUi(),
     /** The log of videos made on this phone, newest first (see [PublishLog]). */
     val publishLog: List<PublishEntry> = emptyList(),
     /** What making videos costs, as OpenRouter and ElevenLabs report it. */
@@ -315,6 +334,7 @@ data class StudioState(
     val ready: Boolean get() = !rendering && when (format) {
         StudioFormat.Forgot -> forgot.script != null
         StudioFormat.RealLife -> real.project?.shown?.isNotEmpty() == true
+        StudioFormat.Riddle -> false
     }
 
     /**
