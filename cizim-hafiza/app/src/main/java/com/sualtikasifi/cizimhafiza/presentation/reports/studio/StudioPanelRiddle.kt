@@ -118,7 +118,7 @@ internal fun LazyListScope.riddleTab(st: StudioState, vm: StudioViewModel, conte
     // the story picture
     item {
         ConsoleCard(Modifier.fillMaxWidth()) {
-            Text("Story görseli (1080 x 2400)", style = Console.Label)
+            Text("Story görseli (1080 x 1920)", style = Console.Label)
             val file = r.image
             if (file == null) {
                 Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Console.Accent) }
@@ -128,7 +128,7 @@ internal fun LazyListScope.riddleTab(st: StudioState, vm: StudioViewModel, conte
                 }
                 if (bitmap != null) {
                     Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
-                        Image(bitmap, contentDescription = "Story görseli", contentScale = ContentScale.Fit, modifier = Modifier.width(240.dp).aspectRatio(9f / 20f).clip(RoundedCornerShape(12.dp)))
+                        Image(bitmap, contentDescription = "Story görseli", contentScale = ContentScale.Fit, modifier = Modifier.width(240.dp).aspectRatio(9f / 16f).clip(RoundedCornerShape(12.dp)))
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 10.dp)) {

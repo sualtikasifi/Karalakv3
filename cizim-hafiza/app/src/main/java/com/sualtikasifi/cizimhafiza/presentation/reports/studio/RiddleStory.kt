@@ -18,12 +18,12 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.random.Random
 
 /**
- * "Bil Bakalım Story": the picture for an Instagram story (the drawing on a painted board, a title on the sign) and the question
+ * "Bil Bakalım Story": the picture for an Instagram story (the drawing on a painted board; the title and the call to get the app are part of the template) and the question
  * with its four answers, which the maker puts into an Instagram quiz sticker by hand.
  */
 object RiddleStory {
     const val W = 1080
-    const val H = 2400
+    const val H = 1920
     const val LETTERS = "ABCD"
 
     /** What the assistant wrote: the question, the right answer and three wrong ones that look like it. */
@@ -78,46 +78,24 @@ object RiddleStory {
 
     // ---- the picture
 
-    // The template is 1080 x 2532 and is laid on the 1080 x 2400 story picture with 66 px cut from the top and the foot (only decoration lies there).
-    private const val CUT = 66
-
-    /** The paper board's inside, in story-picture pixels (measured on the template). */
-    private val PAPER = RectF(141f, 747f, 933f, 1496f)
-
-    /** The sign's inside, where the title goes. */
-    private val SIGN = RectF(190f, 360f, 905f, 556f)
+    /**
+     * The paper board's inside, in story-picture pixels: the template (1080 x 1920, the picture's own size) was measured by filling the
+     * paper from its middle: it spans x 194..876, y 306..915, so its centre is (535, 610.5). This rectangle has that same centre, with
+     * room left to the frame and its rounded corners; the drawing is centred on it.
+     */
+    private val PAPER = RectF(224f, 335.5f, 846f, 885.5f)
 
     fun render(context: Context, assets: StudioAssets, strokes: List<DrawingStroke>): Bitmap {
         val out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val c = Canvas(out)
         val template = BitmapFactory.decodeResource(context.resources, R.drawable.story_bilbakalim)
         if (template != null) {
-            c.drawBitmap(template, 0f, -CUT.toFloat(), Paint(Paint.FILTER_BITMAP_FLAG))
+            // 1 : 1, the template is the story's size
+            c.drawBitmap(template, 0f, 0f, null)
             template.recycle()
         } else c.drawColor(Color.rgb(0xF4, 0xD4, 0x9A))
-        drawTitle(c, assets)
         drawStrokes(c, strokes, PAPER)
         return out
-    }
-
-    private fun drawTitle(c: Canvas, assets: StudioAssets) {
-        val fit = SIGN.width() * 0.92f
-        fun line(text: String, size: Float, baseline: Float) {
-            val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                typeface = assets.display; textAlign = Paint.Align.CENTER; textSize = size
-                style = Paint.Style.STROKE; strokeWidth = size * 0.16f; strokeJoin = Paint.Join.ROUND; color = Color.rgb(0x5A, 0x28, 0x15)
-            }
-            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = assets.display; textAlign = Paint.Align.CENTER; textSize = size; color = Color.WHITE }
-            // shrink to the sign when the words would not fit
-            val w = stroke.measureText(text)
-            if (w > fit) { val s = size * fit / w; stroke.textSize = s; stroke.strokeWidth = s * 0.16f; fill.textSize = s }
-            val x = SIGN.centerX()
-            c.drawText(text, x, baseline + 5f, Paint(stroke).apply { color = Color.argb(70, 0, 0, 0) })
-            c.drawText(text, x, baseline, stroke)
-            c.drawText(text, x, baseline, fill)
-        }
-        line("Karalak", 108f, SIGN.top + 98f)
-        line("Bil Bakalım!", 78f, SIGN.top + 190f)
     }
 
     private fun drawStrokes(c: Canvas, strokes: List<DrawingStroke>, target: RectF) {
