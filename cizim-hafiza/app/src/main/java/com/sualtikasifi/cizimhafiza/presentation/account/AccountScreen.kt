@@ -405,7 +405,10 @@ fun AccountScreen(
         // The strip's painted tick and cloud say "saved": only true for a signed-in account that has been backed up, so for
         // anyone else they are covered in the strip's own colour and what is really the case is shown instead.
         if (!saved) {
-            Box(box(70f, 1286f, 146f, 1364f).clip(CircleShape).background(Color(0xFFFCEACB)), contentAlignment = Alignment.Center) {
+            // The painted tick and cloud are taken out of a copy of the picture itself (acc_strip_left / acc_strip_right: the same
+            // pixels with the icons removed), so the strip keeps its own colour, line and rounded end where they were.
+            Image(painterResource(R.drawable.acc_strip_left), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(66f, 1286f, 148f, 1368f))
+            Box(box(70f, 1286f, 146f, 1364f), contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = if (uiState.isSignedIn) Icons.Filled.CloudSync else Icons.Filled.CloudOff,
                     contentDescription = null,
@@ -413,7 +416,7 @@ fun AccountScreen(
                     modifier = Modifier.size(unit * 48f)
                 )
             }
-            Box(box(630f, 1266f, 778f, 1388f).clip(RoundedCornerShape(unit * 22f)).background(Brush.verticalGradient(listOf(Color(0xFFFCEDCF), Color(0xFFFCE8C9)))))
+            Image(painterResource(R.drawable.acc_strip_right), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(632f, 1256f, 782f, 1380f))
         }
         val strip1: String
         val strip2: String?
