@@ -405,7 +405,10 @@ fun AccountScreen(
         // The strip's painted tick and cloud say "saved": only true for a signed-in account that has been backed up, so for
         // anyone else they are covered in the strip's own colour and what is really the case is shown instead.
         if (!saved) {
-            Box(box(70f, 1286f, 146f, 1364f).clip(CircleShape).background(Color(0xFFFCEACB)), contentAlignment = Alignment.Center) {
+            // The painted tick and cloud are taken out of a copy of the picture itself (acc_strip_left / acc_strip_right: the same
+            // pixels with the icons removed), so the strip keeps its own colour, line and rounded end where they were.
+            Image(painterResource(R.drawable.acc_strip_left), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(66f, 1286f, 148f, 1368f))
+            Box(box(70f, 1286f, 146f, 1364f), contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = if (uiState.isSignedIn) Icons.Filled.CloudSync else Icons.Filled.CloudOff,
                     contentDescription = null,
@@ -413,7 +416,7 @@ fun AccountScreen(
                     modifier = Modifier.size(unit * 48f)
                 )
             }
-            Box(box(630f, 1266f, 778f, 1388f).clip(RoundedCornerShape(unit * 22f)).background(Brush.verticalGradient(listOf(Color(0xFFFCEDCF), Color(0xFFFCE8C9)))))
+            Image(painterResource(R.drawable.acc_strip_right), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = box(632f, 1256f, 782f, 1380f))
         }
         val strip1: String
         val strip2: String?
@@ -492,7 +495,8 @@ fun AccountScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Row(
-                    Modifier.sinkWith(inSink, 0.5f, 0.5f),
+                    // the whole width of the pill less its rounded ends: the label shrinks to fit this, it never runs to the rim
+                    Modifier.fillMaxWidth().padding(horizontal = unit * 46f).sinkWith(inSink, 0.5f, 0.5f),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -506,7 +510,7 @@ fun AccountScreen(
                     Spacer(Modifier.size(unit * 18f))
                     LetteredText(
                         stringResource(R.string.account_sign_in_google), fs(60f), outline = Color(0xFF8A3A00),
-                        modifier = Modifier.height(unit * 90f).weight(1f, fill = false), minScale = 0.5f
+                        modifier = Modifier.height(unit * 90f).weight(1f), minScale = 0.4f
                     )
                 }
             }
@@ -532,10 +536,12 @@ fun AccountScreen(
             } else {
                 FitText(
                     text = stringResource(R.string.account_delete_action),
-                    style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(37f), textAlign = TextAlign.Center),
+                    // the painted bin sits at the pill's left end: the words start just right of it and shrink to the rim
+                    style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(37f), textAlign = TextAlign.Start),
                     maxLines = 1,
                     minScale = 0.55f,
-                    modifier = Modifier.sinkWith(delSink, 0.5f, 0.5f).padding(horizontal = unit * 105f).fillMaxWidth().height(unit * 68f)
+                    contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier.sinkWith(delSink, 0.5f, 0.5f).padding(start = unit * 118f, end = unit * 26f).fillMaxWidth().height(unit * 68f)
                 )
             }
         }

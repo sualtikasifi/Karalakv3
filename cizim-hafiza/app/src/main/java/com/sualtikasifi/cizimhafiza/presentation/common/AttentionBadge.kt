@@ -69,24 +69,24 @@ fun AttentionBadge(count: Int, modifier: Modifier = Modifier) {
         Box(Modifier.wrapContentSize(unbounded = true), contentAlignment = Alignment.Center) {
             Box(
                 Modifier
-                    .size(34.dp)
+                    .size(24.dp)
                     .graphicsLayer { scaleX = 1f + ring * 0.9f; scaleY = 1f + ring * 0.9f; alpha = 0.7f * (1f - ring) }
-                    .border(3.dp, Color(0xFFFF5252), CircleShape)
+                    .border(2.dp, Color(0xFFFF5252), CircleShape)
             )
             Box(
                 Modifier
                     .graphicsLayer { scaleX = breathe; scaleY = breathe; rotationZ = shake }
-                    .defaultMinSize(minWidth = 34.dp, minHeight = 34.dp)
-                    .shadow(4.dp, CircleShape)
+                    .defaultMinSize(minWidth = 24.dp, minHeight = 24.dp)
+                    .shadow(3.dp, CircleShape)
                     .background(Brush.verticalGradient(listOf(Color(0xFFFF6B5E), Color(0xFFE02020))), CircleShape)
-                    .border(2.5.dp, Color.White, CircleShape)
-                    .padding(horizontal = 8.dp),
+                    .border(1.5.dp, Color.White, CircleShape)
+                    .padding(horizontal = 5.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = count.toString(),
                     style = TextStyle(
-                        fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, color = Color.White,
+                        fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Color.White,
                         platformStyle = PlatformTextStyle(includeFontPadding = false)
                     )
                 )
