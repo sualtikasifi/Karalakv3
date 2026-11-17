@@ -232,7 +232,7 @@ fun FriendsScreen(
             if (duelBadgeCount > 0) {
                 com.sualtikasifi.cizimhafiza.presentation.common.AttentionBadge(
                     count = duelBadgeCount,
-                    modifier = Modifier.align(Alignment.TopEnd).offset(x = 12.dp, y = (-10).dp)
+                    modifier = Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-4).dp)
                 )
             }
         }
