@@ -18,12 +18,12 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.random.Random
 
 /**
- * "Bil Bakalım Story": the picture for an Instagram story (the drawing on a painted board, a title on the sign) and the question
+ * "Bil Bakalım Story": the picture for an Instagram story (the drawing on a painted board; the title is part of the template) and the question
  * with its four answers, which the maker puts into an Instagram quiz sticker by hand.
  */
 object RiddleStory {
     const val W = 1080
-    const val H = 2400
+    const val H = 1920
     const val LETTERS = "ABCD"
 
     /** What the assistant wrote: the question, the right answer and three wrong ones that look like it. */
@@ -78,46 +78,49 @@ object RiddleStory {
 
     // ---- the picture
 
-    // The template is 1080 x 2532 and is laid on the 1080 x 2400 story picture with 66 px cut from the top and the foot (only decoration lies there).
-    private const val CUT = 66
+    /** The paper board's inside, in story-picture pixels (measured on the template, 1080 x 1918 laid on 1080 x 1920). */
+    private val PAPER = RectF(239f, 346f, 860f, 898f)
 
-    /** The paper board's inside, in story-picture pixels (measured on the template). */
-    private val PAPER = RectF(141f, 747f, 933f, 1496f)
-
-    /** The sign's inside, where the title goes. */
-    private val SIGN = RectF(190f, 360f, 905f, 556f)
+    /** The panel at the lower left: what is written there asks the viewer to get the app. */
+    private val PROMO = RectF(112f, 1090f, 398f, 1545f)
 
     fun render(context: Context, assets: StudioAssets, strokes: List<DrawingStroke>): Bitmap {
         val out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val c = Canvas(out)
         val template = BitmapFactory.decodeResource(context.resources, R.drawable.story_bilbakalim)
         if (template != null) {
-            c.drawBitmap(template, 0f, -CUT.toFloat(), Paint(Paint.FILTER_BITMAP_FLAG))
+            c.drawBitmap(template, null, android.graphics.Rect(0, 0, W, H), Paint(Paint.FILTER_BITMAP_FLAG))
             template.recycle()
         } else c.drawColor(Color.rgb(0xF4, 0xD4, 0x9A))
-        drawTitle(c, assets)
         drawStrokes(c, strokes, PAPER)
+        drawPromo(context, c, assets)
         return out
     }
 
-    private fun drawTitle(c: Canvas, assets: StudioAssets) {
-        val fit = SIGN.width() * 0.92f
-        fun line(text: String, size: Float, baseline: Float) {
-            val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                typeface = assets.display; textAlign = Paint.Align.CENTER; textSize = size
-                style = Paint.Style.STROKE; strokeWidth = size * 0.16f; strokeJoin = Paint.Join.ROUND; color = Color.rgb(0x5A, 0x28, 0x15)
-            }
-            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = assets.display; textAlign = Paint.Align.CENTER; textSize = size; color = Color.WHITE }
-            // shrink to the sign when the words would not fit
-            val w = stroke.measureText(text)
-            if (w > fit) { val s = size * fit / w; stroke.textSize = s; stroke.strokeWidth = s * 0.16f; fill.textSize = s }
-            val x = SIGN.centerX()
-            c.drawText(text, x, baseline + 5f, Paint(stroke).apply { color = Color.argb(70, 0, 0, 0) })
-            c.drawText(text, x, baseline, stroke)
-            c.drawText(text, x, baseline, fill)
+    /** "Sen de çiz, arkadaşların bilsin!", then the app's name and the Google Play badge. */
+    private fun drawPromo(context: Context, c: Canvas, assets: StudioAssets) {
+        val ink = Color.rgb(0x4A, 0x28, 0x10)
+        val orange = Color.rgb(0xD9, 0x70, 0x1F)
+        fun line(text: String, size: Float, baseline: Float, color: Int) {
+            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = assets.display; textAlign = Paint.Align.CENTER; textSize = size; this.color = color }
+            val w = p.measureText(text)
+            if (w > PROMO.width()) p.textSize = size * PROMO.width() / w
+            c.drawText(text, PROMO.centerX(), baseline, p)
         }
-        line("Karalak", 108f, SIGN.top + 98f)
-        line("Bil Bakalım!", 78f, SIGN.top + 190f)
+        line("Sen de çiz,", 54f, PROMO.top + 74f, ink)
+        line("arkadaşların", 54f, PROMO.top + 138f, ink)
+        line("bilsin!", 54f, PROMO.top + 202f, ink)
+        line("Karalak'ı", 40f, PROMO.top + 290f, orange)
+        line("ücretsiz indir", 40f, PROMO.top + 336f, orange)
+        val badge = BitmapFactory.decodeResource(context.resources, R.drawable.share_play_badge)
+        if (badge != null) {
+            val w = PROMO.width() - 12f
+            val h = w * badge.height / badge.width
+            val left = PROMO.centerX() - w / 2f
+            val top = PROMO.bottom - h - 4f
+            c.drawBitmap(badge, null, RectF(left, top, left + w, top + h), Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
+            badge.recycle()
+        }
     }
 
     private fun drawStrokes(c: Canvas, strokes: List<DrawingStroke>, target: RectF) {
