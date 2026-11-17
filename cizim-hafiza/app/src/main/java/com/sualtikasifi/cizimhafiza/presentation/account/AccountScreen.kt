@@ -492,7 +492,8 @@ fun AccountScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Row(
-                    Modifier.sinkWith(inSink, 0.5f, 0.5f),
+                    // the whole width of the pill less its rounded ends: the label shrinks to fit this, it never runs to the rim
+                    Modifier.fillMaxWidth().padding(horizontal = unit * 46f).sinkWith(inSink, 0.5f, 0.5f),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -506,7 +507,7 @@ fun AccountScreen(
                     Spacer(Modifier.size(unit * 18f))
                     LetteredText(
                         stringResource(R.string.account_sign_in_google), fs(60f), outline = Color(0xFF8A3A00),
-                        modifier = Modifier.height(unit * 90f).weight(1f, fill = false), minScale = 0.5f
+                        modifier = Modifier.height(unit * 90f).weight(1f), minScale = 0.4f
                     )
                 }
             }
@@ -532,10 +533,12 @@ fun AccountScreen(
             } else {
                 FitText(
                     text = stringResource(R.string.account_delete_action),
-                    style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(37f), textAlign = TextAlign.Center),
+                    // the painted bin sits at the pill's left end: the words start just right of it and shrink to the rim
+                    style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(37f), textAlign = TextAlign.Start),
                     maxLines = 1,
                     minScale = 0.55f,
-                    modifier = Modifier.sinkWith(delSink, 0.5f, 0.5f).padding(horizontal = unit * 105f).fillMaxWidth().height(unit * 68f)
+                    contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier.sinkWith(delSink, 0.5f, 0.5f).padding(start = unit * 118f, end = unit * 26f).fillMaxWidth().height(unit * 68f)
                 )
             }
         }
