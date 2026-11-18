@@ -1500,6 +1500,11 @@
     <string name="quick_match_opponent_note_child">Seu rival é a rodada gravada de um jogador aprovado ou uma IA que joga com os nossos desenhos.</string>
     <string name="drawing_time_joker">+10 Segundos</string>
     <string name="duel_list_incoming_play">Jogar</string>
+    <string name="duel_list_decline_title">Recusar este desafio?</string>
+    <string name="duel_list_decline_message">O desafio de %1$s será excluído. Isso não pode ser desfeito.</string>
+    <string name="duel_list_decline_confirm">Recusar</string>
+    <string name="duel_list_decline_cancel">Cancelar</string>
+    <string name="duel_list_decline_cd">Recusar o desafio</string>
     <string name="offline_needed">É preciso ter conexão com a internet</string>
     <string name="offline_screen_title">Sem internet</string>
     <string name="offline_screen_body">Você precisa de internet para jogar isto. Jogar Offline e Fases funcionam sem ela.</string>
