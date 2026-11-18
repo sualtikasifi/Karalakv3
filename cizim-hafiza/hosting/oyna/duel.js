@@ -58,7 +58,11 @@ export function renderDuels(c) {
   else {
     state.incoming.forEach((d) => {
       const r = el("div", "du-row", `<img src="img/du_av_other.webp" alt=""><div class="du-nm"><b>${esc(d.challengerName)}</b><small>${S("duel_list_word_count", d.items.length)}</small></div>`);
-      r.append(pill("o w", S("duel_list_incoming_play"), () => c.playDuel(d))); inc.push(r);
+      r.append(pill("o w", S("duel_list_incoming_play"), () => c.playDuel(d)));
+      // turning the challenge down removes it for both players, so it is asked first
+      const x = el("img", "x", ""); x.src = "img/du_x.webp"; x.alt = S("duel_list_decline_cd");
+      x.onclick = () => c.confirm(S("duel_list_decline_message", d.challengerName), S("duel_list_decline_confirm"), () => { net.deleteDuel(d.id).catch(() => {}); });
+      r.append(x); inc.push(r);
     });
     reqs.forEach((q) => {
       const r = el("div", "du-req", `<div class="du-row"><img src="img/du_av_other.webp" alt=""><div class="du-nm"><b>${S("duel_list_friend_request", esc(q.fromNickname || "?"))}</b></div></div>`), b = el("div", "du-two");

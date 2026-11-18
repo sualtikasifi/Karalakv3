@@ -1499,6 +1499,11 @@
     <string name="quick_match_opponent_note_child">Your opponent is an approved player\'s recorded round or an AI that plays with our own drawings.</string>
     <string name="drawing_time_joker">+10 Seconds</string>
     <string name="duel_list_incoming_play">Play</string>
+    <string name="duel_list_decline_title">Decline this challenge?</string>
+    <string name="duel_list_decline_message">The challenge from %1$s will be deleted. This can\'t be undone.</string>
+    <string name="duel_list_decline_confirm">Decline</string>
+    <string name="duel_list_decline_cancel">Cancel</string>
+    <string name="duel_list_decline_cd">Decline the challenge</string>
     <string name="offline_needed">An internet connection is required</string>
     <string name="offline_screen_title">No internet</string>
     <string name="offline_screen_body">You need an internet connection to play this. Play Offline and Levels work without it.</string>

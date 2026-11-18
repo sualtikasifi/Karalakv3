@@ -1512,6 +1512,11 @@
     <string name="quick_match_opponent_note_child">Rakibin, onaylanmış bir oyuncunun kayıtlı turu ya da bizim çizimlerimizle oynayan yapay zekâ olur.</string>
     <string name="drawing_time_joker">+10 Saniye</string>
     <string name="duel_list_incoming_play">Oyna</string>
+    <string name="duel_list_decline_title">Meydan okumayı reddet?</string>
+    <string name="duel_list_decline_message">%1$s adlı oyuncunun meydan okuması silinir. Bunu geri alamazsın.</string>
+    <string name="duel_list_decline_confirm">Reddet</string>
+    <string name="duel_list_decline_cancel">Vazgeç</string>
+    <string name="duel_list_decline_cd">Meydan okumayı reddet</string>
     <string name="offline_needed">İnternet bağlantısı gerekiyor</string>
     <string name="offline_screen_title">İnternet yok</string>
     <string name="offline_screen_body">Bu bölümü oynamak için internete bağlanman gerekiyor. Çevrimdışı Oyna ve Seviyeler internetsiz de açık.</string>

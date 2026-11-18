@@ -70,6 +70,8 @@ fun DuelListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var resultDuel by remember { mutableStateOf<RecentDuel?>(null) }
+    // the challenge the player is about to turn down (asked first: it is gone for the challenger too)
+    var decliningDuel by remember { mutableStateOf<Duel?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -105,7 +107,7 @@ fun DuelListScreen(
                 } else if (uiState.incoming.isEmpty() && uiState.friendRequests.isEmpty()) {
                     EmptyPanel(R.drawable.du_ic_mail, stringResource(R.string.duel_list_requests_empty))
                 } else {
-                    uiState.incoming.forEach { duel -> androidx.compose.runtime.key("duel_" + duel.id) { IncomingDuelRow(duel = duel, onClick = { onPlayDuel(duel) }) } }
+                    uiState.incoming.forEach { duel -> androidx.compose.runtime.key("duel_" + duel.id) { IncomingDuelRow(duel = duel, onClick = { onPlayDuel(duel) }, onDecline = { decliningDuel = duel }) } }
                     uiState.friendRequests.forEach { request ->
                         androidx.compose.runtime.key("req_" + request.uid) {
                             FriendRequestRow(
@@ -164,6 +166,23 @@ fun DuelListScreen(
 
     // Closing a result is only closing it: not a game's end, so no ad follows.
     resultDuel?.let { recent -> DuelResultDialog(recent = recent, myName = viewModel.myNickname, onDismiss = { resultDuel = null }) }
+
+    // Turning a challenge down removes it (the challenger's list drops it too), so it is asked once more first.
+    decliningDuel?.let { duel ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { decliningDuel = null },
+            title = { Text(stringResource(R.string.duel_list_decline_title)) },
+            text = { Text(stringResource(R.string.duel_list_decline_message, duel.challengerName)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { viewModel.deleteDuel(duel.id); decliningDuel = null }) {
+                    Text(stringResource(R.string.duel_list_decline_confirm), color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { decliningDuel = null }) { Text(stringResource(R.string.duel_list_decline_cancel)) }
+            }
+        )
+    }
 }
 
 /**
@@ -231,7 +250,7 @@ private fun PillButton(res: Int, text: String, modifier: Modifier = Modifier, on
 }
 
 @Composable
-private fun IncomingDuelRow(duel: Duel, onClick: () -> Unit) {
+private fun IncomingDuelRow(duel: Duel, onClick: () -> Unit, onDecline: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().pressable(pressedScale = 0.96f, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
@@ -243,6 +262,12 @@ private fun IncomingDuelRow(duel: Duel, onClick: () -> Unit) {
             Text(stringResource(R.string.duel_list_word_count, duel.totalWords), style = PaintedStyle(color = SoftInk, fontSize = 14.sp, fontWeight = FontWeight.SemiBold))
         }
         PillButton(R.drawable.du_pill_orange, stringResource(R.string.duel_list_incoming_play), Modifier.width(88.dp), onClick)
+        // turning the challenge down: the same painted cross the other rows use to clear a duel
+        Image(
+            painterResource(R.drawable.du_x),
+            contentDescription = stringResource(R.string.duel_list_decline_cd),
+            modifier = Modifier.size(32.dp).pressable(pressedScale = 0.85f, onClick = onDecline)
+        )
     }
 }
 
