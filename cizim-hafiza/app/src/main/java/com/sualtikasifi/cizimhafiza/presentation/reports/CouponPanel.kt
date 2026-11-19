@@ -95,8 +95,14 @@ data class CouponAdminState(
     /** Who redeemed one code (nicknames), after "Kullananlar" was tapped. */
     val redeemers: Redeemers? = null,
     /** A label for the code (which video it is for); empty for none. */
-    val source: String = ""
+    val source: String = "",
+    /** What is waiting for a "yes": one code, or all of them; null when nothing is. */
+    val pendingDelete: PendingCouponDelete? = null,
+    val deleting: Boolean = false
 )
+
+/** A deletion asked for and not yet confirmed: [code] is null for "all the codes" ([count] of them). */
+data class PendingCouponDelete(val code: String?, val count: Int)
 
 /** The users of one code: their names, and how many of them were new players (null when that could not be told). */
 data class Redeemers(val code: String, val names: List<String>, val newPlayers: Int?)
@@ -128,6 +134,51 @@ class CouponAdminViewModel @Inject constructor(
                 _state.update { it.copy(message = "$code kapatıldı.") }
                 refresh()
             }.onFailure { _state.update { it.copy(message = "Kapatılamadı (internet ya da yetki).") } }
+        }
+    }
+
+    fun askDelete(code: String?) = _state.update { it.copy(pendingDelete = PendingCouponDelete(code, if (code == null) it.recent.size else 1), message = null) }
+
+    fun cancelDelete() = _state.update { it.copy(pendingDelete = null) }
+
+    /**
+     * Wipes a code whole: who used it first (in batches, a code can have thousands), then the code itself with its audit line.
+     * Both go, so the same name can be made again later: a code that remembered its old users would refuse them.
+     */
+    private suspend fun wipe(code: String) {
+        val ref = firestore.collection("coupons").document(code)
+        while (true) {
+            val used = ref.collection("redemptions").limit(400).get().await().documents
+            if (used.isEmpty()) break
+            val batch = firestore.batch()
+            used.forEach { batch.delete(it.reference) }
+            batch.commit().await()
+        }
+        admin.audited("coupon-delete", code, "kod ve kullanım kayıtları silindi") { b -> b.delete(ref) }
+    }
+
+    /** Deletes the confirmed one (or every) code. */
+    fun confirmDelete() {
+        val pending = _state.value.pendingDelete ?: return
+        if (_state.value.deleting) return
+        _state.update { it.copy(pendingDelete = null, deleting = true, message = null) }
+        viewModelScope.launch {
+            var done = 0
+            val result = runCatching {
+                val codes = if (pending.code != null) listOf(pending.code)
+                else firestore.collection("coupons").limit(1000).get().await().documents.map { it.id }
+                for (code in codes) { wipe(code); done++ }
+            }
+            _state.update {
+                it.copy(
+                    deleting = false,
+                    redeemers = null,
+                    message = if (result.isSuccess) {
+                        if (pending.code != null) "${pending.code} silindi." else "$done kod silindi."
+                    } else "Silinemedi ($done kod silindi; internet ya da yetki)."
+                )
+            }
+            refresh()
         }
     }
 
@@ -356,6 +407,10 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
         }
         if (state.recent.isNotEmpty()) {
             SectionHeader(stringResource(R.string.coupon_panel_recent))
+            ConsoleButton(
+                "Hepsini sil", { viewModel.askDelete(null) },
+                enabled = !state.deleting, loading = state.deleting, height = 34.dp, style = ConsoleButtonStyle.DangerSoft
+            )
             ConsoleCard(Modifier.fillMaxWidth(), padding = 4.dp) {
                 state.recent.forEachIndexed { i, c ->
                     if (i > 0) Box(Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(1.dp).background(Console.Grid))
@@ -392,7 +447,7 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                             Spacer(Modifier.width(8.dp))
                             Text("${c.usedCount}/${c.maxUses}", style = Console.Label)
                         }
-                        if (c.usedCount > 0 || (!closed && !full) || closed || full) {
+                        run {
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 6.dp)) {
                                 // a code that is over: the line to paste under the video, one tap
                                 CouponStats.closingComment(c, System.currentTimeMillis())?.let { line ->
@@ -404,6 +459,8 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                                 if (!closed && !full) {
                                     ConsoleButton("Kapat", { viewModel.close(c.code) }, height = 30.dp, style = ConsoleButtonStyle.DangerSoft)
                                 }
+                                // every code can be deleted: this is what frees its name to be made again
+                                ConsoleButton("Sil", { viewModel.askDelete(c.code) }, enabled = !state.deleting, height = 30.dp, style = ConsoleButtonStyle.DangerSoft)
                             }
                         }
                         state.redeemers?.takeIf { it.code == c.code }?.let { r ->
@@ -424,6 +481,20 @@ internal fun CouponPanel(viewModel: CouponAdminViewModel = hiltViewModel()) {
                 }
             }
         }
+    }
+    state.pendingDelete?.let { p ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = viewModel::cancelDelete,
+            title = { Text(if (p.code != null) "${p.code} silinsin mi?" else "Tüm kodlar silinsin mi?") },
+            text = {
+                Text(
+                    if (p.code != null) "Kod ve kimlerin kullandığı kaydı silinir. Aynı kodu sonra yeniden oluşturabilirsin; onu daha önce kullananlar yeniden kullanabilir."
+                    else "Bütün kodlar (açık olanlar ve listede görünmeyenler dahil) ile kullanım kayıtları silinir. Bu geri alınamaz."
+                )
+            },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = viewModel::confirmDelete) { Text("Sil", color = Console.Critical) } },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = viewModel::cancelDelete) { Text("Vazgeç") } }
+        )
     }
 }
 
