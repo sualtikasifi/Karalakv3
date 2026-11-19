@@ -45,6 +45,7 @@ internal fun StudioViewModel.makeRiddleImage(d: StudioDrawing) {
                 out
             }
         }
+        file.onSuccess { f -> keepSaved(f, "image", "Bil Bakalım", d.word) }
         file.onSuccess { f -> updateRiddle { if (it.drawingId == d.id) it.copy(image = f, imageVersion = it.imageVersion + 1) else it } }
             .onFailure { e -> updateRiddle { it.copy(error = "Görsel çizilemedi: ${e.message}") } }
     }
