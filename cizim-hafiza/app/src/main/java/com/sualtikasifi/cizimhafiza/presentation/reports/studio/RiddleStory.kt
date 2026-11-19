@@ -30,11 +30,12 @@ object RiddleStory {
     class Written(val question: String, val answer: String, val others: List<String>)
 
     fun prompt(word: String, category: String): String = """
-        Karalak, çizim tahmin oyunudur. Bir oyuncunun çizdiği şey: "$word"${if (category.isNotBlank()) " (kategori: $category)" else ""}.
+        Karalak, çizim tahmin oyunudur. Ekteki resim bir oyuncunun çizimi; çizenin yazdığı kelime: "$word"${if (category.isNotBlank()) " (kategori: $category)" else ""}.
+        ÖNCE RESME BAK. Kelimenin birden çok anlamı olabilir (ör. "fare": hayvan mı, bilgisayar faresi mi; "yüzük", "kalem", "ay"…): resimde ne çizilmişse o anlamı kullan, resimle uyuşmayan anlamı kullanma.
         Bu çizim Instagram story'de 4 şıklı bir soru olacak. Yaz:
         1. "question": çizim hakkında kısa, eğlenceli bir soru (en çok 40 karakter, sonu soru işaretiyle). Kelimeyi söyleme. Her seferinde farklı bir kalıp seç ("Bu çizim ne?", "Sence ne çizilmiş?", "Bu ne olabilir?", "Çizen ne yapmaya çalışmış?"…).
         2. "answer": doğru cevap, yani "$word"; ilk harfi büyük, en çok 18 karakter.
-        3. "others": çizimle karıştırılabilecek, ona biçim ya da konu olarak benzeyen 3 FARKLI kelime (hepsi bir ya da iki kelime, her biri en çok 18 karakter). Doğru cevapla aynı olmasın, birbirine benzemesin, anlamsız ya da saçma olmasın.
+        3. "others": resimdeki şeyle karıştırılabilecek 3 FARKLI kelime: resimdeki şeyin AYNI TÜRDEN (hayvansa hayvan, eşyaysa eşya, bilgisayar parçasıysa bilgisayar parçası) ve biçim olarak ona benzeyen şeyler olsun. Hepsi bir ya da iki kelime, her biri en çok 18 karakter. Doğru cevapla aynı olmasın, birbirine benzemesin, anlamsız ya da saçma olmasın; resimle hiç ilgisi olmayan bir türden şık yazma.
         Yalnızca şu JSON'u yaz: {"question":"…","answer":"…","others":["…","…","…"]}
     """.trimIndent()
 
@@ -96,6 +97,18 @@ object RiddleStory {
         } else c.drawColor(Color.rgb(0xF4, 0xD4, 0x9A))
         drawStrokes(c, strokes, PAPER)
         return out
+    }
+
+    /** The drawing alone, black on white, as PNG bytes: what the assistant is shown so that it reads the right meaning of the word. */
+    fun drawingPng(strokes: List<DrawingStroke>, size: Int = 768): ByteArray {
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        c.drawColor(Color.WHITE)
+        drawStrokes(c, strokes, RectF(0f, 0f, size.toFloat(), size.toFloat()))
+        val out = java.io.ByteArrayOutputStream()
+        bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
+        bmp.recycle()
+        return out.toByteArray()
     }
 
     private fun drawStrokes(c: Canvas, strokes: List<DrawingStroke>, target: RectF) {
