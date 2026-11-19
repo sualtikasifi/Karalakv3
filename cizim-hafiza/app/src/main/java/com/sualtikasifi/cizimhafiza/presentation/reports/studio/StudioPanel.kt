@@ -115,6 +115,7 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
         val pages = buildList {
             add(StudioPage.Make.name to "Video")
             if (st.format == StudioFormat.RealLife) add(StudioPage.Library.name to "Kütüphane (${st.real.library.size})")
+            add(StudioPage.Saved.name to "Kayıtlar (${st.saved.size})")
             add(StudioPage.Log.name to "Geçmiş")
             add(StudioPage.Settings.name to "Ayarlar")
         }
@@ -134,6 +135,7 @@ fun StudioPanel(viewModel: StudioViewModel = hiltViewModel()) {
                 StudioFormat.Riddle -> PageList { riddleTab(st, viewModel, context) }
             }
             StudioPage.Library -> PageList { libraryTab(st, viewModel) }
+            StudioPage.Saved -> PageList { savedTab(st, viewModel, context) }
             StudioPage.Log -> PageList { trackingItems(st, viewModel) }
             StudioPage.Settings -> PageList {
                 languageItems(st, viewModel)

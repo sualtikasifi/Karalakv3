@@ -321,6 +321,14 @@ await check("a player cannot close a code", assertFails(updateDoc(doc(db("cp5"),
 await check("the reviewer makes a code", assertSucceeds(setDoc(doc(reviewer(), "coupons", "NEW12345"), couponData({ source: "Düello · 7 Kas" }))));
 await check("the reviewer lists the codes", assertSucceeds(getDocs(collection(reviewer(), "coupons"))));
 await check("a player cannot list the codes", assertFails(getDocs(collection(db("cp5"), "coupons"))));
+// wiping a code: the reviewer clears its redemptions and the code; nobody else may, and a redemption is never edited
+await seed(["coupons", "WIPE1234"], couponData({ usedCount: 1 }));
+await seed(["coupons", "WIPE1234", "redemptions", "wp1"], { redeemedAt: 5 });
+await check("a player cannot delete a redemption", assertFails(deleteDoc(doc(db("wp1"), "coupons", "WIPE1234", "redemptions", "wp1"))));
+await check("a player cannot delete a code", assertFails(deleteDoc(doc(db("wp1"), "coupons", "WIPE1234"))));
+await check("the reviewer cannot edit a redemption", assertFails(updateDoc(doc(reviewer(), "coupons", "WIPE1234", "redemptions", "wp1"), { redeemedAt: 9 })));
+await check("the reviewer deletes a redemption", assertSucceeds(deleteDoc(doc(reviewer(), "coupons", "WIPE1234", "redemptions", "wp1"))));
+await check("the reviewer deletes the code", assertSucceeds(deleteDoc(doc(reviewer(), "coupons", "WIPE1234"))));
 
 // a change and its audit line are one batch: both land, or neither
 const auditLine = (extra = {}) => ({ action: "coupon-close", target: "NEW12345", detail: "x", by: "r", at: serverTimestamp(), ...extra });

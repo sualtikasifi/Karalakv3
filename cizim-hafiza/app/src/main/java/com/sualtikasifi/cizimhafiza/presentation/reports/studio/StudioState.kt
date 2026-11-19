@@ -274,7 +274,7 @@ data class RealUi(
 enum class RealTab { Prepare, Library, Settings }
 
 /** What the studio shows: the video being made, step by step, or one of the pages beside it. */
-enum class StudioPage { Make, Library, Log, Settings }
+enum class StudioPage { Make, Library, Saved, Log, Settings }
 
 /** The number of screens of the Düello and of "Gerçek Olsaydı" (see StudioPanel). */
 const val FORGOT_STEPS = 9
@@ -323,6 +323,8 @@ data class StudioState(
     val riddle: RiddleUi = RiddleUi(),
     /** The log of videos made on this phone, newest first (see [PublishLog]). */
     val publishLog: List<PublishEntry> = emptyList(),
+    /** Finished videos and story pictures kept for posting (the "Kayıtlar" page). */
+    val saved: List<SavedMedia> = emptyList(),
     /** What making videos costs, as OpenRouter and ElevenLabs report it. */
     val spend: SpendUi = SpendUi(),
     /** Counts up each time a draft is opened from the log, so the panel scrolls back to the top. */

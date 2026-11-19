@@ -45,6 +45,7 @@ internal fun StudioViewModel.makeRiddleImage(d: StudioDrawing) {
                 out
             }
         }
+        file.onSuccess { f -> keepSaved(f, "image", "Bil Bakalım", d.word) }
         file.onSuccess { f -> updateRiddle { if (it.drawingId == d.id) it.copy(image = f, imageVersion = it.imageVersion + 1) else it } }
             .onFailure { e -> updateRiddle { it.copy(error = "Görsel çizilemedi: ${e.message}") } }
     }
@@ -63,13 +64,15 @@ fun StudioViewModel.writeRiddle() {
     updateRiddle { it.copy(writing = true, error = null) }
     viewModelScope.launch {
         val client = OpenRouterClient(key)
+        // the assistant is shown the drawing itself: a word like "fare" means an animal or a computer mouse, and only the picture says which
+        val png = withContext(Dispatchers.Default) { runCatching { RiddleStory.drawingPng(d.strokes) }.getOrNull() }
         val result = runCatching {
             // one more try when the answer cannot be used (a repeated word, a missing question)
             var written: RiddleStory.Written? = null
             var last: Throwable? = null
             for (attempt in 1..2) {
                 val answer = Backoff.retrying {
-                    client.generate(RiddleStory.SYSTEM, RiddleStory.prompt(d.word, d.category), analysisModel(), webSearch = false, json = true, temperature = 0.9, maxTokens = 600)
+                    client.generate(RiddleStory.SYSTEM, RiddleStory.prompt(d.word, d.category), analysisModel(), webSearch = false, images = listOfNotNull(png), json = true, temperature = 0.8, maxTokens = 600)
                 }.onFailure { last = it }.getOrNull() ?: break
                 written = RiddleStory.parse(answer.text, d.word.trim().replaceFirstChar { it.uppercase() })
                 if (written != null) break

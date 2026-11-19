@@ -148,6 +148,7 @@ class StudioViewModel @Inject constructor(
         loadReal()
         loadVoiceSettings()
         loadPublishLog()
+        loadSaved()
         startDraftAutosave()
         restoreLastDraft()
         refreshLearned()
@@ -433,6 +434,7 @@ class StudioViewModel @Inject constructor(
                 // the log of made videos: which day went out with which code
                 recordMadeVideo(s)
                 keepDraftVideo(s, out)
+                keepMadeVideo(s, out)
                 _state.update { it.copy(rendering = false, video = out, progress = 1f, renderStage = "") }
             }
                 .onFailure { e ->
