@@ -9,3 +9,8 @@ preview_urls = false
 # Every 5 minutes. Cloudflare's own cron is exact (GitHub Actions' is not) and free: 288 runs a day against a 100,000-request allowance.
 [triggers]
 crons = ["*/5 * * * *"]
+
+# The job's console lines ("unannounced duels: 1, to push: 1", "duel … -> 200", "no token for …") are readable in the Cloudflare dashboard
+# (Workers & Pages → karalak-duel-push → Observability). A few lines per run, far below the free 200,000 events a day.
+[observability]
+enabled = true
