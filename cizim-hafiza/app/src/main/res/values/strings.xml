@@ -464,9 +464,9 @@
     <string name="friend_invite_notification_title">%1$s invited you!</string>
     <string name="friend_invite_notification_body">Tap to play together on Karalak.</string>
     <string name="duel_notification_title">%1$s challenged you!</string>
-    <string name="duel_notification_body">Tap to play the duel on Karalak.</string>
+    <string name="duel_notification_body">Your duel is waiting. Accept the challenge.</string>
     <string name="duel_result_notification_title">%1$s played your duel!</string>
-    <string name="duel_result_notification_body">Tap to see who won.</string>
+    <string name="duel_result_notification_body">The result is in. See who won.</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_turkish">Türkçe</string>
     <string name="settings_language_english">English</string>
