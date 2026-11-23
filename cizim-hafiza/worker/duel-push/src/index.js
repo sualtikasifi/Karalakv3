@@ -44,20 +44,26 @@ export function plain(v) {
 
 const FIELDS = ["challengerUid", "challengerName", "opponentUid", "opponentName", "status", "createdAt", "completedAt"];
 
+/**
+ * The query for duels in [status] whose [marker] is still null. Firestore's REST API does not match `EQUAL` with a `nullValue`
+ * (it answers with nothing, even for a stored null: no push ever went out because of that); a null test is the unary filter IS_NULL.
+ */
+export function owedQuery(status, marker) {
+  return {
+    from: [{ collectionId: "duels" }],
+    where: { compositeFilter: { op: "AND", filters: [
+      { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: status } } },
+      { unaryFilter: { op: "IS_NULL", field: { fieldPath: marker } } },
+    ] } },
+    select: { fields: FIELDS.map((fieldPath) => ({ fieldPath })) },
+    limit: 200,
+  };
+}
+
 async function owedDuels(api, auth, status, marker) {
   const res = await fetch(`${api}:runQuery`, {
     method: "POST", headers: auth,
-    body: JSON.stringify({
-      structuredQuery: {
-        from: [{ collectionId: "duels" }],
-        where: { compositeFilter: { op: "AND", filters: [
-          { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: status } } },
-          { fieldFilter: { field: { fieldPath: marker }, op: "EQUAL", value: { nullValue: null } } },
-        ] } },
-        select: { fields: FIELDS.map((fieldPath) => ({ fieldPath })) },
-        limit: 200,
-      },
-    }),
+    body: JSON.stringify({ structuredQuery: owedQuery(status, marker) }),
   });
   if (!res.ok) throw new Error(`query ${status} ${res.status}: ${await res.text()}`);
   return (await res.json()).filter((r) => r.document).map((r) => {
