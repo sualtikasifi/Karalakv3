@@ -19,7 +19,7 @@ const ECONOMY = [
   ["leagueMonthlyGold", "Aylık lig altını", 0, 1000000, 10000],
 ];
 const JOBS = [
-  ["build-global-leaderboard", "Küresel lig özeti (saatlik)"], ["process-admin-commands", "Panel komutları (saatlik)"],
+  ["build-global-leaderboard", "Küresel lig özeti (saatlik)"], ["notify-duels", "Düello bildirimi (5 dk)"], ["process-admin-commands", "Panel komutları (5 dk)"],
   ["rollup-stats", "Günlük istatistik özeti (gece)"], ["cleanup-abandoned-rooms", "Oda temizliği (gece)"],
   ["finalize-league-period", "Lig kapanışı (gece)"], ["grant-referral-rewards", "Davet ödülleri (gece)"], ["process-deletions", "Hesap silme (gece)"],
 ];

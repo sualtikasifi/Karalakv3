@@ -25,7 +25,7 @@ object DashboardAlerts {
     /** Jobs that run every hour may be quiet for a few; the nightly ones for a day and a half. */
     private const val HOURLY_MS = 4 * 3_600_000L
     private const val NIGHTLY_MS = 36 * 3_600_000L
-    private val HOURLY = setOf("build-global-leaderboard", "process-admin-commands")
+    private val HOURLY = setOf("build-global-leaderboard", "process-admin-commands", "notify-duels")
 
     fun maxAgeFor(job: String): Long = if (job in HOURLY) HOURLY_MS else NIGHTLY_MS
 
