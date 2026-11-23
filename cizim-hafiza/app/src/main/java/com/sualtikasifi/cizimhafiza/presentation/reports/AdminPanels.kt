@@ -667,7 +667,8 @@ private fun PushPreview(title: String, body: String) {
 
 internal val JOBS = listOf(
     "build-global-leaderboard" to "Küresel lig özeti (saatlik)",
-    "process-admin-commands" to "Panel komutları: telafi, bildirim, planlı XP (saatlik)",
+    "notify-duels" to "Düello bildirimi (5 dk)",
+    "process-admin-commands" to "Panel komutları: telafi, bildirim, planlı XP (5 dk)",
     "rollup-stats" to "Günlük istatistik özeti (gece)",
     "cleanup-abandoned-rooms" to "Terk edilmiş oda temizliği (gece)",
     "finalize-league-period" to "Lig dönemi kapanışı (gece)",
