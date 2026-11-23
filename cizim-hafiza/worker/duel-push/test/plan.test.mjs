@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { planDuelPushes, plain, DUEL_PUSH_WINDOW_MS } from "../src/index.js";
+import { planDuelPushes, plain, describeDuel, DUEL_PUSH_WINDOW_MS } from "../src/index.js";
 
 const now = 1_000_000_000_000;
 test("a fresh pending duel is announced to the opponent", () => {
@@ -43,4 +43,13 @@ test("the ISO week topic", () => assert.equal(weekTopic(new Date("2026-11-16T12:
 test("values survive an encode and decode", () => {
   const x = { a: 5, b: "s", c: true, d: null, e: [1, "z"], f: { g: 2.5 } };
   assert.deepEqual(decode(encode(x)), x);
+});
+
+test("a duel is described with how its markers look", () => {
+  const doc = { name: "projects/p/databases/(default)/documents/duels/abcdef123", fields: {
+    status: { stringValue: "AWAITING_OPPONENT" }, createdAt: { integerValue: String(now - 5 * 60_000) }, pushedAt: { nullValue: null },
+  } };
+  assert.equal(describeDuel(doc, now), "recent duel abcdef: AWAITING_OPPONENT, 5 min ago, pushedAt=null, resultPushedAt=missing");
+  const done = { name: "x/duels/zz", fields: { status: { stringValue: "COMPLETE" }, pushedAt: { integerValue: "1" }, resultPushedAt: { nullValue: null } } };
+  assert.equal(describeDuel(done, now), "recent duel zz: COMPLETE, age unknown, pushedAt=set, resultPushedAt=null");
 });

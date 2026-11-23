@@ -67,6 +67,35 @@ async function owedDuels(api, auth, status, marker) {
   });
 }
 
+/** How a marker field looks in a stored duel: "null" (not announced yet: what the job queries for), "missing" (never written), "set". */
+const markerKind = (v) => (v === undefined ? "missing" : "nullValue" in v ? "null" : "set");
+
+/** Pure: one line telling how a duel document looks to the job (for the log: why is it, or is it not, owed a push?). */
+export function describeDuel(doc, nowMs) {
+  const f = doc.fields ?? {};
+  const created = Number(f.createdAt?.integerValue ?? NaN);
+  const age = Number.isFinite(created) ? `${Math.round((nowMs - created) / 60_000)} min ago` : "age unknown";
+  return `recent duel ${doc.name.split("/").pop().slice(0, 6)}: ${f.status?.stringValue ?? "no status"}, ${age}, pushedAt=${markerKind(f.pushedAt)}, resultPushedAt=${markerKind(f.resultPushedAt)}`;
+}
+
+/** The newest few duels, whatever their state, written to the log: tells a missing duel from one that was already announced. Never fails the job. */
+async function logRecentDuels(api, auth) {
+  try {
+    const res = await fetch(`${api}:runQuery`, {
+      method: "POST", headers: auth,
+      body: JSON.stringify({ structuredQuery: {
+        from: [{ collectionId: "duels" }],
+        orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }],
+        limit: 3,
+      } }),
+    });
+    if (!res.ok) { console.warn(`recent duels ${res.status}: ${await res.text()}`); return; }
+    const docs = (await res.json()).filter((r) => r.document).map((r) => r.document);
+    if (docs.length === 0) console.log("recent duels: none in the database");
+    for (const d of docs) console.log(describeDuel(d, Date.now()));
+  } catch (e) { console.warn("recent duels failed", e); }
+}
+
 async function tokenOf(api, auth, uid) {
   for (const path of [`users/${uid}/private/device`, `users/${uid}`]) {
     const res = await fetch(`${api}/${path}`, { headers: auth });
@@ -89,6 +118,7 @@ export async function runNotifyDuels(env) {
   ]);
   const owed = planDuelPushes(waiting, played, Date.now());
   console.log(`unannounced duels: ${owed.length}, to push: ${owed.filter((p) => p.send).length}`);
+  await logRecentDuels(api, auth);
 
   for (const push of owed) {
     if (push.send) {
