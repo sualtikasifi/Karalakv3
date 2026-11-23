@@ -52,6 +52,7 @@ class CizimHafizaApp : Application(), Configuration.Provider {
     @Inject lateinit var economyConfigRepository: Lazy<com.sualtikasifi.cizimhafiza.data.repository.EconomyConfigRepository>
     @Inject lateinit var legalConsentStore: Lazy<com.sualtikasifi.cizimhafiza.util.LegalConsentStore>
     @Inject lateinit var accountAgeSync: Lazy<com.sualtikasifi.cizimhafiza.util.AccountAgeSync>
+    @Inject lateinit var pushTokenSync: Lazy<com.sualtikasifi.cizimhafiza.util.PushTokenSync>
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
@@ -178,6 +179,8 @@ class CizimHafizaApp : Application(), Configuration.Provider {
             guarded("analytics by age") { legalConsentStore.get().applyAnalyticsCollection() }
             // A linked account's year of birth: saved on the account once, then the one that counts (see AccountAgeSync).
             guarded("account age") { accountAgeSync.get().start() }
+            // The push token on the signed-in account, so a duel or an invite sent to this player can reach this phone (see PushTokenSync).
+            guarded("push token") { pushTokenSync.get().start() }
             // Broadcasts from the developer panel: only while notifications are on, and never for a child account.
             guarded("news topic") {
                 val flow = kotlinx.coroutines.flow.combine(
