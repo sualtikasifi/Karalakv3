@@ -70,7 +70,7 @@ class FriendInviteMessagingService : FirebaseMessagingService() {
             val answered = message.data["type"] == "duel_result"
             showNotification(
                 getString(if (answered) R.string.duel_result_notification_title else R.string.duel_notification_title, who),
-                getString(if (answered) R.string.duel_result_notification_body else R.string.duel_notification_body),
+                if (answered) getString(R.string.duel_result_notification_body) else nextDuelBody(),
                 message.data["duelId"]
             )
             return
@@ -81,6 +81,15 @@ class FriendInviteMessagingService : FirebaseMessagingService() {
         val body = getString(R.string.friend_invite_notification_body)
 
         showNotification(title, body, inviteId)
+    }
+
+    /** The text under a duel notification: the next one of the list, so the same words do not come every time (see DuelNotificationText). */
+    private fun nextDuelBody(): String {
+        val bodies = resources.getStringArray(R.array.duel_notification_bodies)
+        val prefs = getSharedPreferences("duel_notification_rotation", Context.MODE_PRIVATE)
+        val next = DuelNotificationText.nextIndex(prefs.getInt("last", -1), bodies.size, firstPick = bodies.indices.random())
+        prefs.edit().putInt("last", next).apply()
+        return bodies[next]
     }
 
     private fun showBroadcast(title: String, body: String) {

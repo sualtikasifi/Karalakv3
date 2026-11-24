@@ -465,7 +465,16 @@
     <string name="friend_invite_notification_title">%1$s te convidou!</string>
     <string name="friend_invite_notification_body">Toque para jogarem juntos no Karalak.</string>
     <string name="duel_notification_title">%1$s te desafiou!</string>
-    <string name="duel_notification_body">Seu duelo está esperando. Aceite o desafio.</string>
+    <!-- The text under a duel notification: each new one shows the next in the list (see DuelNotificationText). Same order in every language. -->
+    <string-array name="duel_notification_bodies">
+        <item>Na arena do Karalak, os lápis falam!</item>
+        <item>Pronto para rabiscar ou vai se agarrar à borracha?</item>
+        <item>Pegue o lápis, a guerra de rabiscos começou!</item>
+        <item>Quem foge deste duelo fica com o lápis quebrado!</item>
+        <item>Pegue o lápis, o duelo começou!</item>
+        <item>Não deixe este desafio sem resposta!</item>
+        <item>Se fugir, perde por desistência!</item>
+    </string-array>
     <string name="duel_result_notification_title">%1$s jogou o seu duelo!</string>
     <string name="duel_result_notification_body">O resultado saiu. Veja quem ganhou.</string>
     <string name="settings_language">Idioma</string>
