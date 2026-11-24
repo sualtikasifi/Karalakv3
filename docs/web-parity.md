@@ -72,3 +72,12 @@ Yukarıdaki "Sırada" listesindeki her şey yapıldı (Lig, mağaza, harita, dü
 - Web modüllerindeki kendi metin tablolarına (`T`) `pt` ve `es` eklendi; dil yoksa İngilizceye düşer. Sayılar dile göre gruplanır (`fmtNum`: 6.245 / 6,245).
 - Görseller henüz çevrilmedi: boyalı yazılı görseller (Düellolar, Dünyalar, giriş serisi çerçevesi, eşleşme başlığı, indirme sayfası) Portekizce ve İspanyolcada İngilizce/Türkçe sürümüyle görünür.
 - Emülatör kontrolü: `smoke-test.yml` → `langs.sh` ana ekranları iki dilde çeker.
+
+## Kasım 2026, ikinci eşitleme turu ("birebir" kararı)
+Karar: yukarıda "salt görsel olduğundan web'in mevcut tasarımıyla kaldı" denen boyalı pencere çerçeveleri artık Android'deki gibi yapılıyor.
+- **Kasalar nasıl çalışır?** Yazıyla kurulan pencere kaldırıldı; Android'deki gibi dil başına bir resim (`img/chests_info_<tr|en|es|pt>.webp`, Android'in `chests_info` dosyalarının kopyası), "Anladım" düğmesi resmin içindeki boyalı düğme (koordinatlar `res/values*/chest_info_art.xml`'den, `INFO_ART`). Resimdeki sayılar (altın, joker, süre) resmin içinde olduğundan kasa değerleri değişince resim yeniden çizilmeli.
+- **`paintedFrameDialog` (ui.js)** = `PaintedFrameDialog.kt`: asma yaprak + parşömen çerçeve (`dialog_frame_btn`, 966x1595), başlık ve sığana kadar küçülen gövde, boyalı düğme. Yalnız Rünler'de kullanılıyor.
+- **Rünler**: ilk ziyarette tanıtım penceresi (`rune_intro_*`, bir kez okununca `P.runesIntroSeen`), oyuncunun ilk rünü alınca açıklama penceresi (`rune_first_*`), satın alma gösterisi (`purchaseShow` = `RuneBurstEffects`: halkalar, kıvılcımlar, yükselen "+%8", karo zıplaması, seviye noktası vurgusu), son seviyede (`GrandFinish`) ışın tacı, beyaz parlama, altın dalga ve "Tamamlandı" yazısı, büyük konfeti (150 parça; ara seviyede 36).
+- Testler: `ios.test.mjs` tohumuna `runesIntroSeen: true` eklendi; iki yeni durum (`chest_info`, `rune_intro`) ekran görüntüsü alıp pencerenin açılıp kapandığını denetliyor.
+- **Henüz yok (sırada):** Rünlerde rehberli ilk rün (el işareti + not, ana ekrandaki maskot teklifi), diğer ekranların sistemli karşılaştırması (mağaza, hesap, arkadaşlar, lig, ayarlar, başarımlar, düello). Android'deki haptik geri bildirim web'de yok (tarayıcı desteklemiyor).
+

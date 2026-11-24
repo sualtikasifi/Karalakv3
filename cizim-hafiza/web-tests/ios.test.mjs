@@ -28,7 +28,7 @@ const fake = fs.readFileSync(path.join(here, "fakefb_mod.js"), "utf8");
 const DEVICES = ["iPhone SE", "iPhone 13", "iPhone 15 Pro Max"];
 const SCREENS = ["home", "store", "settings", "ach", "league", "runes", "friends", "account", "report", "onl", "offs", "duels", "welcome", "draw", "guess"];
 const problems = [], diffs = [];
-const seed = { nick: "Test", xp: 300, gold: 500, tutorialDone: true, login: { streak: 1, last: 99999 } };
+const seed = { nick: "Test", xp: 300, gold: 500, tutorialDone: true, runesIntroSeen: true, login: { streak: 1, last: 99999 } };
 
 for (const name of DEVICES) {
   const browser = await webkit.launch();
@@ -72,6 +72,28 @@ for (const name of DEVICES) {
       }
     } catch (e) { console.log(`  (no Chrome comparison for ${id}: ${e.message.split("\n")[0]})`); }
   }
+  // two painted windows taken from the app: the chest guide, and the Runes' first-visit window (it opens only until it has been read)
+  current = "chest_info";
+  try {
+    await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
+    await page.evaluate(() => document.getElementById("ch-info").click()); await page.waitForTimeout(900);
+    if (!(await page.$(".pc-ov.ci2"))) problems.push(`[${name}] the chest guide did not open`);
+    else {
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_chest_info.jpg`), type: "jpeg", quality: 72 });
+      await page.evaluate(() => document.querySelector(".pc-ov.ci2 .pc-btn").click()); await page.waitForTimeout(300);
+      if (await page.$(".pc-ov.ci2")) problems.push(`[${name}] the chest guide's button did not close it`);
+    }
+  } catch (e) { problems.push(`[${name}] chest guide: ${e.message.split("\n")[0]}`); }
+  current = "rune_intro";
+  try {
+    await page.evaluate(() => { window.__karalak.P.runesIntroSeen = false; window.__karalak.show("runes"); }); await page.waitForTimeout(1200);
+    if (!(await page.$(".pc-ov.pf"))) problems.push(`[${name}] the Runes' first-visit window did not open`);
+    else {
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_rune_intro.jpg`), type: "jpeg", quality: 72 });
+      await page.evaluate(() => document.querySelector(".pc-ov.pf .pc-btn").click()); await page.waitForTimeout(300);
+      if (await page.$(".pc-ov.pf") || !(await page.evaluate(() => window.__karalak.P.runesIntroSeen))) problems.push(`[${name}] the Runes' window did not close and stay read`);
+    }
+  } catch (e) { problems.push(`[${name}] rune intro: ${e.message.split("\n")[0]}`); }
   // taps: a home tile and a rune must answer
   current = "tap"; await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
   await page.tap("#tl-settings").catch((e) => problems.push(`[${name}] tap on Ayarlar failed: ${e.message.split("\n")[0]}`));

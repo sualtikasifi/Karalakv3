@@ -2,7 +2,8 @@
 // ring gates, the ceilings and the icon centring — is generated from the Android sources by scripts/gen_web_runes.js, so the web
 // map cannot drift from the app. One art unit is 1/841 of the stage width; one Android dp is DP art units.
 import { todayEpoch, turkeyMonth } from "./daily.js";
-let D = null, sel = null, statusOpen = false, view = { s: 0.78, x: 0, y: 0, key: "" };
+import { paintedFrameDialog } from "./ui.js";
+let D = null, sel = null, statusOpen = false, introOpen = false, view = { s: 0.78, x: 0, y: 0, key: "" };
 const DP = 2.05, SP = 116 * DP;
 const GATES = { 2: 15, 3: 30, 4: 40, need: 70, price: 1 };
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -153,6 +154,7 @@ function tile(c, r, sealed, pl, u, cx, cy, sp) {
   const unl = canBuy(P, r, pl), maxed = owned && level >= r.costs.length && !key && !root;
   const cost = nextCost(P, r), afford = unl && cost !== null && P.gold >= cost, size = tileSize(r, sealed) * u;
   const b = el("button", "ru-n" + (afford ? " aff" : "") + (sel === r.id ? " sel" : ""));
+  b.dataset.rune = r.id;
   b.style.cssText = `left:${cx + r.x * sp - size / 2}px;top:${cy + r.y * sp - size / 2}px;width:${size}px;height:${size}px`;
   if (sel === r.id || afford) { const h = el("img", "halo"); h.src = "img/rune_halo.webp"; h.alt = ""; h.style.cssText = `width:${size * 1.45}px;height:${size * 1.45}px;left:${-size * 0.225}px;top:${-size * 0.225}px;${sel === r.id ? "opacity:1;animation:none" : ""}`; b.append(h); }
   const pl_ = el("img", "pl"); pl_.alt = ""; pl_.src = "img/" + (sealed ? "rune_gate_seal" : tileArt(r, owned, unl, maxed)) + ".webp";
@@ -228,14 +230,94 @@ function drawCard(c) {
   else if (!ringOpen(P, r.ring, pl)) det.append(el("div", "ru-state bad", fmt(ui("rune_status_ring_locked"), gateLevel(r.ring))));
   else {
     const can = P.gold >= cost, btn = el("button", "ru-buy " + (can ? "on" : "off"), `<img src="img/icon_gold_coin.webp" alt=""><span>${fmt(ui("rune_buy"), fmtNum(cost))}</span>`);
-    btn.onclick = () => { if (!can) return; P.gold -= cost; P.runes[r.id] = level + 1; c.saveP(); c.refreshHome(); c.sfx && c.sfx.buy && c.sfx.buy(); celebrate(c); c.analytics && c.analytics("rune_bought", { rune_id: r.id, rune_level: level + 1, ring: r.ring, player_level: pl, gold_left: P.gold }); renderRunes(c, true); };
+    btn.onclick = () => {
+      if (!can) return;
+      // the player's first rune ever gets a window of its own (RunesScreen.kt: firstRune)
+      const first = D.runes.every((q) => q.id === "root" || lv(P, q.id) === 0), reached = level + 1, grand = reached >= r.costs.length;
+      P.gold -= cost; P.runes[r.id] = reached; c.saveP(); c.refreshHome(); c.sfx && c.sfx.buy && c.sfx.buy();
+      c.analytics && c.analytics("rune_bought", { rune_id: r.id, rune_level: reached, ring: r.ring, player_level: pl, gold_left: P.gold });
+      renderRunes(c, true); celebrate(c, grand); purchaseShow(c, r, reached, grand);
+      if (first) firstRuneDialog(c, r);
+    };
     det.append(btn);
   }
 }
-function celebrate(c) {
-  const host = c.$("runes"), f = el("div", "rs-conf"); host.append(f);
-  for (let i = 0; i < 60; i++) { const e = el("i", ""); e.style.cssText = `left:${Math.random() * 100}%;background:hsl(${Math.random() * 360},85%,60%);animation-delay:${Math.random() * 0.5}s;animation-duration:${1.2 + Math.random() * 0.8}s`; f.append(e); }
-  setTimeout(() => f.remove(), 2600);
+function celebrate(c, grand) {
+  const host = c.$("runes"), f = el("div", "rs-conf"), n = grand ? 150 : 36, span = grand ? 2.3 : 1.2; host.append(f);
+  for (let i = 0; i < n; i++) { const e = el("i", ""); e.style.cssText = `left:${Math.random() * 100}%;background:hsl(${Math.random() * 360},85%,60%);animation-delay:${Math.random() * span * 0.35}s;animation-duration:${span * (0.55 + Math.random() * 0.45)}s`; f.append(e); }
+  setTimeout(() => f.remove(), (span + 0.6) * 1000);
+}
+
+// ---------- the windows of a first visit and of a first rune (RunesScreen.kt: showIntro, firstRune) ----------
+function introDialog(c) {
+  const { lang } = c, ui = (k) => D.ui[k][lang()];
+  introOpen = true;
+  paintedFrameDialog(c.$("stage"), { title: ui("rune_intro_title"), body: ui("rune_intro_body"), buttonText: ui("rune_intro_ok"), onClick: () => { introOpen = false; c.P.runesIntroSeen = true; c.saveP(); } });
+}
+function firstRuneDialog(c, r) {
+  const { lang } = c, ui = (k) => D.ui[k][lang()];
+  paintedFrameDialog(c.$("stage"), { title: ui("rune_first_title"), body: fmt(ui("rune_first_body"), r[lang()]) + "\n\n" + fmt(D.fx[r.effect][lang()], r.per), buttonText: ui("rune_first_ok"), onClick: () => {} });
+}
+
+// ---------- the show round a rune just bought (RuneTile / RuneBurstEffects / GrandFinish) ----------
+const BRANCH = { ROOT: ["#FFD35E", "#E08A1B"], GOLD: ["#FFD35E", "#E59A12"], CHEST: ["#FF8F80", "#D42A1E"], LUCK: ["#FF9BD0", "#D43A8E"], GREEN: ["#8BE08B", "#2E9B3E"], BLUE: ["#8CC0FF", "#2A62C8"], PURPLE: ["#C79BFF", "#7A3FC8"], CYAN: ["#8FE6EA", "#1FA6B0"], LEGEND: ["#B69AE0", "#3C2A5E"] };
+const hexA = (hex, a) => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${Math.max(0, Math.min(1, a))})`;
+const easeOutSlow = (t) => 1 - Math.pow(1 - t, 3); // LinearOutSlowInEasing
+/** One frame of the rings, sparks and flash that play in front of the tile, [t] 0..1 through the show, [s] the tile's size in canvas pixels. */
+function frontFx(g, B, s, t, grand, light, deep) {
+  g.clearRect(0, 0, B, B); const cx = B / 2, cy = B / 2;
+  const ring = (tt, from, to, thick) => { if (tt <= 0 || tt >= 1) return; g.beginPath(); g.arc(cx, cy, s * (from + (to - from) * tt), 0, Math.PI * 2); g.lineWidth = s * thick * (1 - tt) + 1; g.strokeStyle = hexA(light, (1 - tt) * 0.95); g.stroke(); };
+  ring(t, 0.45, 1.3, 0.14);
+  if (grand) { ring((t - 0.12) / 0.88, 0.4, 1.9, 0.16); ring((t - 0.28) / 0.72, 0.4, 2.3, 0.10); }
+  const n = grand ? 24 : 10, e = 1 - (1 - t) * (1 - t);
+  for (let i = 0; i < n; i++) {
+    const a = ((i * 360) / n + (grand ? 7 : 0) + (i % 2) * 9) * Math.PI / 180, dist = s * (0.55 + (0.75 + (i % 3) * 0.28) * e * (grand ? 1.6 : 1)), r = s * (i % 3 === 0 ? 0.085 : 0.055) * (1 - t);
+    const x = cx + dist * Math.cos(a), y = cy + dist * Math.sin(a);
+    g.beginPath(); g.moveTo(x, y - r * 2); g.lineTo(x + r * 0.7, y - r * 0.7); g.lineTo(x + r * 2, y); g.lineTo(x + r * 0.7, y + r * 0.7); g.lineTo(x, y + r * 2); g.lineTo(x - r * 0.7, y + r * 0.7); g.lineTo(x - r * 2, y); g.lineTo(x - r * 0.7, y - r * 0.7); g.closePath();
+    g.fillStyle = i % 2 === 0 ? `rgba(255,255,255,${1 - t})` : hexA(deep, 1 - t); g.fill();
+  }
+  if (grand) { const f = Math.max(0, Math.min(1, 1 - Math.abs(t - 0.2) / 0.2)); if (f > 0) { g.beginPath(); g.arc(cx, cy, s * 0.95, 0, Math.PI * 2); g.fillStyle = `rgba(255,255,255,${0.9 * f})`; g.fill(); } }
+}
+/** The turning crown of rays behind the tile (the last level only). */
+function behindFx(g, B, t, light) {
+  g.clearRect(0, 0, B, B); const cx = B / 2, cy = B / 2, reach = B / 2, fade = Math.sin(Math.PI * Math.max(0, Math.min(1, t))), spin = t * 70;
+  for (let i = 0; i < 14; i++) {
+    const a = (spin + (i * 360) / 14) * Math.PI / 180, w = 5.5 * Math.PI / 180, gr = g.createRadialGradient(cx, cy, 0, cx, cy, reach);
+    gr.addColorStop(0, `rgba(255,255,255,${0.85 * fade})`); gr.addColorStop(0.5, hexA(light, 0.55 * fade)); gr.addColorStop(1, hexA(light, 0));
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + reach * Math.cos(a - w), cy + reach * Math.sin(a - w)); g.lineTo(cx + reach * Math.cos(a + w), cy + reach * Math.sin(a + w)); g.closePath(); g.fillStyle = gr; g.fill();
+  }
+}
+function purchaseShow(c, r, level, grand) {
+  const { $, lang } = c, tileEl = $("ru-map").querySelector(`[data-rune="${r.id}"]`); if (!tileEl) return;
+  const ui = (k) => D.ui[k][lang()], u = c.u(), size = tileSize(r, false) * u, [light, deep] = BRANCH[r.branch] || BRANCH.GOLD;
+  const dur = grand ? 1700 : 900, box = size * (grand ? 4.2 : 3.2), dpr = Math.min(2, window.devicePixelRatio || 1) * Math.max(1, view.s), cv = (cls) => { const k = el("canvas", "ru-fx " + cls); k.width = k.height = Math.round(box * dpr); k.style.width = k.style.height = box + "px"; return k; };
+  tileEl.style.isolation = "isolate";
+  const front = cv(""), fg = front.getContext("2d"), back = grand ? cv("behind") : null, bg = back && back.getContext("2d");
+  if (back) tileEl.append(back); tileEl.append(front);
+  // the tile jumps (the last level crouches first and leaps higher), the dot of the level reached pops in
+  tileEl.animate(grand ? [{ transform: "scale(1)" }, { transform: "scale(0.8)", offset: 0.08 }, { transform: "scale(1.5)", offset: 0.22 }, { transform: "scale(1)", easing: "cubic-bezier(.3,1.6,.5,1)" }] : [{ transform: "scale(1)" }, { transform: "scale(1.32)", offset: 0.18 }, { transform: "scale(1)", easing: "cubic-bezier(.3,1.6,.5,1)" }], { duration: grand ? 900 : 520 });
+  const pip = tileEl.querySelector(".pips")?.children[level - 1]; if (pip) pip.animate([{ transform: "scale(2.6)" }, { transform: "scale(1)" }], { duration: 480, easing: "cubic-bezier(.3,1.6,.5,1)" });
+  // the plate a last level had before dissolves over the new one
+  if (grand && tileEl.querySelector("img.pl")) { const old = el("img", "ru-old"); old.src = "img/" + tileArt(r, true, true, false) + ".webp"; old.alt = ""; old.style.cssText = `left:0;top:0;width:${size}px;height:${size}px`; tileEl.append(old); old.animate([{ opacity: 1 }, { opacity: 0 }], { duration: dur * 0.45, fill: "forwards" }).onfinish = () => old.remove(); }
+  // the gain floats up above the tile
+  const fx = D.fx[r.effect];
+  if (fx.unit !== "FLAG" && r.per > 0) {
+    const g = el("div", "ru-gain", unitText(ui, fx.unit, r.per)); tileEl.append(g);
+    g.animate([{ transform: `translateY(${-size * 0.55}px)`, opacity: 1, offset: 0 }, { opacity: 1, offset: 0.55 }, { transform: `translateY(${-size * 1.45}px)`, opacity: 0 }], { duration: dur, easing: "ease-out" }).onfinish = () => g.remove();
+  }
+  const t0 = performance.now(), step = (now) => {
+    const t = Math.min(1, (now - t0) / dur), k = easeOutSlow(t);
+    if (bg) behindFx(bg, back.width, k, light); frontFx(fg, front.width, size * dpr, k, grand, light, deep);
+    if (t < 1) requestAnimationFrame(step); else { front.remove(); back && back.remove(); tileEl.style.isolation = ""; }
+  };
+  requestAnimationFrame(step);
+  if (grand) grandFinish(c);
+}
+/** The screen's part of a rune's last level: a gold wash that clears, and the banner that says it is complete. */
+function grandFinish(c) {
+  const host = c.$("runes"), wash = el("div", "rs-wash"), banner = el("div", "rs-banner", D.ui.rune_complete_banner[c.lang()]); host.append(wash, banner);
+  wash.animate([{ opacity: 0 }, { opacity: 1, offset: 0.17 }, { opacity: 0 }], { duration: 1080 }).onfinish = () => wash.remove();
+  banner.animate([{ opacity: 0, transform: "scale(.4)" }, { opacity: 1, transform: "scale(1)", offset: 0.22, easing: "cubic-bezier(.3,1.5,.5,1)" }, { opacity: 1, transform: "scale(1)", offset: 0.77 }, { opacity: 0, transform: "scale(.4)" }], { duration: 1900 }).onfinish = () => banner.remove();
 }
 
 // ---------- the status window (RuneStatusDialog) ----------
@@ -292,4 +374,6 @@ export function renderRunes(c, keepView) {
   const u = c.u(), cardTop = ($("ru-detail").offsetTop) / u; MAP.h = Math.max(300, cardTop - 16 - MAP.y);
   c.place($("ru-map"), MAP.x, MAP.y, MAP.w, MAP.h);
   buildMap(c); drawStatus(c);
+  // the first visit: what the runes are (the guide, when one brings the player here, explains itself)
+  if (!keepView && !P.runesIntroSeen && !introOpen) introDialog(c);
 }
