@@ -71,7 +71,8 @@ class FriendInviteMessagingService : FirebaseMessagingService() {
             showNotification(
                 getString(if (answered) R.string.duel_result_notification_title else R.string.duel_notification_title, who),
                 if (answered) getString(R.string.duel_result_notification_body) else nextDuelBody(),
-                message.data["duelId"]
+                message.data["duelId"],
+                opensDuels = true
             )
             return
         }
@@ -115,13 +116,15 @@ class FriendInviteMessagingService : FirebaseMessagingService() {
         NotificationManagerCompat.from(context).notify(BROADCAST_REQUEST_CODE, notification)
     }
 
-    private fun showNotification(title: String, body: String, inviteId: String?) {
+    private fun showNotification(title: String, body: String, inviteId: String?, opensDuels: Boolean = false) {
         val context: Context = applicationContext
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             return
         }
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            // A duel lands on the duels page, not on the home screen (see MainActivity.noteDuelNotification).
+            if (opensDuels) putExtra(MainActivity.DUEL_NOTIFICATION_EXTRA, true)
         }
         // Distinct request code per invite so multiple pending invite
         // notifications don't overwrite each other's PendingIntent (unlike
