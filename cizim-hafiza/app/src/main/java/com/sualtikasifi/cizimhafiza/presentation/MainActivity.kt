@@ -61,8 +61,14 @@ class MainActivity : AppCompatActivity() {
 
     private var navController: NavHostController? = null
 
-    private companion object {
+    /** A duel notification was tapped and the duels page has not been opened for it yet (see [DUEL_NOTIFICATION_EXTRA]). */
+    private val openDuelsRequested = kotlinx.coroutines.flow.MutableStateFlow(false)
+
+    companion object {
         private const val TAG = "MainActivity"
+
+        /** Put on the intent of a duel notification (see FriendInviteMessagingService): the tap should land on the duels page. */
+        const val DUEL_NOTIFICATION_EXTRA = "open_duels"
 
         /** The system splash rising off the opening scene. */
         const val SPLASH_CURTAIN_MILLIS = 160L
@@ -126,6 +132,8 @@ class MainActivity : AppCompatActivity() {
         // fixed for the lifetime of this NavHost, and completing the
         // tutorial navigates away explicitly instead of re-deciding it.
         val tutorialCompleted = settingsRepository.tutorialCompleted
+        // Only the launch itself: a recreate (rotation, language change) gets the same intent again and must not reopen the page.
+        if (savedInstanceState == null) noteDuelNotification(intent)
         val composeApp = {
         setContent {
             val online by networkMonitor.isOnline.collectAsState()
@@ -184,6 +192,23 @@ class MainActivity : AppCompatActivity() {
                                 return@LaunchedEffect
                             }
                             kotlinx.coroutines.delay(1_000)
+                        }
+                    }
+                    // A tapped duel notification lands on the duels page, once the player is past the tutorial and the terms
+                    // (the same wait as the "Bil Bakalım" link above). The page itself is behind ChildGate and OfflineGate.
+                    if (appReady) LaunchedEffect(Unit) {
+                        openDuelsRequested.collect { requested ->
+                            if (!requested) return@collect
+                            repeat(60) {
+                                val nav = navController
+                                if (nav != null && settingsRepository.tutorialCompleted && !legalConsentStore.needsPrompt) {
+                                    openDuelsRequested.value = false
+                                    nav.navigate(com.sualtikasifi.cizimhafiza.presentation.navigation.Screen.DuelList) { launchSingleTop = true }
+                                    return@collect
+                                }
+                                kotlinx.coroutines.delay(1_000)
+                            }
+                            openDuelsRequested.value = false
                         }
                     }
                     com.sualtikasifi.cizimhafiza.presentation.common.XpFlyOverlay()
@@ -331,7 +356,17 @@ class MainActivity : AppCompatActivity() {
     // forwarded to the existing NavController by hand.
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        noteDuelNotification(intent)
         navController?.handleDeepLink(intent)
+    }
+
+    /** A duel notification's tap asks for the duels page; whoever tapped it, the page opens once the app is ready for it. */
+    private fun noteDuelNotification(intent: Intent?) {
+        if (intent?.getBooleanExtra(DUEL_NOTIFICATION_EXTRA, false) == true) {
+            // Taken off, so the same intent is not read again (a recreate, or the next return to the app).
+            intent.removeExtra(DUEL_NOTIFICATION_EXTRA)
+            openDuelsRequested.value = true
+        }
     }
 }
 

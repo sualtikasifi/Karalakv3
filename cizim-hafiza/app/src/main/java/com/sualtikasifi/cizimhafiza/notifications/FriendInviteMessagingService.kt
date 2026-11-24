@@ -70,8 +70,9 @@ class FriendInviteMessagingService : FirebaseMessagingService() {
             val answered = message.data["type"] == "duel_result"
             showNotification(
                 getString(if (answered) R.string.duel_result_notification_title else R.string.duel_notification_title, who),
-                getString(if (answered) R.string.duel_result_notification_body else R.string.duel_notification_body),
-                message.data["duelId"]
+                if (answered) getString(R.string.duel_result_notification_body) else nextDuelBody(),
+                message.data["duelId"],
+                opensDuels = true
             )
             return
         }
@@ -81,6 +82,15 @@ class FriendInviteMessagingService : FirebaseMessagingService() {
         val body = getString(R.string.friend_invite_notification_body)
 
         showNotification(title, body, inviteId)
+    }
+
+    /** The text under a duel notification: the next one of the list, so the same words do not come every time (see DuelNotificationText). */
+    private fun nextDuelBody(): String {
+        val bodies = resources.getStringArray(R.array.duel_notification_bodies)
+        val prefs = getSharedPreferences("duel_notification_rotation", Context.MODE_PRIVATE)
+        val next = DuelNotificationText.nextIndex(prefs.getInt("last", -1), bodies.size, firstPick = bodies.indices.random())
+        prefs.edit().putInt("last", next).apply()
+        return bodies[next]
     }
 
     private fun showBroadcast(title: String, body: String) {
@@ -106,13 +116,15 @@ class FriendInviteMessagingService : FirebaseMessagingService() {
         NotificationManagerCompat.from(context).notify(BROADCAST_REQUEST_CODE, notification)
     }
 
-    private fun showNotification(title: String, body: String, inviteId: String?) {
+    private fun showNotification(title: String, body: String, inviteId: String?, opensDuels: Boolean = false) {
         val context: Context = applicationContext
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             return
         }
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            // A duel lands on the duels page, not on the home screen (see MainActivity.noteDuelNotification).
+            if (opensDuels) putExtra(MainActivity.DUEL_NOTIFICATION_EXTRA, true)
         }
         // Distinct request code per invite so multiple pending invite
         // notifications don't overwrite each other's PendingIntent (unlike

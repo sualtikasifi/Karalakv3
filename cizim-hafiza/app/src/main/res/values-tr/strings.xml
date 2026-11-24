@@ -472,9 +472,18 @@
     <string name="friend_invite_notification_title">%1$s seni davet etti!</string>
     <string name="friend_invite_notification_body">Karalak\'ta birlikte oynamak için dokun.</string>
     <string name="duel_notification_title">%1$s sana meydan okudu!</string>
-    <string name="duel_notification_body">Düelloyu oynamak için Karalak\'a dokun.</string>
+    <!-- The text under a duel notification: each new one shows the next in the list (see DuelNotificationText). Same order in every language. -->
+    <string-array name="duel_notification_bodies">
+        <item>Karalak arenasında kalemler konuşur!</item>
+        <item>Karalamaya hazır mısın, yoksa silgiye mi sarılacaksın!</item>
+        <item>Kalemini kuşan, karalama savaşı başladı!</item>
+        <item>Bu düellodan kaçanın kalemi kırılır!</item>
+        <item>Kalemini kap, düello başladı!</item>
+        <item>Bu meydan okumayı cevapsız bırakma!</item>
+        <item>Kaçarsan kaybettin sayılırsın!</item>
+    </string-array>
     <string name="duel_result_notification_title">%1$s düellonu oynadı!</string>
-    <string name="duel_result_notification_body">Kimin kazandığını görmek için dokun.</string>
+    <string name="duel_result_notification_body">Sonuç hazır. Kimin kazandığını gör.</string>
     <string name="settings_language">Dil</string>
     <string name="settings_language_turkish">Türkçe</string>
     <string name="settings_language_english">English</string>

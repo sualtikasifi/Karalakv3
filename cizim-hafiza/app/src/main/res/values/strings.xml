@@ -464,9 +464,18 @@
     <string name="friend_invite_notification_title">%1$s invited you!</string>
     <string name="friend_invite_notification_body">Tap to play together on Karalak.</string>
     <string name="duel_notification_title">%1$s challenged you!</string>
-    <string name="duel_notification_body">Tap to play the duel on Karalak.</string>
+    <!-- The text under a duel notification: each new one shows the next in the list (see DuelNotificationText). Same order in every language. -->
+    <string-array name="duel_notification_bodies">
+        <item>In the Karalak arena, pencils do the talking!</item>
+        <item>Ready to scribble, or will you reach for the eraser?</item>
+        <item>Pencil up, the scribble war has begun!</item>
+        <item>Run from this duel and your pencil snaps!</item>
+        <item>Grab your pencil, the duel has begun!</item>
+        <item>Don\'t leave this challenge unanswered!</item>
+        <item>Run away and you lose by default!</item>
+    </string-array>
     <string name="duel_result_notification_title">%1$s played your duel!</string>
-    <string name="duel_result_notification_body">Tap to see who won.</string>
+    <string name="duel_result_notification_body">The result is in. See who won.</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_turkish">Türkçe</string>
     <string name="settings_language_english">English</string>
