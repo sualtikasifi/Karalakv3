@@ -4,6 +4,8 @@ import { reportPlayerDialog } from "./ui.js";
 import { childMode } from "./agegate.js";
 import { rankLevelHtml } from "./ranks.js";
 import { frameRing, frameList, frameById, penList } from "./store.js";
+import * as eco from "./economy.js";
+import { paintedCard } from "./ui.js";
 
 // ---- Port of LeagueBots.kt: the fillers every phone adds to the published table ----
 let NAMES = [], BOTPHOTO = {};
@@ -65,7 +67,7 @@ async function fetchTable() {
   loading = true; table = null;
   const pid = periodId();
   try {
-    const doc = await net.getGlobalLeague(); rewardId = doc?.rewardId || null; const mine = await net.myUid().catch(() => "");
+    const doc = await net.getGlobalLeague(); rewardId = doc?.rewardId || null; const mine = await net.myUid().catch(() => ""); lastPeriod = doc?.lastPeriod || null; myId = mine;
     const published = ((doc?.humans || doc?.entries || []).filter((r) => typeof r.uid === "string"));
     const rows = doc && doc.periodId === pid ? published : [];
     const humans = rows.map((r) => ({ uid: r.uid, nickname: r.nickname || "?", periodXp: r.periodXp || 0, level: r.level || 1, avatarUrl: "", bot: false, me: r.uid === mine, frameId: r.frameId }));
@@ -114,7 +116,7 @@ export async function renderLeague(c, refetch = true) {
     fr.forEach((e, i) => list.append(row(c, { ...e, nickname: e.me ? c.P.nick : e.nickname, level: e.me ? levelForXp(c.P.xp) : e.level, periodXp: e.totalXp }, i + 1)));
     return;
   }
-  if (refetch || (!table && !loading)) { list.append(note("…")); await fetchTable(); if (c.current() !== "league" || tab !== "global") return; list.replaceChildren(); }
+  if (refetch || (!table && !loading)) { list.append(note("…")); await fetchTable(); collectPrize(c); if (c.current() !== "league" || tab !== "global") return; list.replaceChildren(); }
   if (!table) return;
   if (!table.ok) list.append(note(S("league_global_failed")));
   if (childMode()) list.append(note("🏆 " + ({ tr: "Aylık sıralamaya Android uygulamasında Google hesabınla katılabilirsin.", en: "You can join the monthly ranking with your Google account in the Android app.", pt: "Você pode entrar no ranking mensal com sua conta Google no app Android.", es: "Puedes entrar en la clasificación mensual con tu cuenta de Google en la app de Android." })[c.lang()]));
@@ -123,7 +125,7 @@ export async function renderLeague(c, refetch = true) {
   table.list.forEach((e, i) => list.append(row(c, e, i + 1)));
   list.append(note(S("league_global_refresh_note")));
 }
-let tick = 0, rewardId = null;
+let tick = 0, rewardId = null, lastPeriod = null, myId = "";
 // PenStrokePreview: a wide curve drawn on in the pen's own gradient (65% drawing, then a hold, then a fade), looping every 4.2 s
 let penRaf = 0;
 function penPreview(cv, colors) {
@@ -149,10 +151,10 @@ function banner(lang) {
   const b = document.createElement("div"); b.className = "lg-banner";
   const icon = document.createElement("div"); icon.className = "lb-i";
   if (frame) icon.append(frameRing(frame, "lb-fr")); else icon.textContent = "🏆";
-  const label = pen ? pen[lang] || pen.en : S("league_reward_kind_frame") + (key.startsWith("LEAGUE_CHAMPION_") ? " " + key.replace("LEAGUE_CHAMPION_", "").replace(/_/g, "-") : "");
+  const label = pen ? pen[lang] || pen.en : S("league_reward_kind_frame") + (key.startsWith("LEAGUE_CHAMPION_") ? " · " + key.replace("LEAGUE_CHAMPION_", "").replace(/_/g, "-") : "");
   const mid = document.createElement("div"); mid.className = "lb-m"; mid.innerHTML = `<small>${S("league_reward_title")}</small><b>${label}</b>`;
   if (pen) { const cv = document.createElement("canvas"); cv.className = "lb-pen"; mid.append(cv); penPreview(cv, pen.colors); }
-  const r = document.createElement("div"); r.className = "lb-r"; r.innerHTML = `<span>${S("league_reward_bonus_gold", fmtNum(10000))}</span><span>${S("league_reward_bonus_xp", fmtNum(10000))}</span><small>${S("league_reward_top3")}</small>`;
+  const r = document.createElement("div"); r.className = "lb-r"; r.innerHTML = `<span>${S("league_reward_bonus_gold", fmtNum(eco.CFG.leagueMonthlyGold))}</span><span>${S("league_reward_bonus_xp", fmtNum(10000))}</span><small>${S("league_reward_top3")}</small>`;
   b.append(icon, mid, r); return b;
 }
 function timerText() {
@@ -202,3 +204,44 @@ function row(c, e, rank) {
   if (!childMode() && !e.me && !e.bot && e.uid) { r.style.cursor = "pointer"; r.title = S("report_player_action"); r.onclick = () => reportPlayerDialog(net, e.uid, e.nickname, "league"); }
   return r;
 }
+
+// ---------- last month's prize (LeagueViewModel.collectPrize + LeaguePrizeDialog) ----------
+/**
+ * Hands over last month's prize once, if this account was among the winners: the monthly gold and XP and the cosmetic itself.
+ * ONE gate per MONTH ("PERIOD:<id>"), not per prize id: the id can be pinned from the review panel and repeat month after month.
+ */
+function collectPrize(c) {
+  const P = c.P, lp = lastPeriod; if (!lp || !Array.isArray(lp.winners) || !myId) return;
+  const win = lp.winners.find((w) => w && w.uid === myId); if (!win) return;
+  const earned = (P.leagueEarned = P.leagueEarned || []), gate = "PERIOD:" + lp.periodId;
+  if (earned.includes(gate)) return;
+  earned.push(gate);
+  const rid = typeof lp.rewardId === "string" ? lp.rewardId : "";
+  if (rid) { if (!earned.includes(rid)) earned.push(rid); const own = rid.replace(/^PEN:/, "pen:").replace(/^FRAME:/, "frame:"); if (/^(pen|frame):/.test(own) && !(P.owned = P.owned || []).includes(own)) P.owned.push(own); }
+  P.gold = (P.gold || 0) + eco.CFG.leagueMonthlyGold; eco.addXp(P, 10000, 0);
+  c.saveP(); c.refreshHome && c.refreshHome();
+  prizeDialog(c, rid, win.rank | 0);
+}
+const WIN = { w: 1229, h: 1280, title: [150, 300, 1080, 395], prize: [200, 410, 1030, 585], body: [150, 598, 1080, 715], gold: [350, 748, 560, 842], xp: [770, 748, 1000, 842], button: [262, 895, 940, 1085] };
+function prizeDialog(c, rid, rank) {
+  const card = paintedCard(c.$("stage"), { art: "league_win_frame", w: WIN.w, h: WIN.h, cls: "lw" }), { put, fit } = card;
+  card.card.setAttribute("role", "dialog");
+  const t = put("pc-t", WIN.title, "<span></span>"); t.firstChild.textContent = S("league_win_title", rank); fit(t, 92, 1, 0.5);
+  const isPen = rid.startsWith("PEN:"), key = rid.replace(/^(PEN|FRAME):/, "");
+  const pen = isPen ? penList().find((p) => p.id === key) : null, frame = !isPen && rid ? frameList().find((f) => f.id === key) : null;
+  if (pen || frame) {
+    const box = put("lw-prize", WIN.prize, ""), lang = c.lang();
+    if (pen) { const cv = document.createElement("canvas"); cv.className = "lw-pen"; box.append(cv); penPreview(cv, pen.colors); }
+    else box.append(frameRing(frame, "lw-fr"));
+    const l = document.createElement("div"); l.className = "lw-l"; const sp = document.createElement("span");
+    sp.textContent = pen ? pen[lang] || pen.en : S("league_reward_kind_frame") + (key.startsWith("LEAGUE_CHAMPION_") ? " · " + key.replace("LEAGUE_CHAMPION_", "").replace(/_/g, "-") : ""); l.append(sp); box.append(l);
+    fit(l, 84, 1, 0.5);
+  }
+  const b = put("lw-b", WIN.body, "<span></span>"); b.firstChild.textContent = S("league_win_body"); fit(b, 46, 2, 0.6);
+  const g = put("pc-t", WIN.gold, "<span></span>"); g.firstChild.textContent = "+" + fmtNum(eco.CFG.leagueMonthlyGold); fit(g, 46, 1, 0.5);
+  const x = put("pc-t", WIN.xp, "<span></span>"); x.firstChild.textContent = S("league_reward_bonus_xp", fmtNum(10000)).replace(/^\+?/, "+"); fit(x, 46, 1, 0.5);
+  const btn = put("pc-btn lw-btn", WIN.button, '<span class="pc-lt"></span>'); btn.style.setProperty("--ol", "#8a3a00"); btn.setAttribute("role", "button");
+  btn.firstChild.textContent = S("close"); fit(btn, 88, 1, 0.5); btn.onclick = () => card.close();
+  return card;
+}
+export { prizeDialog };

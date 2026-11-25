@@ -133,7 +133,7 @@ export async function redeemCoupon(rawCode) {
       if ((await tx.get(rref)).exists()) return { status: "used" };
       tx.set(rref, { redeemedAt: now });
       tx.update(cref, { usedCount: (c.usedCount || 0) + 1 });
-      return { status: "ok", gold: Math.min(c.gold || 0, 10000000), xp: Math.min(c.xp || 0, 100000), chests: (c.chestSilver || 0) + (c.chestGold || 0) + (c.chestRare || 0) };
+      return { status: "ok", gold: Math.min(c.gold || 0, 10000000), xp: Math.min(c.xp || 0, 100000), chests: [["SILVER", c.chestSilver], ["GOLD", c.chestGold], ["RARE", c.chestRare]].flatMap(([t, n]) => Array(Math.max(0, Math.min(20, n | 0))).fill(t)) };
     });
   } catch (e) { return { status: "network" }; }
 }
@@ -264,6 +264,25 @@ export async function signOutAccount() {
 }
 
 // ================= Friends (same documents and rules as FriendRepositoryImpl) =================
+// ---------- penalties (PenaltyRepositoryImpl): penalties/{id} {uid, appliedAt 0 until applied, xpRevoked, goldRevoked, strike, lockedUntil, createdAt, breaksDailyStreak} ----------
+/** Penalties of this account that nobody has acknowledged yet (appliedAt == 0), newest first. Empty when the read fails. */
+export async function outstandingPenalties() {
+  const { fs, db, auth } = await init(), uid = auth.currentUser.uid;
+  const snap = await fs.getDocs(fs.query(fs.collection(db, "penalties"), fs.where("uid", "==", uid), fs.where("appliedAt", "==", 0)));
+  return snap.docs.map((d) => { const x = d.data(); return { id: d.id, xpRevoked: x.xpRevoked | 0, goldRevoked: x.goldRevoked | 0, strike: x.strike == null ? 1 : x.strike | 0, lockedUntil: Number(x.lockedUntil) || 0, createdAt: Number(x.createdAt) || 0, breaksDailyStreak: !!x.breaksDailyStreak }; })
+    .sort((p, q) => q.createdAt - p.createdAt);
+}
+/** The one field a player may write on a penalty (firestore.rules); throws when the write is refused. */
+export async function markPenaltyApplied(id) { const { fs, db } = await init(); await fs.updateDoc(fs.doc(db, "penalties", id), { appliedAt: Date.now() }); }
+/** The live lockout deadline (the largest lockedUntil of this account's penalties, if still ahead), or null. One equality filter: no composite index. */
+export async function lockedUntilMillis() {
+  try {
+    const { fs, db, auth } = await init();
+    const snap = await fs.getDocs(fs.query(fs.collection(db, "penalties"), fs.where("uid", "==", auth.currentUser.uid)));
+    const top = Math.max(0, ...snap.docs.map((d) => Number(d.data().lockedUntil) || 0));
+    return top > Date.now() ? top : null;
+  } catch { return null; }
+}
 export async function myUid() { return (await init()).auth.currentUser.uid; }
 /** "Videolarda öne çık": the player's yes or no on their public profile, where the app's video studio looks (same field as the app). */
 export async function publishFeatureConsent(consent) {
@@ -322,6 +341,30 @@ export async function removeFriend(fu) {
 }
 export async function blockUser(uid2, nick) { const { fs, db, auth } = await init(); await fs.setDoc(fs.doc(db, "users", auth.currentUser.uid, "blockedUsers", uid2), { nickname: nick, blockedAt: Date.now() }); }
 export async function unblockUser(uid2) { const { fs, db, auth } = await init(); await fs.deleteDoc(fs.doc(db, "users", auth.currentUser.uid, "blockedUsers", uid2)); }
+/**
+ * UX-only pre-check before an invite (FriendRepositoryImpl.canInvite): "blocked" when that player blocked this account, the remaining
+ * minutes when they declined an invite less than five minutes ago, otherwise null. firestore.rules enforces both again on the write.
+ */
+export async function inviteBlock(toUid) {
+  const { fs, db, auth } = await init(), me = auth.currentUser.uid;
+  if ((await fs.getDoc(fs.doc(db, "users", toUid, "blockedUsers", me))).exists()) return { blocked: true };
+  const cd = await fs.getDoc(fs.doc(db, "users", toUid, "inviteCooldowns", me));
+  const left = cd.exists() && Number(cd.data().declinedAt) ? Number(cd.data().declinedAt) + 5 * 60 * 1000 - Date.now() : 0;
+  return left > 0 ? { minutes: Math.floor(left / 60000) + 1 } : null;
+}
+/** The friends list once (not a listener): who a streak belongs to, by name. */
+export async function friendsOnce() {
+  const { fs, db, auth } = await init();
+  return (await fs.getDocs(fs.collection(db, "users", auth.currentUser.uid, "friends"))).docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+/** This account's friend streaks (FriendStreakRepositoryImpl.observeStreaks), each with the other player's uid as friendUid. */
+export async function listenStreaks(cb) {
+  const { fs, db, auth } = await init(), me = auth.currentUser.uid;
+  return fs.onSnapshot(fs.query(fs.collection(db, "friendStreaks"), fs.where("uids", "array-contains", me)), (snap) => cb(snap.docs.map((d) => {
+    const x = d.data(), friendUid = (x.uids || []).find((u) => u !== me); if (!friendUid) return null;
+    return { pairId: d.id, friendUid, count: x.count || 0, best: x.best || 0, run: x.run || 1, lastDay: x.lastDay ?? -1e9, pendingDay: x.pendingDay ?? -1, repairs: x.repairs || 0, repairedBy: x.repairedBy || null };
+  }).filter(Boolean)), () => cb([]));
+}
 export async function sendInvite(toUid, roomCode, myNick) {
   const { fs, db, auth } = await init();
   await fs.addDoc(fs.collection(db, "users", toUid, "invites"), { fromUid: auth.currentUser.uid, fromNickname: myNick, roomCode, sentAt: Date.now() });
@@ -346,6 +389,9 @@ export async function createRoom(nick, level, frameId, { wordCount, difficulty, 
   }
   throw new Error("code");
 }
+/** How long the account stays removed from the room joinRoom last refused with "kicked" (error_kicked_from_room names the minutes). */
+let kickLeftMs = 0;
+export const kickMinutes = () => Math.max(1, Math.ceil(kickLeftMs / 60000));
 export async function joinRoom(code, nick, level, frameId) {
   const { fs, db, auth } = await init(), uid = auth.currentUser.uid, ref = fs.doc(db, "rooms", code);
   return fs.runTransaction(db, async (tx) => {
@@ -353,7 +399,7 @@ export async function joinRoom(code, nick, level, frameId) {
     if (!s.exists()) return "notfound";
     const d = s.data(), players = d.players || {}, now = Date.now();
     const kicked = d.kickedUsers && d.kickedUsers[uid];
-    if (kicked && kicked.until > now) return "kicked";
+    if (kicked && kicked.until > now) { kickLeftMs = kicked.until - now; return "kicked"; }
     const present = Object.values(players).filter((p) => !p.left && now - (p.lastSeenAt || p.joinedAt || 0) <= 150000);
     const team = !!d.teamMode;
     if (!(uid in players) && present.length >= (team ? 4 : 8)) return "full";

@@ -36,7 +36,7 @@ export function toSnapshot(P, remote) {
     unlockedAchievementIds: unlockedIds(P), levelProgress, goldBalance: P.gold || 0, ownedStoreIds: [...(P.owned || [])],
     jokerCounts: Object.entries(P.jokers || {}).map(([t, n]) => `${t}:${n}`),
     periodXp: P.periodId === periodId() ? P.periodXp || 0 : 0, periodId: periodId(), periodXpVersion: 2,
-    loginStreak: lg.streak || 0, loginLastClaimDay: lg.last ?? -1, runeLevels: { ...(P.runes || {}) }, claimedAchievementIds: [...(P.claimed || [])], claimsSaved: true,
+    loginStreak: lg.streak || 0, loginLastClaimDay: lg.last ?? -1, runeLevels: { ...(P.runes || {}) }, claimedAchievementIds: [...(P.claimed || [])], claimsSaved: true, earnedLeagueRewardIds: [...(P.leagueEarned || [])],
     dailyResult: d.result ? [d.result.day, (d.result.flags || []).map((f) => (f ? "1" : "0")).join(","), d.result.score, d.result.xp, d.result.streak].join("|") : "",
     backedUpAt: Date.now(),
   };
@@ -55,7 +55,7 @@ export function applySnapshot(P, r) {
   P.owned = [...(r.ownedStoreIds || [])];
   P.jokers = {}; for (const e of r.jokerCounts || []) { const [t, c] = String(e).split(":"); if (t && Number.isFinite(+c)) P.jokers[t] = +c; }
   P.levels = {}; for (const e of r.levelProgress || []) { const p = String(e).split(":"); if (p.length === 4 && Number.isFinite(+p[2])) P.levels[`${p[0]}:${p[1]}`] = +p[2]; }
-  P.claimed = [...(r.claimedAchievementIds || [])];
+  P.claimed = [...(r.claimedAchievementIds || [])]; P.leagueEarned = [...new Set([...(P.leagueEarned || []), ...(r.earnedLeagueRewardIds || [])])]; for (const id of P.leagueEarned) { const o = String(id).replace(/^PEN:/, "pen:").replace(/^FRAME:/, "frame:"); if (/^(pen|frame):/.test(o) && !P.owned.includes(o)) P.owned.push(o); }
   P.runes = { ...(r.runeLevels || {}) };
   P.daily = { last: r.dailyLastCompletedEpochDay ?? -1, streak: n(r.dailyCurrentStreak), best: n(r.dailyBestStreak), result: null };
   if (r.dailyResult) { const p = String(r.dailyResult).split("|"); if (p.length === 5) P.daily.result = { day: +p[0], flags: p[1] ? p[1].split(",").map((f) => f === "1") : [], score: +p[2], xp: +p[3], streak: +p[4] }; }

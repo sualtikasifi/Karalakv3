@@ -13,7 +13,7 @@ import { todayEpoch, msToMidnight, dailyWords, state as dailyState, record as da
 import { drawFxStroke } from "./penfx.js";
 import { openPenPicker, openFramePicker, openNickEdit } from "./picker.js";
 import { setPrefs, sfx, vibrate, initAudio, syncMusic } from "./audio.js";
-import { layoutOnline, renderFinished, renderEntry, renderCreate, renderJoin, leaveLobby, submitAndWait, joinWithCode, quickInvite } from "./online.js";
+import { layoutOnline, renderFinished, renderEntry, renderCreate, renderJoin, leaveLobby, submitAndWait, joinWithCode, joinErrorText, quickInvite } from "./online.js";
 import { openDuels, stopDuels, renderDuels, openCreateDuel, recordReceived as duelReceived } from "./duel.js";
 import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "./friends.js";
 import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
@@ -26,6 +26,8 @@ import { startSearch, stopSearch } from "./search.js";
 import { exitDialog, appOnlyDialog, sparkFlight, PLAY_URL } from "./ui.js";
 import { makeGhostRun, loadGhostNames } from "./ghost.js";
 import { needsPrompt as legalNeeded, childMode, adultOnly, openAgeGate } from "./agegate.js";
+import { checkPenalties, lockGate } from "./penalty.js";
+import { checkStreakPrompt } from "./fstreak.js";
 import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
@@ -98,7 +100,8 @@ const ctx = {
   },
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height, fillH: () => (safeRows[current] ? safeRows[current].b * u : stage.getBoundingClientRect().height),
-  inviteFriend: (f) => quickInvite(ctx, f).then(() => { stopFriends(); show("onw"); }),
+  quickMessage: (w) => quickMessage(w),
+  inviteFriend: async (f) => { if (!(await lockGate(ctx, () => ctx.inviteFriend(f)))) return; if (!(await quickInvite(ctx, f))) return; stopFriends(); show("onw"); },
   sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
@@ -621,7 +624,7 @@ async function startTutorial() {
 // LeagueScorePublisher: this month's score onto the public profile — never for a player who may be under 13 (agegate.js).
 function publishLeague() {
   if (childMode()) return;
-  net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
+  if (!P.leagueBanned) net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
 }
 function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); if (legalNeeded()) openAgeGate(stage); }
 async function startDaily() {
@@ -643,22 +646,40 @@ async function pickOpponent() {
 }
 // SearchingScene.kt texts: the sign reads "Rakip / aranıyor…" with its dots ticking, the plate says what is going on.
 function paintSearching() {
+  $("s-back").hidden = false;
   $("s-text").innerHTML = `<span>${S("quick_match_searching_title")}</span><span>${S("quick_match_searching_title2").replace(/[….s]+$/, "")}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
   $("s-sub").replaceChildren(Object.assign(document.createElement("b"), { textContent: S("quick_match_searching_sub") }), Object.assign(document.createElement("small"), { textContent: S(childMode() ? "quick_match_opponent_note_child" : "quick_match_opponent_note") }));
 }
 async function startQuick() {
   levelRun = null; kind = "quick"; relaxed = false; quickOpp = null; quickItems = []; quickItemsP = null;
+  const run = ++quickRun; searchCancelled = false;
   await ensureWords(); await loadGhostNames().catch(() => {}); paintSearching(); show("search");
   const minWait = new Promise((r) => setTimeout(r, 2000 + Math.random() * 3000));
-  try { quickOpp = await Promise.race([pickOpponent(), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]); } catch {}
+  let failed = false;
+  try { quickOpp = await Promise.race([pickOpponent(), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]); } catch { failed = true; }
   await minWait;
-  if (current !== "search") return;
+  if (current !== "search" || run !== quickRun || searchCancelled) return;
   const byId = new Map(words.map((w) => [w.id, w]));
   const picked = quickOpp ? (quickOpp.wordIds || []).map((id) => byId.get(id)).filter(Boolean) : [];
-  if (!quickOpp || picked.length < 10) { quickOpp = null; msgNoOpp(); return; }
+  if (!quickOpp || picked.length < 10) { quickOpp = null; quickMessage(failed || navigator.onLine === false ? "failed" : "empty"); return; }
   quickItemsP = net.loadItems(quickOpp.id, new Map(words.map((w) => [w.id, w.text])), POINTS, SPEED_BONUS).then((it) => (quickItems = it)).catch(() => quickItems);
   showFound(quickOpp, () => begin(picked));
 }
+let quickRun = 0, searchCancelled = false;
+/** Backing out while the search runs (QuickMatchScreen `leave`): the search stops at once, the sign says it is being cancelled, the screen closes after a moment. */
+function cancelSearch() {
+  if (searchCancelled || current !== "search" || kind !== "quick") return;
+  searchCancelled = true; quickRun++;
+  $("s-text").innerHTML = `<span>${S("quick_match_cancelling_title")}</span><span>${S("quick_match_cancelling_title2").replace(/[….s]+$/, "")}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
+  $("s-sub").replaceChildren(Object.assign(document.createElement("b"), { textContent: S("quick_match_cancelling_sub") }));
+  setTimeout(() => { if (current === "search") show("home"); }, 1500);
+}
+/** The pool is empty / the opponent could not be fetched: a message on the wood with "Tekrar Ara" (QuickMatchState.Empty / Failed). */
+function quickMessage(which) {
+  $("qm-t").textContent = S("quick_match_" + which + "_title"); $("qm-b").textContent = S("quick_match_" + which + "_body"); $("qm-go").firstChild.textContent = S("quick_match_search_again");
+  show("qmsg");
+}
+$("s-back").onclick = cancelSearch; $("qm-back").onclick = () => show("home"); $("qm-go").onclick = () => startQuick();
 function msgNoOpp() { show("home"); msg(t().noOpp + inLang({ tr: ". Bir süre sonra tekrar dene ya da çevrimdışı oyna.", en: ". Try again in a bit or play offline.", pt: ". Tente de novo daqui a pouco ou jogue offline.", es: ". Inténtalo en un rato o juega sin conexión." })); }
 // Countdowns run on a DEADLINE, as in the app (util/Countdown.kt): the clock keeps running while the tab is hidden or the phone is
 // locked, and what is left is read off the clock, never counted in ticks. A countdown that ended AWAY_MS or more late hands that
@@ -700,7 +721,7 @@ function showFound(opp, go) {
 }
 function highestFrameFor(lv) { try { const L = frameListSafe().filter((f) => f.level > 0 && !f.league && f.level <= lv); return (L.pop() || { id: "SCRIBBLER" }).id; } catch { return "SCRIBBLER"; } }
 async function start(k = "quick") {
-  if (k === "quick") return startQuick();
+  if (k === "quick") { if (!(await lockGate(ctx, () => start("quick")))) return; return startQuick(); }
   levelRun = null; kind = k; relaxed = false;
   await ensureWords();
   begin([...words].sort(() => Math.random() - 0.5).slice(0, WORD_COUNT));
@@ -910,7 +931,7 @@ function addRow(parent, strokes, ok, label, sub, pen) {
 function showWaiting() {
   const [a, b, sub] = inLang({ tr: ["Sonuçlar", "hazırlanıyor", "Puanlar hesaplanıyor…"], en: ["Getting your", "results", "Counting the points…"], pt: ["Preparando", "os resultados", "Contando os pontos…"], es: ["Preparando", "resultados", "Contando los puntos…"] });
   $("s-text").innerHTML = `<span>${a}</span><span>${b}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
-  $("s-sub").innerHTML = `<b>${sub}</b>`;
+  $("s-sub").innerHTML = `<b>${sub}</b>`; $("s-back").hidden = true;
   show("search");
 }
 async function finish() {
@@ -1069,7 +1090,7 @@ function msg(text, extra) {
 const soon = (name) => () => msg(`${name} · ${t().soon}`);
 // Online sections need the internet; offline ones (Play Offline, Levels) keep working. Same words as the app's offline screen.
 const needNet = (fn) => (...a) => { if (navigator.onLine === false) return msg(S("offline_needed") + ". " + S("offline_screen_body")); return fn(...a); };
-$("tl-online").onclick = needNet(adultOnly(msg, async () => { await ensureWords(); show("onl"); }));
+$("tl-online").onclick = needNet(adultOnly(msg, async () => { if (!(await lockGate(ctx, () => $("tl-online").click()))) return; await ensureWords(); show("onl"); }));
 $("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("onl"); $("oc-back").onclick = () => show("onl");
 $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
@@ -1112,7 +1133,7 @@ setTimeout(async () => { if (P.nickClaimed || childMode()) return; const n = awa
 setTimeout(() => net.listen("invites", (list) => {
   const inv = list[0]; if (!inv || current === "onw" || current === "draw" || current === "guess") return;
   const tx = S("friends_incoming_invite", inv.fromNickname);
-  ctx.confirm(tx, S("friends_accept_invite"), async () => { net.consumeInvite(inv.id).catch(() => {}); const r = await joinWithCode(ctx, inv.roomCode); if (r !== "ok") msg(inLang({ tr: "Odaya katılınamadı.", en: "Couldn't join the room.", pt: "Não foi possível entrar na sala.", es: "No se pudo entrar a la sala." })); });
+  ctx.confirm(tx, S("friends_accept_invite"), async () => { net.consumeInvite(inv.id).catch(() => {}); const r = await joinWithCode(ctx, inv.roomCode); if (r !== "ok") msg(joinErrorText(r)); });
   $("dlg-no").onclick = () => { net.consumeInvite(inv.id).catch(() => {}); $("dialog").classList.add("hidden"); };
 }).catch(() => {}), 4000);
 applyLang();
@@ -1130,7 +1151,7 @@ function afterSplash(fn, delay = 0) {
   if (!document.getElementById("splash")) return go();
   const t = setInterval(() => { if (!document.getElementById("splash")) { clearInterval(t); go(); } }, 100);
 }
-if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); if (legalNeeded()) openAgeGate(stage); }; } else { show("home"); afterSplash(() => { if (legalNeeded()) openAgeGate(stage); else if (current === "home") dailyRescue(ctx, () => {}); }, 600); }
+if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); if (legalNeeded()) openAgeGate(stage); }; } else { show("home"); afterSplash(() => { if (legalNeeded()) openAgeGate(stage); else if (current === "home") dailyRescue(ctx, () => {}); }, 600); afterSplash(() => { if (current === "home" && !legalNeeded()) checkPenalties(ctx); }, 2500); afterSplash(() => { if (current === "home" && !legalNeeded() && !childMode()) checkStreakPrompt(ctx); }, 6000); }
 // The game is served at "/" while the worker file lives in /oyna/, so there it asks for the whole site (allowed by the
 // Service-Worker-Allowed header in firebase.json); opened as /oyna/ it keeps its own folder.
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js", location.pathname.startsWith("/oyna/") ? undefined : { scope: "/" }).catch(() => {});

@@ -154,14 +154,14 @@ function openChest(c, ch, win) {
   openingScene(c, rw);
 }
 /** A chest opened on the spot (login-streak days, coupons): the same loot and the same opening scene. */
-export function openNow(c, tier) {
-  const P = c.P; P.__fx = c.runeFx; const rw = roll(P, tier); pay(P, rw); c.saveP(); c.refreshHome(); openingScene(c, rw);
+export function openNow(c, tier, then) {
+  const P = c.P; P.__fx = c.runeFx; const rw = roll(P, tier); pay(P, rw); c.saveP(); c.refreshHome(); openingScene(c, rw, then);
 }
 export const reward = (c, tier, rw) => openingScene(c, { tier, ...rw });
 
 // ---------- the opening scene: the tier's video, then the reward (ChestOpeningScene) ----------
 const TAIL_TRIM = 0.15; // the clips now end as the screen turns white
-function openingScene(c, rw) {
+function openingScene(c, rw, then) {
   const { $ } = c, T = TIER[rw.tier], host = $("stage"), ov = el("div", "os2"); host.append(ov);
   let stage = 0, stopFx = null, done = false; const timers = [];
   const vid = el("video", "os2-v"); vid.src = `video/${T.video}.mp4`; vid.playsInline = true; vid.setAttribute("playsinline", ""); vid.autoplay = true; vid.muted = !(c.P.prefs && c.P.prefs.s0);
@@ -216,7 +216,7 @@ function openingScene(c, rw) {
     let skip = false;
     const t0 = performance.now(), count = (now) => { const p = skip ? 1 : Math.min(1, Math.max(0, (now - t0 - delays.count) / countMs)), e = 1 - Math.pow(1 - p, 3); setGold(Math.round(rw.gold * e)); if (p < 1) timers.push(requestAnimationFrame(count)); };
     timers.push(requestAnimationFrame(count));
-    const close = () => { if (done) return; done = true; timers.forEach(cancelAnimationFrame); removeEventListener("resize", fitBoard); stopFx && stopFx(); ov.remove(); };
+    const close = () => { if (done) return; done = true; timers.forEach(cancelAnimationFrame); removeEventListener("resize", fitBoard); stopFx && stopFx(); ov.remove(); then && then(); };
     const btn = board.querySelector(".rb-btn");
     btn.onclick = (ev) => { ev.stopPropagation(); if (stage === 2) close(); };
     timers.push(setTimeout(() => { stage = 2; }, btnAt + 150));

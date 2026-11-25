@@ -94,6 +94,94 @@ for (const name of DEVICES) {
       if (await page.$(".pc-ov.pf") || !(await page.evaluate(() => window.__karalak.P.runesIntroSeen))) problems.push(`[${name}] the Runes' window did not close and stay read`);
     }
   } catch (e) { problems.push(`[${name}] rune intro: ${e.message.split("\n")[0]}`); }
+  // the "how do you want to play?" window over a friend (opened straight from its module: the test has no friends)
+  current = "play_choice";
+  try {
+    await page.evaluate(() => window.__karalak.show("friends")); await page.waitForTimeout(500);
+    await page.evaluate(async () => { const m = await import("./ui.js"); window.__picked = []; m.playChoiceDialog(document.getElementById("stage"), { onRoom: () => window.__picked.push("room"), onDuel: () => window.__picked.push("duel") }); });
+    await page.waitForTimeout(900);
+    if (!(await page.$(".pc-ov.pcw"))) problems.push(`[${name}] the play choice window did not open`);
+    else {
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_play_choice.jpg`), type: "jpeg", quality: 72 });
+      const bars = await page.$$(".pc-ov.pcw .pc-btn");
+      if (bars.length !== 2) problems.push(`[${name}] the play choice window has ${bars.length} buttons, not 2`);
+      else {
+        await bars[1].tap(); await page.waitForTimeout(300);
+        if ((await page.evaluate(() => window.__picked.join())) !== "duel" || (await page.$(".pc-ov.pcw"))) problems.push(`[${name}] choosing a duel did not answer and close the window`);
+      }
+    }
+  } catch (e) { problems.push(`[${name}] play choice: ${e.message.split("\n")[0]}`); }
+  // the penalty window (taken from the app) and the lockout scene, both opened straight from their module: the test account has no penalties
+  current = "penalty";
+  try {
+    await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
+    await page.evaluate(async () => { const m = await import("./penalty.js"); m.penaltyDialog(window.__karalak, [{ id: "t", xpRevoked: 120, goldRevoked: 0, strike: 2, lockedUntil: Date.now() + 2 * 3600 * 1000 + 5000, createdAt: Date.now(), breaksDailyStreak: false }]); });
+    await page.waitForTimeout(900);
+    if (!(await page.$(".pc-ov.pen"))) problems.push(`[${name}] the penalty window did not open`);
+    else {
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_penalty.jpg`), type: "jpeg", quality: 72 });
+      await page.evaluate(() => document.querySelector(".pc-ov.pen .pen-b").click()); await page.waitForTimeout(300);
+      if (await page.$(".pc-ov.pen")) problems.push(`[${name}] the penalty window's button did not close it`);
+    }
+    await page.evaluate(async () => { const m = await import("./penalty.js"); window.__freed = false; m.lockScene(window.__karalak, Date.now() + 26 * 3600 * 1000 + 3723000, () => { window.__freed = true; }); });
+    await page.waitForTimeout(900);
+    if (!(await page.$(".lk-ov"))) problems.push(`[${name}] the lockout scene did not open`);
+    else {
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_locked.jpg`), type: "jpeg", quality: 72 });
+      const txt = await page.evaluate(() => document.querySelector(".lk-clock").textContent);
+      if (!/\d/.test(txt) || !/:/.test(txt)) problems.push(`[${name}] the lockout countdown shows "${txt}"`);
+      await page.evaluate(() => document.querySelector(".lk-back").click()); await page.waitForTimeout(200);
+      if (await page.$(".lk-ov")) problems.push(`[${name}] the lockout scene's back button did not close it`);
+    }
+  } catch (e) { problems.push(`[${name}] penalty/lock: ${e.message.split("\n")[0]}`); }
+  // last month's league prize window (taken from the app), opened straight from its module
+  current = "league_win";
+  try {
+    await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
+    await page.evaluate(async () => { const m = await import("./league.js"); m.prizeDialog(window.__karalak, "PEN:LEAGUE_AURORA", 2); }); await page.waitForTimeout(900);
+    if (!(await page.$(".pc-ov.lw"))) problems.push(`[${name}] the league prize window did not open`);
+    else {
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_league_win.jpg`), type: "jpeg", quality: 72 });
+      await page.evaluate(() => document.querySelector(".pc-ov.lw .lw-btn").click()); await page.waitForTimeout(300);
+      if (await page.$(".pc-ov.lw")) problems.push(`[${name}] the league prize window's button did not close it`);
+    }
+  } catch (e) { problems.push(`[${name}] league win: ${e.message.split("\n")[0]}`); }
+  // "Kupon kodunu nasıl kazanırım?" (the painted window in Turkish, as in the app)
+  current = "coupon_how";
+  try {
+    await page.evaluate(() => window.__karalak.show("settings")); await page.waitForTimeout(500);
+    await page.evaluate(() => document.getElementById("se-how").click()); await page.waitForTimeout(900);
+    if (!(await page.$(".pc-ov.cph"))) problems.push(`[${name}] the coupon window did not open`);
+    else {
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_coupon_how.jpg`), type: "jpeg", quality: 72 });
+      await page.evaluate(() => document.querySelector(".pc-ov.cph .pc-btn").click()); await page.waitForTimeout(300);
+      if (await page.$(".pc-ov.cph")) problems.push(`[${name}] the coupon window's close button did not close it`);
+    }
+  } catch (e) { problems.push(`[${name}] coupon how: ${e.message.split("\n")[0]}`); }
+  // the friend-streak windows (a prize, a streak that ends today), opened straight from their module
+  for (const [which, prompt] of [["reward", { k: "reward", pair: "a_b", run: 1, name: "Ece", milestone: 7, reward: { gold: 100 } }], ["risk", { k: "risk", items: [{ pair: "a_b", uid: "b", name: "Ece", count: 4 }] }]]) {
+    current = "fstreak_" + which;
+    try {
+      await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
+      await page.evaluate(async (p) => { const m = await import("./fstreak.js"); m.showPrompt(window.__karalak, p, 1); }, prompt); await page.waitForTimeout(700);
+      if (!(await page.$(".aw-ov.fs-win"))) problems.push(`[${name}] the ${which} streak window did not open`);
+      else {
+        await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_fstreak_${which}.jpg`), type: "jpeg", quality: 72 });
+        await page.evaluate(() => document.querySelector(".aw-ov.fs-win .prim").click()); await page.waitForTimeout(300);
+        if (await page.$(".aw-ov.fs-win")) problems.push(`[${name}] the ${which} streak window's button did not close it`);
+      }
+    } catch (e) { problems.push(`[${name}] streak ${which}: ${e.message.split("\n")[0]}`); }
+  }
+  // Hızlı Eşleş's two message states (pool empty / opponent not fetched), with "Tekrar Ara"
+  for (const which of ["empty", "failed"]) {
+    current = "qmsg_" + which;
+    try {
+      await page.evaluate((w) => window.__karalak.quickMessage(w), which); await page.waitForTimeout(700);
+      const t = await page.evaluate(() => document.getElementById("qm-t").textContent.trim());
+      if (!t || (await page.evaluate(() => window.__karalak.current())) !== "qmsg") problems.push(`[${name}] the ${which} message did not open (title "${t}")`);
+      else await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_qm_${which}.jpg`), type: "jpeg", quality: 72 });
+    } catch (e) { problems.push(`[${name}] qm ${which}: ${e.message.split("\n")[0]}`); }
+  }
   // taps: a home tile and a rune must answer
   current = "tap"; await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
   await page.tap("#tl-settings").catch((e) => problems.push(`[${name}] tap on Ayarlar failed: ${e.message.split("\n")[0]}`));

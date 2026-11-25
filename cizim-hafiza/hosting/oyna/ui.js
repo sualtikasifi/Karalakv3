@@ -135,6 +135,27 @@ export function paintedFrameDialog(host, { title, body, buttonText, onClick }) {
 }
 
 /**
+ * "How do you want to play?" over a friend (PlayChoiceDialog.kt): a live room right now, or a duel the friend answers whenever they like. The
+ * window is one painted picture (948 x 1152) carrying the ribbon, the two orange bars with their icons and the two cream boxes under them;
+ * the words are laid over it, and a tap on a whole orange bar chooses it.
+ */
+export function playChoiceDialog(host, { onRoom, onDuel }) {
+  const card = paintedCard(host, { art: "play_choice_window", w: 948, h: 1152, cls: "pcw" }), { put, fit } = card;
+  card.card.setAttribute("role", "dialog"); card.card.setAttribute("aria-label", S("friends_pick_title"));
+  const lettered = (r, text, outline, base, min, title) => { const e = put("pc-lbl", r, '<span class="pc-lt"></span>'); e.style.setProperty("--ol", outline); e.firstChild.textContent = text; fit(e, base, 1, min); return e; };
+  lettered([225, 140, 735, 245], S("friends_pick_title"), "#3a0f5e", 84, 0.45, true);
+  const choice = (label, desc, barTop, descTop, fn) => {
+    const bar = put("pc-btn", [95, barTop, 850, barTop + 144], ""); bar.setAttribute("role", "button"); bar.setAttribute("aria-label", label);
+    bar.onclick = () => { card.close(); fn(); };
+    lettered([95 + 228, barTop + 14, 95 + 228 + 515, barTop + 14 + 112], label, "#8a3a00", 64, 0.5);
+    const d = put("pc-desc", [125, descTop, 820, descTop + 96], "<span></span>"); d.firstChild.textContent = desc; fit(d, 33, 3, 0.5);
+  };
+  choice(S("friends_pick_room"), S("friends_pick_room_desc"), 406, 560, onRoom);
+  choice(S("friends_pick_duel"), S("friends_pick_duel_desc"), 708, 862, onDuel);
+  return card;
+}
+
+/**
  * Ads only exist in the phone app, so every "watch an ad" spot on the web says so and sends the player to the store instead
  * of pretending to show one.
  */

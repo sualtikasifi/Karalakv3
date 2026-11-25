@@ -1,6 +1,7 @@
 import * as net from "./firebase.js";
 import { S } from "./i18n.js";
-import { friendInviteText, shareInvite } from "./ui.js";
+import { friendInviteText, shareInvite, playChoiceDialog } from "./ui.js";
+import { streakOf, chip, watchStreaks } from "./fstreak.js";
 
 // The screen's words are the app's own (strings.json), so the web never drifts from it (the invite reward was once "500 XP" here
 // while the app paid gold). Only what the app does not say has its own words: it shows one "could not add" for a wrong code or
@@ -50,7 +51,8 @@ export async function openFriends(c) {
     unsubs.push(await net.listen("friends", (l) => { friends = l; renderFriends(c); }));
     unsubs.push(await net.listen("friendRequests", (l) => { requests = l; renderFriends(c); }));
     unsubs.push(await net.listen("blockedUsers", (l) => { blocked = l; renderFriends(c); }));
-  } catch { msg = words(c.lang()).err; renderFriends(c); }
+    watchStreaks(() => { if (c.current() === "friends") renderFriends(c); });
+  } catch { msg = S("error_friend_list_failed"); renderFriends(c); }
 }
 export function stop() { unsubs.forEach((u) => { try { u(); } catch {} }); unsubs = []; }
 
@@ -91,14 +93,16 @@ export function renderFriends(c) {
   }
   friends.forEach((f) => {
     const row = el("div", "fr-row", `<span class="nm">${esc(f.nickname || "?")}</span>`);
-    const inv = el("button", "fr-pill", x.invite), more = el("button", "fr-more", "⋮");
-    inv.onclick = () => c.inviteFriend(f);
+    // "Meydan Oku" asks how to play first: a live room right now, or a duel the friend answers whenever they like (FriendRow)
+    const inv = el("button", "fr-pill", S("duel_challenge_action")), more = el("button", "fr-more", "⋮");
+    inv.onclick = () => playChoiceDialog(c.$("stage"), { onRoom: () => c.inviteFriend(f), onDuel: () => c.openDuel({ uid: f.id, name: f.nickname || "?" }) });
     more.onclick = () => menu(c, f, x);
+    const sv = streakOf(f.id, net.turkeyDay()); if (sv) row.insertBefore(chip(sv), inv);
     row.append(inv, more); list.append(row);
   });
   if (blocked.length) {
     list.append(el("div", "fr-sec", x.blockedT));
-    blocked.forEach((b) => { const row = el("div", "fr-row", `<span class="nm">${esc(b.nickname || "?")}</span>`); const u = el("button", "fr-pill", x.unblock); u.onclick = () => net.unblockUser(b.id); row.append(u); list.append(row); });
+    blocked.forEach((b) => { const row = el("div", "fr-row", `<span class="nm">${esc(b.nickname || "?")}</span>`); const u = el("button", "fr-pill", x.unblock); u.onclick = () => net.unblockUser(b.id).catch(() => c.info(S("error_unblock_failed"))); row.append(u); list.append(row); });
   }
 }
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
@@ -106,9 +110,8 @@ function menu(c, f, x) {
   const { $ } = c, d = $("fr-menu"); d.classList.remove("hidden"); d.replaceChildren();
   const box = el("div", "fr-mbox", `<b>${esc(f.nickname || "?")}</b>`);
   const a = (label, q, yes, fn) => { const b = el("button", "pill cream small", `<span>${label}</span>`); b.onclick = () => { d.classList.add("hidden"); c.confirm(q, yes, fn); }; box.append(b); };
-  const dl = el("button", "pill orange small", `<span>${S("duel_challenge_action")}</span>`); dl.onclick = () => { d.classList.add("hidden"); c.openDuel({ uid: f.id, name: f.nickname || "?" }); }; box.append(dl);
-  a(x.remove, x.removeQ(f.nickname || "?"), x.yes, () => net.removeFriend(f.id));
-  a(x.block, x.blockQ(f.nickname || "?"), x.yesBlock, () => net.blockUser(f.id, f.nickname || "?"));
+  a(x.remove, x.removeQ(f.nickname || "?"), x.yes, () => net.removeFriend(f.id).catch(() => c.info(S("error_friend_remove_failed"))));
+  a(x.block, x.blockQ(f.nickname || "?"), x.yesBlock, () => net.blockUser(f.id, f.nickname || "?").catch(() => c.info(S("error_block_failed"))));
   const cancel = el("button", "pill cream small", `<span>${x.no}</span>`); cancel.onclick = () => d.classList.add("hidden"); box.append(cancel);
   d.append(box); d.onclick = (e) => { if (e.target === d) d.classList.add("hidden"); };
 }
