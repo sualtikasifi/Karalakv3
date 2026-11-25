@@ -28,7 +28,7 @@ const T = {
 };
 // texts that are the app's own (strings.json), so they cannot drift from it
 useAppTexts(T, { linked: "account_signed_in_title", max: "level_max_reached", user: "account_section_username", welcome: "account_signed_in_restored" });
-let who = null, msg = "", msgBad = false, busy = false, linkedNow = false;
+let who = null, msg = "", msgBad = false, busy = false, linkedNow = false, msgShown = false;
 
 // The painted scene (bg_account) is 836 x 1882; the web's art units are 841 x 1870, so every box below is converted.
 const FX = 841 / 836, FY = 1870 / 1882;
@@ -92,7 +92,9 @@ function paint(c) {
   $("ak-out").style.display = linked ? "" : "none"; $("ak-out-t").textContent = S("account_sign_out");
   $("ak-edit").onclick = () => openNickEdit(c);
   $("ak-del").textContent = S("account_delete_action"); $("ak-del").style.display = ""; // a guest has data on the server too (profile, rounds, league score), so it can be deleted as well
-  const m = $("ak-msg"); m.textContent = msg; m.style.display = msg ? "" : "none"; m.classList.toggle("bad", msgBad); if (c.relayout) requestAnimationFrame(() => c.relayout());
+  const m = $("ak-msg"); m.textContent = msg; m.style.display = msg ? "" : "none"; m.classList.toggle("bad", msgBad);
+  // measure the page afresh only when the message appears or goes (painting runs from the layout itself: an unconditional call would loop)
+  if (!!msg !== msgShown) { msgShown = !!msg; if (c.relayout) requestAnimationFrame(() => c.relayout()); }
   const done = (text, bad = false) => { msg = text; msgBad = bad; busy = false; c.refreshHome(); renderAccount(c); };
   const read = () => {
     const name = $("ak-user").value.trim().toLowerCase(), pass = $("ak-pass").value;
@@ -100,7 +102,7 @@ function paint(c) {
     if (pass.length < 6) { msg = x.badPass; msgBad = true; renderMsg(); return null; }
     return { name, pass };
   };
-  const renderMsg = () => { const e = $("ak-msg"); e.textContent = msg; e.style.display = msg ? "" : "none"; e.classList.toggle("bad", msgBad); c.relayout && c.relayout(); };
+  const renderMsg = () => { const e = $("ak-msg"); e.textContent = msg; e.style.display = msg ? "" : "none"; e.classList.toggle("bad", msgBad); if (!!msg !== msgShown) { msgShown = !!msg; c.relayout && c.relayout(); } };
   const go = async (fn, okText) => {
     if (childMode()) { msg = S("child_feature_locked"); msgBad = true; renderMsg(); return; } // a web account is for ages 13 and up (agegate.js)
     if (busy) return; const v = read(); if (!v) return; busy = true; msg = "…"; msgBad = false; renderMsg();
