@@ -341,6 +341,17 @@ export async function removeFriend(fu) {
 }
 export async function blockUser(uid2, nick) { const { fs, db, auth } = await init(); await fs.setDoc(fs.doc(db, "users", auth.currentUser.uid, "blockedUsers", uid2), { nickname: nick, blockedAt: Date.now() }); }
 export async function unblockUser(uid2) { const { fs, db, auth } = await init(); await fs.deleteDoc(fs.doc(db, "users", auth.currentUser.uid, "blockedUsers", uid2)); }
+/**
+ * UX-only pre-check before an invite (FriendRepositoryImpl.canInvite): "blocked" when that player blocked this account, the remaining
+ * minutes when they declined an invite less than five minutes ago, otherwise null. firestore.rules enforces both again on the write.
+ */
+export async function inviteBlock(toUid) {
+  const { fs, db, auth } = await init(), me = auth.currentUser.uid;
+  if ((await fs.getDoc(fs.doc(db, "users", toUid, "blockedUsers", me))).exists()) return { blocked: true };
+  const cd = await fs.getDoc(fs.doc(db, "users", toUid, "inviteCooldowns", me));
+  const left = cd.exists() && Number(cd.data().declinedAt) ? Number(cd.data().declinedAt) + 5 * 60 * 1000 - Date.now() : 0;
+  return left > 0 ? { minutes: Math.floor(left / 60000) + 1 } : null;
+}
 export async function sendInvite(toUid, roomCode, myNick) {
   const { fs, db, auth } = await init();
   await fs.addDoc(fs.collection(db, "users", toUid, "invites"), { fromUid: auth.currentUser.uid, fromNickname: myNick, roomCode, sentAt: Date.now() });
@@ -365,6 +376,9 @@ export async function createRoom(nick, level, frameId, { wordCount, difficulty, 
   }
   throw new Error("code");
 }
+/** How long the account stays removed from the room joinRoom last refused with "kicked" (error_kicked_from_room names the minutes). */
+let kickLeftMs = 0;
+export const kickMinutes = () => Math.max(1, Math.ceil(kickLeftMs / 60000));
 export async function joinRoom(code, nick, level, frameId) {
   const { fs, db, auth } = await init(), uid = auth.currentUser.uid, ref = fs.doc(db, "rooms", code);
   return fs.runTransaction(db, async (tx) => {
@@ -372,7 +386,7 @@ export async function joinRoom(code, nick, level, frameId) {
     if (!s.exists()) return "notfound";
     const d = s.data(), players = d.players || {}, now = Date.now();
     const kicked = d.kickedUsers && d.kickedUsers[uid];
-    if (kicked && kicked.until > now) return "kicked";
+    if (kicked && kicked.until > now) { kickLeftMs = kicked.until - now; return "kicked"; }
     const present = Object.values(players).filter((p) => !p.left && now - (p.lastSeenAt || p.joinedAt || 0) <= 150000);
     const team = !!d.teamMode;
     if (!(uid in players) && present.length >= (team ? 4 : 8)) return "full";

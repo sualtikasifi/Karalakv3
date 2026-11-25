@@ -151,7 +151,7 @@ function banner(lang) {
   const b = document.createElement("div"); b.className = "lg-banner";
   const icon = document.createElement("div"); icon.className = "lb-i";
   if (frame) icon.append(frameRing(frame, "lb-fr")); else icon.textContent = "🏆";
-  const label = pen ? pen[lang] || pen.en : S("league_reward_kind_frame") + (key.startsWith("LEAGUE_CHAMPION_") ? " " + key.replace("LEAGUE_CHAMPION_", "").replace(/_/g, "-") : "");
+  const label = pen ? pen[lang] || pen.en : S("league_reward_kind_frame") + (key.startsWith("LEAGUE_CHAMPION_") ? " · " + key.replace("LEAGUE_CHAMPION_", "").replace(/_/g, "-") : "");
   const mid = document.createElement("div"); mid.className = "lb-m"; mid.innerHTML = `<small>${S("league_reward_title")}</small><b>${label}</b>`;
   if (pen) { const cv = document.createElement("canvas"); cv.className = "lb-pen"; mid.append(cv); penPreview(cv, pen.colors); }
   const r = document.createElement("div"); r.className = "lb-r"; r.innerHTML = `<span>${S("league_reward_bonus_gold", fmtNum(eco.CFG.leagueMonthlyGold))}</span><span>${S("league_reward_bonus_xp", fmtNum(10000))}</span><small>${S("league_reward_top3")}</small>`;
@@ -234,7 +234,7 @@ function prizeDialog(c, rid, rank) {
     if (pen) { const cv = document.createElement("canvas"); cv.className = "lw-pen"; box.append(cv); penPreview(cv, pen.colors); }
     else box.append(frameRing(frame, "lw-fr"));
     const l = document.createElement("div"); l.className = "lw-l"; const sp = document.createElement("span");
-    sp.textContent = pen ? pen[lang] || pen.en : S("league_reward_kind_frame") + (key.startsWith("LEAGUE_CHAMPION_") ? " " + key.replace("LEAGUE_CHAMPION_", "").replace(/_/g, "-") : ""); l.append(sp); box.append(l);
+    sp.textContent = pen ? pen[lang] || pen.en : S("league_reward_kind_frame") + (key.startsWith("LEAGUE_CHAMPION_") ? " · " + key.replace("LEAGUE_CHAMPION_", "").replace(/_/g, "-") : ""); l.append(sp); box.append(l);
     fit(l, 84, 1, 0.5);
   }
   const b = put("lw-b", WIN.body, "<span></span>"); b.firstChild.textContent = S("league_win_body"); fit(b, 46, 2, 0.6);

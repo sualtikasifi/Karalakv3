@@ -13,7 +13,7 @@ import { todayEpoch, msToMidnight, dailyWords, state as dailyState, record as da
 import { drawFxStroke } from "./penfx.js";
 import { openPenPicker, openFramePicker, openNickEdit } from "./picker.js";
 import { setPrefs, sfx, vibrate, initAudio, syncMusic } from "./audio.js";
-import { layoutOnline, renderFinished, renderEntry, renderCreate, renderJoin, leaveLobby, submitAndWait, joinWithCode, quickInvite } from "./online.js";
+import { layoutOnline, renderFinished, renderEntry, renderCreate, renderJoin, leaveLobby, submitAndWait, joinWithCode, joinErrorText, quickInvite } from "./online.js";
 import { openDuels, stopDuels, renderDuels, openCreateDuel, recordReceived as duelReceived } from "./duel.js";
 import { layoutFriends, openFriends, renderFriends, stop as stopFriends } from "./friends.js";
 import { loadWorlds, layoutWorlds, renderWorlds, layoutMap, renderMap, mixFor, starsFor, recordLevel, currentWorld } from "./levels.js";
@@ -100,7 +100,7 @@ const ctx = {
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height, fillH: () => (safeRows[current] ? safeRows[current].b * u : stage.getBoundingClientRect().height),
   quickMessage: (w) => quickMessage(w),
-  inviteFriend: async (f) => { if (!(await lockGate(ctx, () => ctx.inviteFriend(f)))) return; await quickInvite(ctx, f); stopFriends(); show("onw"); },
+  inviteFriend: async (f) => { if (!(await lockGate(ctx, () => ctx.inviteFriend(f)))) return; if (!(await quickInvite(ctx, f))) return; stopFriends(); show("onw"); },
   sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
@@ -1132,7 +1132,7 @@ setTimeout(async () => { if (P.nickClaimed || childMode()) return; const n = awa
 setTimeout(() => net.listen("invites", (list) => {
   const inv = list[0]; if (!inv || current === "onw" || current === "draw" || current === "guess") return;
   const tx = S("friends_incoming_invite", inv.fromNickname);
-  ctx.confirm(tx, S("friends_accept_invite"), async () => { net.consumeInvite(inv.id).catch(() => {}); const r = await joinWithCode(ctx, inv.roomCode); if (r !== "ok") msg(inLang({ tr: "Odaya katılınamadı.", en: "Couldn't join the room.", pt: "Não foi possível entrar na sala.", es: "No se pudo entrar a la sala." })); });
+  ctx.confirm(tx, S("friends_accept_invite"), async () => { net.consumeInvite(inv.id).catch(() => {}); const r = await joinWithCode(ctx, inv.roomCode); if (r !== "ok") msg(joinErrorText(r)); });
   $("dlg-no").onclick = () => { net.consumeInvite(inv.id).catch(() => {}); $("dialog").classList.add("hidden"); };
 }).catch(() => {}), 4000);
 applyLang();

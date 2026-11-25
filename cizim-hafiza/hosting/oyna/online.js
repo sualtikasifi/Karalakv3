@@ -39,7 +39,7 @@ const T = {
         done: (n) => `¡Terminaste! ${n} puntos`, waiting: "Esperando a que los demás jugadores terminen…", place: (n) => `¡Quedaste en el puesto ${n}!`, drawings: "¿Dibujos de quién?", ofTotal: (a, b) => `${a}/${b} aciertos`, rematch: "Jugar de Nuevo", lobbyBack: "Volver a la sala", pts: "pts", leaveQ: "¿Salir de la sala?" },
 };
 // texts that are the app's own (strings.json), so they cannot drift from it
-useAppTexts(T, { full: "error_room_full" });
+useAppTexts(T, { full: "error_room_full", notfound: "error_room_not_found" });
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
 const PRESENCE = 150000;
@@ -128,21 +128,24 @@ export async function renderCreate(c, keepScale = false) {
       const cat = opts.cats.size ? [...opts.cats].sort().join(",") : null;
       const cd = await net.createRoom(c.P.nick, lv, c.P.frame, { wordCount: opts.wordCount, difficulty: all, mode: opts.mode, category: cat, teamMode: opts.team });
       enterLobby(c, cd);
-    } catch { $("oc-msg").textContent = x.err; idle(); }
+    } catch { $("oc-msg").textContent = S("error_room_create_failed"); idle(); }
   };
 }
+/** "Bu odadan atıldın, N dakika sonra tekrar deneyebilirsin" (error_kicked_from_room). */
+export const joinErrorText = (r) => (r === "kicked" ? kickText() : r === "notfound" ? S("error_room_not_found") : r === "full" ? S("error_room_full") : S("error_no_connection"));
+const kickText = () => { const m = net.kickMinutes(); return S(m === 1 ? "error_kicked_from_room_one" : "error_kicked_from_room", m); };
 export function renderJoin(c) {
   const { $, P, lang } = c, x = T[lang()];
   $("oj-title").textContent = S("online_join_room"); $("oj-go-t").textContent = S("online_join_room_action"); $("oj-l1").textContent = S("online_nickname_label"); $("oj-l2").textContent = S("online_room_code_label"); $("oj-msg").textContent = "";
   $("oj-nick").value = P.nick; $("oj-code").placeholder = S("friends_add_friend_hint");
   $("oj-code").oninput = () => { $("oj-code").value = $("oj-code").value.replace(/\D/g, "").slice(0, 6); };
   $("oj-go").onclick = async () => {
-    const cd = $("oj-code").value; if (cd.length !== 6) return;
+    const cd = $("oj-code").value; if (cd.length !== 6) { $("oj-msg").textContent = S("error_room_code_length"); return; }
     const nick = ($("oj-nick").value || P.nick).trim().slice(0, 20) || P.nick; $("oj-msg").textContent = "…";
     try {
       const r = await net.joinRoom(cd, nick, c.levelOf(P.xp).level, P.frame);
-      if (r === "ok") enterLobby(c, cd); else $("oj-msg").textContent = x[r] || x.err;
-    } catch { $("oj-msg").textContent = x.err; }
+      if (r === "ok") enterLobby(c, cd); else $("oj-msg").textContent = r === "kicked" ? kickText() : x[r] || S("error_no_connection");
+    } catch { $("oj-msg").textContent = S("error_no_connection"); }
   };
 }
 export const joinWithCode = async (c, cd) => {
@@ -373,9 +376,16 @@ export const roomCode = () => code;
 export const roomNow = () => room;
 
 // Invite a friend straight from the friends list: opens a room if there is none, then sends the invite.
+/** Creates a quick room (if none is open) and invites [f] to it, with the app's messages for each way it can fail. Resolves true when the player should go to the room. */
 export async function quickInvite(c, f) {
+  try { const why = await net.inviteBlock(f.id);
+    if (why && why.blocked) { c.info(S("error_invite_blocked")); return false; }
+    if (why) { c.info(S(why.minutes === 1 ? "error_invite_cooldown_one" : "error_invite_cooldown", why.minutes)); return false; }
+  } catch {} // the pre-check is a courtesy; the write is what rules enforce
   try {
     if (!code) { const cd = await net.createRoom(c.P.nick, c.levelOf(c.P.xp).level, c.P.frame, { wordCount: 10, difficulty: null, mode: "NORMAL", category: null }); await enterLobby(c, cd); }
-    await net.sendInvite(f.id, code, c.P.nick); sent.add(f.id);
-  } catch {}
+  } catch { c.info(S("error_invite_send_failed")); return false; }
+  // the room exists whether or not the invite arrives: a failed send leaves the player in it, with the code to share
+  try { await net.sendInvite(f.id, code, c.P.nick); sent.add(f.id); } catch { c.info(S("error_invite_failed_room_ready")); }
+  return true;
 }
