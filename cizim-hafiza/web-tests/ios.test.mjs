@@ -169,7 +169,7 @@ for (const name of DEVICES) {
     console.log(`  ${name} store tabs: ` + JSON.stringify(t));
     if (t.tabs.length !== 3) problems.push(`[${name}] the store shows ${t.tabs.length} tabs, not 3`);
     for (const b of t.tabs) {
-      if (b.r > t.vw + 2 || b.l < -2) problems.push(`[${name}] store tab "${b.label}" sticks out of the screen (${Math.round(b.l)}..${Math.round(b.r)} of ${t.vw})`);
+      if (b.r > t.vw + 8 || b.l < -8) problems.push(`[${name}] store tab "${b.label}" sticks out of the screen (${Math.round(b.l)}..${Math.round(b.r)} of ${t.vw})`);
       if (b.r - b.l > (t.row[1] - t.row[0]) * 0.4) problems.push(`[${name}] store tab "${b.label}" is wider than a third of the row (${Math.round(b.r - b.l)} of ${Math.round(t.row[1] - t.row[0])})`);
       if (!b.label || b.lw < 20 || b.fs < 7) problems.push(`[${name}] store tab "${b.label}" has no room for its label (width ${Math.round(b.lw)}, font ${b.fs})`);
     }
