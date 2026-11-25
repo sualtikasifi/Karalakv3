@@ -56,6 +56,7 @@ on:
           - qmcancel.sh
           - runes.sh
           - frames.sh
+          - avatargallery.sh
           - pens.sh
           - exit.sh
           - exitgame.sh

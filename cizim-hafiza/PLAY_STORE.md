@@ -263,7 +263,7 @@ Oyun / Kelime Oyunu
 | Kişisel bilgiler | **Kullanıcı kimlikleri** (Firebase uid, takma ad, arkadaş kodu, web kullanıcı adı) | Zorunlu | Uygulama işlevselliği, Hesap yönetimi |
 | Kişisel bilgiler | **Diğer bilgiler** (doğum tarihi, Google hesabına) | İsteğe bağlı — Google ile giriş | Uygulama işlevselliği, Hesap yönetimi |
 | Konum | **Yaklaşık konum** (IP adresinden türetilen ülke/şehir — Firebase Analytics ve AdMob; GPS/konum izni yok) | Zorunlu (13 altında Analytics kapalı) | Analiz, Reklam, Dolandırıcılık önleme |
-| Fotoğraflar ve videolar | — (toplanmıyor; Google profil fotoğrafının yalnızca adresi saklanıyor) | — | — |
+| Fotoğraflar ve videolar | — (toplanmıyor; profil görseli oyunun hazır avatar galerisinden seçilir, kullanıcı fotoğrafı yüklenmez ve Google fotoğrafı alınmaz) | — | — |
 | Uygulama etkinliği | **Uygulama etkileşimleri** (Analytics olayları) | Zorunlu (AB'de onaya bağlı) | Analiz |
 | Uygulama etkinliği | **Kullanıcı tarafından oluşturulan diğer içerik** (çizimler, tahminler, emoji tepkileri, şikâyetler, hata bildirimi metni) | Zorunlu | Uygulama işlevselliği, Dolandırıcılık önleme/güvenlik |
 | Uygulama etkinliği | **Diğer işlemler** (skorlar, XP, altın, bölüm ilerlemesi, lig puanı) | Zorunlu | Uygulama işlevselliği |

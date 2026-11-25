@@ -11,7 +11,7 @@ sealed interface AuthState {
     data object Anonymous : AuthState
 
     /** Linked to a permanent Google account — survives an uninstall/reinstall or a new device. */
-    data class Linked(val email: String?, val displayName: String?, val photoUrl: String?) : AuthState
+    data class Linked(val email: String?, val displayName: String?) : AuthState
 }
 
 /**

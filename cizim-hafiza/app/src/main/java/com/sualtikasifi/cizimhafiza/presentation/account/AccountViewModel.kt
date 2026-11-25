@@ -20,6 +20,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.delay
@@ -129,6 +130,15 @@ class AccountViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _actionState = MutableStateFlow(AccountUiState(isGoogleSignInConfigured = authRepository.isGoogleSignInConfigured))
+
+    /** The picture inside the avatar frame: the gallery picture the player chose, else the mascot. */
+    val avatarPhoto: StateFlow<com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto> = settingsRepository.avatarSource
+        .map { com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOfSource(it) }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOfSource(settingsRepository.avatarSource.value)
+        )
 
     val uiState: StateFlow<AccountUiState> = combine(
         authRepository.authState,

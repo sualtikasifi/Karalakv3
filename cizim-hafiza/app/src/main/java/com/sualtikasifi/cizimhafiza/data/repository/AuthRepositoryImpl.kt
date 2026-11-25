@@ -115,7 +115,7 @@ class AuthRepositoryImpl @Inject constructor(
         if (user == null) return AuthState.Unknown
         val google = user.providerData.firstOrNull { it.providerId == GoogleAuthProvider.PROVIDER_ID }
             ?: return AuthState.Anonymous
-        return AuthState.Linked(email = google.email, displayName = google.displayName, photoUrl = google.photoUrl?.toString())
+        return AuthState.Linked(email = google.email, displayName = google.displayName)
     }
 
     /**

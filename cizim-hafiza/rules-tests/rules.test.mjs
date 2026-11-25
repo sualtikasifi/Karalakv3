@@ -123,6 +123,11 @@ await check("nobody writes someone else's profile", assertFails(setDoc(doc(db("u
 await check("nobody writes their own league prize", assertFails(setDoc(doc(db("u3"), "users", "u3", "private", "leagueAwards"), { won: ["crown"] })));
 await check("a profile name of 5000 characters is refused", assertFails(setDoc(doc(db("u5"), "users", "u5"), { nickname: "x".repeat(5000) }, { merge: true })));
 await check("a Google photo is accepted as the picture", assertSucceeds(setDoc(doc(db("u5"), "users", "u5"), { nickname: "Ece", avatarUrl: "https://lh3.googleusercontent.com/a/abc=s96-c" }, { merge: true })));
+await check("a gallery picture is accepted as the picture", assertSucceeds(setDoc(doc(db("u5"), "users", "u5"), { avatarUrl: "avatar:bunny_astronaut" }, { merge: true })));
+await check("a gallery id with other characters is refused", assertFails(setDoc(doc(db("u5"), "users", "u5"), { avatarUrl: "avatar:../fox" }, { merge: true })));
+await check("a gallery id in capitals is refused", assertFails(setDoc(doc(db("u5"), "users", "u5"), { avatarUrl: "avatar:FOX" }, { merge: true })));
+await check("an empty gallery id is refused", assertFails(setDoc(doc(db("u5"), "users", "u5"), { avatarUrl: "avatar:" }, { merge: true })));
+await check("a too long gallery id is refused", assertFails(setDoc(doc(db("u5"), "users", "u5"), { avatarUrl: "avatar:" + "a".repeat(33) }, { merge: true })));
 await check("any other picture address is refused", assertFails(setDoc(doc(db("u5"), "users", "u5"), { avatarUrl: "https://evil.example/pixel.png" }, { merge: true })));
 await check("the owner deletes their own profile", assertSucceeds(deleteDoc(doc(db("u5"), "users", "u5"))));
 // the global table counts the players ahead of you
