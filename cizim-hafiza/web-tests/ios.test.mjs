@@ -134,6 +134,18 @@ for (const name of DEVICES) {
       if (await page.$(".lk-ov")) problems.push(`[${name}] the lockout scene's back button did not close it`);
     }
   } catch (e) { problems.push(`[${name}] penalty/lock: ${e.message.split("\n")[0]}`); }
+  // last month's league prize window (taken from the app), opened straight from its module
+  current = "league_win";
+  try {
+    await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
+    await page.evaluate(async () => { const m = await import("./league.js"); m.prizeDialog(window.__karalak, "PEN:LEAGUE_AURORA", 2); }); await page.waitForTimeout(900);
+    if (!(await page.$(".pc-ov.lw"))) problems.push(`[${name}] the league prize window did not open`);
+    else {
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_league_win.jpg`), type: "jpeg", quality: 72 });
+      await page.evaluate(() => document.querySelector(".pc-ov.lw .lw-btn").click()); await page.waitForTimeout(300);
+      if (await page.$(".pc-ov.lw")) problems.push(`[${name}] the league prize window's button did not close it`);
+    }
+  } catch (e) { problems.push(`[${name}] league win: ${e.message.split("\n")[0]}`); }
   // Hızlı Eşleş's two message states (pool empty / opponent not fetched), with "Tekrar Ara"
   for (const which of ["empty", "failed"]) {
     current = "qmsg_" + which;

@@ -8,9 +8,9 @@
 /** The amounts config/economy can change (EconomyConfig.kt); the defaults are the designed ones. */
 export const CFG = {
   goldPerCorrectWord: 10, onlineWinGold: 100, achievementGold: 100, levelGoldPerNewStar: 50,
-  dailyGoldBase: 300, dailyGoldPerStreakDay: 30, chainBonusGold: 10,
+  dailyGoldBase: 300, dailyGoldPerStreakDay: 30, chainBonusGold: 10, leagueMonthlyGold: 10000,
 };
-const RANGES = { goldPerCorrectWord: [1, 1000], onlineWinGold: [0, 10000], achievementGold: [0, 10000], levelGoldPerNewStar: [0, 10000], dailyGoldBase: [0, 100000], dailyGoldPerStreakDay: [0, 10000], chainBonusGold: [0, 1000] };
+const RANGES = { goldPerCorrectWord: [1, 1000], onlineWinGold: [0, 10000], achievementGold: [0, 10000], levelGoldPerNewStar: [0, 10000], dailyGoldBase: [0, 100000], dailyGoldPerStreakDay: [0, 10000], chainBonusGold: [0, 1000], leagueMonthlyGold: [0, 1000000] };
 const DEFAULTS = { ...CFG };
 
 /** Takes a config/economy document; a missing, wrong-typed or out-of-range field keeps its default (EconomyConfig.apply). */
