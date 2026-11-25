@@ -765,7 +765,12 @@ service cloud.firestore {
                 || (after.username is string && after.username.size() <= 40))
              && (!changed.hasAny(['avatarUrl']) || !('avatarUrl' in after)
                 || (after.avatarUrl is string
-                    && (after.avatarUrl == '' || after.avatarUrl.matches('https://lh[0-9]+[.]googleusercontent[.]com/[^ ]{1,1000}'))))
+                    && (after.avatarUrl == ''
+                        // a gallery picture (AvatarGallery.kt): the app draws it from its own resources, nothing is fetched
+                        || after.avatarUrl.matches('avatar:[a-z0-9_]{1,32}')
+                        // Older app versions still publish the Google account picture; it is accepted so their writes keep working,
+                        // and current versions never fetch it (avatarPhotoOf shows the mascot for anything but a gallery id).
+                        || after.avatarUrl.matches('https://lh[0-9]+[.]googleusercontent[.]com/[^ ]{1,1000}'))))
              && (!changed.hasAny(['frameId']) || !('frameId' in after) || (after.frameId is string && after.frameId.size() <= 64))
              // The month's start moves only together with the score (plausibleMonthScore checks it there).
              && (!changed.hasAny(['periodStartAt']) || changed.hasAny(['periodXp', 'periodId']))

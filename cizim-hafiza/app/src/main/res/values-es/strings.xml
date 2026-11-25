@@ -1322,8 +1322,7 @@
     <string name="home_level_inline">Nivel %1$d</string>
     <string name="avatar_source_title">Foto de perfil</string>
     <string name="avatar_source_karalak">Karalak</string>
-    <string name="avatar_source_google">Mi foto de Google</string>
-    <string name="avatar_source_google_locked">Inicia sesión con Google para usar tu foto de Google.</string>
+    <string name="avatar_gallery_item_cd">Avatar %1$d</string>
     <string name="avatar_frame_section">Marco</string>
     <string name="username_finalize_title">Fija tu nombre de usuario</string>
     <string name="username_finalize_body">Tu cuenta de Google está vinculada. Tu nombre de usuario y tu perfil ahora le pertenecen. Puedes cambiar el nombre una última vez; después será permanente.</string>

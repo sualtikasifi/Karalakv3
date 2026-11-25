@@ -106,7 +106,8 @@ const ctx = {
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
   startTutorial: () => playTutorial(), homeGain: (g, x) => homeGain(g, x), openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
-  fit: () => fitAll(), syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
+  fit: () => fitAll(), layout: () => layout(), relayout: () => { delete safeRows[current]; layout(); }, // a widget that appears below the visible window would be taken for a list that may shrink: measure the page afresh
+  syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   fit: () => fitAll(),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },
@@ -322,7 +323,8 @@ function fitAll() {
   for (const e of els) e.style.fontSize = "";
   // the real width of the text against the real width of the box (scrollWidth is rounded, and Safari starts the "…" at a fraction of a pixel)
   const over = (e) => (e.classList.contains("fitw") && (e.scrollWidth > e.clientWidth + 1 || textWidth(e) > e.getBoundingClientRect().width + 0.01)) || (e.classList.contains("fith") && e.scrollHeight > e.clientHeight + 1);
-  const textWidth = (e) => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect().width; };
+  // the outline (-webkit-text-stroke) is painted half its width outside each edge of the letters, so the text really takes its width + the stroke
+  const textWidth = (e) => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect().width + (parseFloat(getComputedStyle(e).webkitTextStrokeWidth) || 0); };
   const todo = [];
   for (const e of els) if (e.clientWidth >= 4 && over(e)) todo.push([e, parseFloat(getComputedStyle(e).fontSize)]);
   for (const [e, base] of todo) { let k = 1; while (k > 0.55 && over(e)) { k -= 0.04; e.style.fontSize = base * k + "px"; } }

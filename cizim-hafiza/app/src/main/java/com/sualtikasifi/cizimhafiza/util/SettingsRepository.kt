@@ -239,7 +239,7 @@ class SettingsRepository @Inject constructor(
     private val _nicknameRenameUsed = MutableStateFlow(prefs.getBoolean(KEY_NICKNAME_RENAME_USED, false))
     val nicknameRenameUsed: StateFlow<Boolean> = _nicknameRenameUsed.asStateFlow()
 
-    /** Which picture sits inside the avatar frame: "DINO", "GOOGLE", or "" (automatic: the Google photo when signed in). */
+    /** Which picture sits inside the avatar frame: "AVATAR:<id>" (a gallery picture, see AvatarGallery) or "DINO"/"" (the Karalak mascot). */
     private val _avatarSource = MutableStateFlow(prefs.getString(KEY_AVATAR_SOURCE, "") ?: "")
     val avatarSource: StateFlow<String> = _avatarSource.asStateFlow()
 

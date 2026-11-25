@@ -60,6 +60,12 @@ for (const name of DEVICES) {
     console.log(`  ${name} ${id}: stage ${Math.round(m.l)}..${Math.round(m.r)} of ${Math.round(m.w)}`);
     if (m.sw > m.iw + 1) problems.push(`[${name}] ${id}: the page scrolls sideways (${m.sw} > ${m.iw})`);
     if (m.l < -1 || m.r > m.w + 1) problems.push(`[${name}] ${id}: the game area sticks out of the window (${Math.round(m.l)}..${Math.round(m.r)} of ${Math.round(m.w)})`);
+    // a label wider than its own button is cut off (or spills): list them so a wrong-sized pill is seen in the log, not only by a player
+    const clipped = await page.evaluate(() => [...document.querySelectorAll(".screen.on button, .screen.on .pill, .screen.on .tab")].filter((b) => b.offsetParent && b.firstElementChild && b.firstElementChild.tagName === "SPAN").map((b) => { const sp = b.firstElementChild, cs = getComputedStyle(b), room = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight); return { t: sp.textContent.trim().slice(0, 30), w: Math.round(sp.scrollWidth), room: Math.round(room) }; }).filter((x) => x.t && x.room > 0 && x.w > x.room + 3));
+    if (clipped.length) console.log(`  CLIPPED [${name}] ${id}: ` + JSON.stringify(clipped));
+    // the lettered labels that fit their box by shrinking (fitw): the letters plus their outline must stay inside it (an outline on the edge reads as text spilling over)
+    const tight = await page.evaluate(() => [...document.querySelectorAll(".screen.on .fitw")].filter((e) => e.offsetParent && e.clientWidth > 4).map((e) => { const r = document.createRange(); r.selectNodeContents(e); const w = r.getBoundingClientRect().width + (parseFloat(getComputedStyle(e).webkitTextStrokeWidth) || 0); return { t: e.textContent.trim().slice(0, 30), w: Math.round(w), box: Math.round(e.getBoundingClientRect().width) }; }).filter((x) => x.t && x.w > x.box + 1));
+    if (tight.length) console.log(`  TIGHT [${name}] ${id}: ` + JSON.stringify(tight));
     await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_${id}.jpg`), type: "jpeg", quality: 72 });
     // the same screen in Chrome's engine; the share of pixels that differ shows what is Safari-only
     try {
@@ -158,6 +164,35 @@ for (const name of DEVICES) {
       if (await page.$(".pc-ov.cph")) problems.push(`[${name}] the coupon window's close button did not close it`);
     }
   } catch (e) { problems.push(`[${name}] coupon how: ${e.message.split("\n")[0]}`); }
+  // the Account page: the three stat labels stay clear of the paint splashes, and a wrong entry shows its message in red, under the buttons and inside the screen
+  current = "account_msg";
+  try {
+    await page.evaluate(() => window.__karalak.show("account")); await page.waitForTimeout(700);
+    await page.evaluate(() => { document.getElementById("ak-user").value = "a"; document.getElementById("ak-pass").value = "x"; document.getElementById("ak-reg").click(); }); await page.waitForTimeout(500);
+    const m = await page.evaluate(() => { const r = (id) => { const b = document.getElementById(id).getBoundingClientRect(); return { t: b.top, b: b.bottom, l: b.left, r: b.right }; }; const e = document.getElementById("ak-msg"); return { bad: e.classList.contains("bad"), shown: e.offsetParent !== null, color: getComputedStyle(e).color, msg: r("ak-msg"), reg: r("ak-reg"), del: r("ak-del"), vh: innerHeight, vw: innerWidth, over: e.scrollHeight > e.clientHeight + 1, stats: [0, 1, 2].map((i) => { const c = document.getElementById("ak-s" + i).getBoundingClientRect(), s = document.querySelector("#ak-s" + i + " small").getBoundingClientRect(); return { cl: c.left, cr: c.right, sl: s.left, sr: s.right }; }) }; });
+    console.log(`  ${name} account msg: ` + JSON.stringify(m));
+    if (!m.shown || !m.bad) problems.push(`[${name}] a wrong sign-up entry does not show its message as an error (shown ${m.shown}, bad ${m.bad})`);
+    if (m.msg.t < m.reg.b - 1) problems.push(`[${name}] the account message overlaps the "Hesap Oluştur" button (${Math.round(m.msg.t)} < ${Math.round(m.reg.b)})`);
+    if (m.reg.t < m.del.b - 1) problems.push(`[${name}] the "Hesap Oluştur" button overlaps the delete button`);
+    if (m.msg.b > m.vh + 1 || m.msg.l < -1 || m.msg.r > m.vw + 1) problems.push(`[${name}] the account message sticks out of the screen`);
+    if (m.over) problems.push(`[${name}] the account message does not fit its box`);
+    for (const [i, st] of m.stats.entries()) if (st.sl < st.cl + (st.cr - st.cl) * 0.12 || st.sr > st.cr - (st.cr - st.cl) * 0.12) problems.push(`[${name}] stat label ${i} runs into the card's corner splashes`);
+    await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_account_msg.jpg`), type: "jpeg", quality: 72 });
+  } catch (e) { problems.push(`[${name}] account msg: ${e.message.split("\n")[0]}`); }
+  // the store's three tabs: each must sit inside the row (not spill past the screen) and show its label (a percentage padding once made them twice as wide, with no room for the words)
+  current = "store_tabs";
+  try {
+    await page.evaluate(() => window.__karalak.show("store")); await page.waitForTimeout(700);
+    const t = await page.evaluate(() => { const row = document.getElementById("st-tabs").getBoundingClientRect(), vw = innerWidth; return { row: [row.left, row.right], vw, tabs: [...document.querySelectorAll("#st-tabs .tab")].map((b) => { const r = b.getBoundingClientRect(), s = b.firstElementChild.getBoundingClientRect(); return { l: r.left, r: r.right, label: b.textContent.trim(), lw: s.width, fs: parseFloat(getComputedStyle(b).fontSize) }; }) }; });
+    console.log(`  ${name} store tabs: ` + JSON.stringify(t));
+    if (t.tabs.length !== 3) problems.push(`[${name}] the store shows ${t.tabs.length} tabs, not 3`);
+    for (const b of t.tabs) {
+      if (b.r > t.vw + 8 || b.l < -8) problems.push(`[${name}] store tab "${b.label}" sticks out of the screen (${Math.round(b.l)}..${Math.round(b.r)} of ${t.vw})`);
+      if (b.r - b.l > (t.row[1] - t.row[0]) * 0.4) problems.push(`[${name}] store tab "${b.label}" is wider than a third of the row (${Math.round(b.r - b.l)} of ${Math.round(t.row[1] - t.row[0])})`);
+      if (!b.label || b.lw < 20 || b.fs < 7) problems.push(`[${name}] store tab "${b.label}" has no room for its label (width ${Math.round(b.lw)}, font ${b.fs})`);
+    }
+    await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_store_tabs.jpg`), type: "jpeg", quality: 72 });
+  } catch (e) { problems.push(`[${name}] store tabs: ${e.message.split("\n")[0]}`); }
   // the friend-streak windows (a prize, a streak that ends today), opened straight from their module
   for (const [which, prompt] of [["reward", { k: "reward", pair: "a_b", run: 1, name: "Ece", milestone: 7, reward: { gold: 100 } }], ["risk", { k: "risk", items: [{ pair: "a_b", uid: "b", name: "Ece", count: 4 }] }]]) {
     current = "fstreak_" + which;

@@ -37,6 +37,9 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.CircleShape
@@ -55,7 +58,6 @@ import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.PlayCircle
@@ -178,7 +180,6 @@ fun MainMenuScreen(
     val avatarFrameItems by viewModel.avatarFrameItems.collectAsState()
     val avatarPhoto by viewModel.avatarPhoto.collectAsState()
     val avatarSource by viewModel.avatarSource.collectAsState()
-    val googlePhotoUrl by viewModel.googlePhotoUrl.collectAsState()
     var framePickerOpen by remember { mutableStateOf(false) }
     var penPickerOpen by remember { mutableStateOf(false) }
     // The whole tour for a player who has never seen it; just its new rune page for one who saw it before that page existed.
@@ -480,7 +481,6 @@ fun MainMenuScreen(
             AvatarFramePickerSheet(
                 items = avatarFrameItems,
                 photoSource = avatarSource,
-                googlePhotoUrl = googlePhotoUrl,
                 onPhotoSource = viewModel::selectAvatarSource,
                 onSelect = { viewModel.selectAvatarFrame(it); framePickerOpen = false },
                 onDismiss = { framePickerOpen = false }
@@ -544,78 +544,78 @@ private fun PenaltyDialog(penalty: Penalty, onDismiss: () -> Unit) {
  */
 
 /**
- * A grid of every [AvatarFrame] the player has unlocked so far (plus locked
- * ones ahead, dimmed with the level that opens them), tapping an unlocked
- * one picks it — see MainMenuViewModel.selectAvatarFrame. No level-number
- * face is drawn on the swatches (unlike [LevelAvatar]): this is about
- * choosing the ring, not restating the player's level eleven times over.
+ * The profile-picture window: first the picture inside the avatar frame (the Karalak mascot or one of the gallery pictures, see
+ * AvatarGallery; nothing else can be worn), then a grid of every [AvatarFrame] the player has unlocked so far (plus locked
+ * ones ahead, dimmed with the level that opens them), tapping an unlocked one picks it — see MainMenuViewModel.selectAvatarFrame.
+ * No level-number face is drawn on the swatches (unlike [LevelAvatar]): this is about choosing the ring, not restating the
+ * player's level eleven times over.
+ *
+ * One grid for both, so the window scrolls as a whole: twelve columns, a picture takes three of them (four to a row), a frame four
+ * (three to a row), and a title takes the whole row.
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun AvatarFramePickerSheet(
     items: List<AvatarFrameUiItem>,
     photoSource: String,
-    googlePhotoUrl: String?,
     onPhotoSource: (String) -> Unit,
     onSelect: (AvatarFrame) -> Unit,
     onDismiss: () -> Unit
 ) {
     com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(title = stringResource(R.string.avatar_frame_picker_title), onDismiss = onDismiss) {
-        val googleSelected = googlePhotoUrl != null && photoSource != "DINO"
-        Text(
-            text = stringResource(R.string.avatar_source_title),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-            color = Color(0xFF3A2416)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
-            AvatarSourceOption(
-                label = stringResource(R.string.avatar_source_karalak),
-                selected = !googleSelected,
-                enabled = true,
-                photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino,
-                onClick = { onPhotoSource("DINO") }
-            )
-            AvatarSourceOption(
-                label = stringResource(R.string.avatar_source_google),
-                selected = googleSelected,
-                enabled = googlePhotoUrl != null,
-                photo = googlePhotoUrl?.let { com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Url(it) },
-                onClick = { onPhotoSource("GOOGLE") }
-            )
-        }
-        if (googlePhotoUrl == null) {
-            Spacer(modifier = Modifier.height(6.dp))
+        val chosen = com.sualtikasifi.cizimhafiza.domain.model.AvatarGallery.entryOfSource(photoSource)
+        val title = @Composable { text: String ->
             Text(
-                text = stringResource(R.string.avatar_source_google_locked),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = text,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                color = Color(0xFF3A2416)
             )
         }
-        Spacer(modifier = Modifier.height(14.dp))
-        Text(
-            text = stringResource(R.string.avatar_frame_section),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-            color = Color(0xFF3A2416)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Column(modifier = Modifier.fillMaxWidth().weight(1f, fill = false)) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.weight(1f, fill = false)
-            ) {
-                gridItems(items, key = { it.frame.name }) { item ->
-                    AvatarFrameSwatch(item = item, onClick = { if (item.unlocked) onSelect(item.frame) })
-                }
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(12),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().weight(1f, fill = false)
+        ) {
+            item(key = "avatar_title", span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                title(stringResource(R.string.avatar_source_title))
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            item(key = "avatar_mascot", span = { androidx.compose.foundation.lazy.grid.GridItemSpan(3) }) {
+                AvatarSourceOption(
+                    label = stringResource(R.string.avatar_source_karalak),
+                    selected = chosen == null,
+                    photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino,
+                    onClick = { onPhotoSource("DINO") }
+                )
+            }
+            gridItems(
+                com.sualtikasifi.cizimhafiza.domain.model.AvatarGallery.entries,
+                key = { "avatar_" + it.id },
+                span = { androidx.compose.foundation.lazy.grid.GridItemSpan(3) }
+            ) { entry ->
+                AvatarSourceOption(
+                    label = null,
+                    contentDescription = stringResource(
+                        R.string.avatar_gallery_item_cd,
+                        com.sualtikasifi.cizimhafiza.domain.model.AvatarGallery.entries.indexOf(entry) + 1
+                    ),
+                    selected = chosen?.id == entry.id,
+                    photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Res(entry.res),
+                    onClick = { onPhotoSource(com.sualtikasifi.cizimhafiza.domain.model.AvatarGallery.source(entry.id)) }
+                )
+            }
+            item(key = "frame_title", span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                Spacer(modifier = Modifier.height(6.dp))
+                title(stringResource(R.string.avatar_frame_section))
+            }
+            gridItems(items, key = { it.frame.name }, span = { androidx.compose.foundation.lazy.grid.GridItemSpan(4) }) { item ->
+                AvatarFrameSwatch(item = item, onClick = { if (item.unlocked) onSelect(item.frame) })
+            }
         }
     }
 }
+
 
 @Composable
 private fun AvatarFrameSwatch(item: AvatarFrameUiItem, onClick: () -> Unit) {
@@ -1090,45 +1090,46 @@ private fun FitToHeight(modifier: Modifier = Modifier, content: @Composable Colu
     }
 }
 
-/** One picture choice for the avatar: a round preview with its name, ringed when selected, dimmed when unavailable. */
+/** One picture choice for the avatar: a round preview with its name (if it has one), ringed when selected. */
 @Composable
 private fun AvatarSourceOption(
-    label: String,
+    label: String?,
     selected: Boolean,
-    enabled: Boolean,
-    photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto?,
-    onClick: () -> Unit
+    photo: com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto,
+    onClick: () -> Unit,
+    contentDescription: String? = null
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
+            .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .clickable(enabled = enabled, onClick = onClick)
-            .alpha(if (enabled) 1f else 0.45f)
-            .padding(4.dp)
+            .clickable(onClick = onClick)
+            .semantics { this.contentDescription = contentDescription ?: label.orEmpty(); this.selected = selected }
+            .padding(2.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(64.dp)
+                .fillMaxWidth()
+                .aspectRatio(1f)
                 .clip(CircleShape)
                 .border(if (selected) 3.dp else 1.dp, if (selected) Color(0xFFFF7A21) else Color(0xFFD9B57A), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            if (photo != null) {
-                com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhotoFace(photo = photo, modifier = Modifier.fillMaxSize())
-            } else {
-                Icon(Icons.Filled.Group, contentDescription = null, tint = Color(0xFF7A5A44))
-            }
+            com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhotoFace(photo = photo, modifier = Modifier.fillMaxSize())
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.ExtraBold else androidx.compose.ui.text.font.FontWeight.Medium,
-            color = Color(0xFF3A2416)
-        )
+        if (!label.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.ExtraBold else androidx.compose.ui.text.font.FontWeight.Medium,
+                color = Color(0xFF3A2416)
+            )
+        }
     }
 }
+
 
 /**
  * Asks for the notification permission (API 33+) once, on a quiet visit to the home screen: never in a launch that has

@@ -90,7 +90,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil3.compose.AsyncImage
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.repository.AuthState
 import com.sualtikasifi.cizimhafiza.presentation.common.AppTextField
@@ -130,6 +129,7 @@ fun AccountScreen(
     viewModel: AccountViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val avatarPhoto by viewModel.avatarPhoto.collectAsState()
     val context = LocalContext.current
 
     // Deletion only. Signing in and out change the profile in place now —
@@ -200,7 +200,7 @@ fun AccountScreen(
                 level = uiState.level,
                 frame = uiState.frame,
                 size = (214f * us).dp,
-                photo = com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOf(linked?.photoUrl)
+                photo = avatarPhoto
             )
         }
         FitText(

@@ -521,9 +521,6 @@ sealed interface AvatarPhoto {
     /** Karalak's own mascot. */
     data object Dino : AvatarPhoto
 
-    /** The player's Google account picture. */
-    data class Url(val url: String) : AvatarPhoto
-
     /** A stand-in picture for a league filler row, picked deterministically from [seed] (its name): mascot, Google-style default, initial, or an emoji scene. */
     data class Persona(val seed: String) : AvatarPhoto
 
@@ -560,34 +557,17 @@ fun AvatarPhotoFace(photo: AvatarPhoto, modifier: Modifier = Modifier) {
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-            is AvatarPhoto.Url -> coil3.compose.SubcomposeAsyncImage(
-                model = photo.url,
-                contentDescription = null,
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-                loading = { dino() },
-                error = { dino() }
-            )
         }
     }
 }
 
-/**
- * Only a Google account picture (https://lh<N>.googleusercontent.com/...) is ever fetched for another
- * player. The published avatar URL is written by that player's own client and Firestore does not
- * vouch for it, so anything else — another host, plain http, an oversized string — would let one
- * player make every other player's phone load an address of their choosing.
- */
-private val GOOGLE_AVATAR_URL = Regex("^https://lh[0-9]+\\.googleusercontent\\.com/\\S*$")
-private const val MAX_AVATAR_URL_LENGTH = 512
+/** The picture to draw for another player's published avatar value ("avatar:<id>" names a gallery picture; "", null or anything else = the Karalak mascot). */
+fun avatarPhotoOf(published: String?): AvatarPhoto =
+    com.sualtikasifi.cizimhafiza.domain.model.AvatarGallery.entryOfPublished(published)?.let { AvatarPhoto.Res(it.res) } ?: AvatarPhoto.Dino
 
-/** The picture to draw for another player's published avatar URL ("", null or anything untrusted = the Karalak mascot). */
-fun avatarPhotoOf(url: String?): AvatarPhoto =
-    if (url.isNullOrBlank() || url.length > MAX_AVATAR_URL_LENGTH || !GOOGLE_AVATAR_URL.matches(url)) {
-        AvatarPhoto.Dino
-    } else {
-        AvatarPhoto.Url(url)
-    }
+/** The picture to draw for this phone's own avatar setting ("AVATAR:<id>"; "DINO", "" or anything else = the mascot). */
+fun avatarPhotoOfSource(source: String?): AvatarPhoto =
+    com.sualtikasifi.cizimhafiza.domain.model.AvatarGallery.entryOfSource(source)?.let { AvatarPhoto.Res(it.res) } ?: AvatarPhoto.Dino
 
 private val PersonaEmoji = listOf("🦊", "🐼", "🎨", "⚽", "🎸", "🌸", "🚀", "🐱", "🎮", "🌵", "🍕", "🐶", "🦁", "📚", "🏀", "🐧")
 private val PersonaGradients = listOf(

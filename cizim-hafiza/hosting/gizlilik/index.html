@@ -49,12 +49,12 @@
 <h3>2.2 Hesap</h3>
 <ul>
   <li><strong>Anonim hesap kimliği:</strong> Uygulama ilk açıldığında Firebase Authentication ile otomatik oluşturulur.</li>
-  <li><strong>Google ile giriş (isteğe bağlı, Android):</strong> E-posta adresin, Google'daki adın ve profil fotoğrafının adresi; ilerlemeni yedeklemek ve başka cihazda geri yüklemek için kullanılır. E-posta adresin ve Google'daki adın diğer oyunculara gösterilmez. Doğum tarihin de hesabına kaydedilir; böylece yaşa bağlı ayarlar başka bir cihazda da aynı kalır.</li>
+  <li><strong>Google ile giriş (isteğe bağlı, Android):</strong> E-posta adresin ve Google'daki adın (Google profil fotoğrafın alınmaz ve saklanmaz); ilerlemeni yedeklemek ve başka cihazda geri yüklemek için kullanılır. E-posta adresin ve Google'daki adın diğer oyunculara gösterilmez. Doğum tarihin de hesabına kaydedilir; böylece yaşa bağlı ayarlar başka bir cihazda da aynı kalır.</li>
   <li><strong>Web hesabı (isteğe bağlı):</strong> Seçtiğin kullanıcı adı ve şifre. Şifren Firebase Authentication tarafından saklanır, biz göremeyiz. Kullanıcı adın teknik olarak <code>kullanıcıadı@users.karalak.com</code> biçiminde bir adrese çevrilir; bu adrese e-posta gönderilmez.</li>
 </ul>
 
 <h3>2.3 Genel profil (diğer oyunculara görünür)</h3>
-<p>Takma adın, seviyen, avatar çerçeven, aylık lig puanın, arkadaş kodun ve — Google ile giriş yapıp fotoğrafını göstermeyi seçtiysen — Google profil fotoğrafının adresi. Bu bilgiler arkadaş listelerinde, oyun odalarında, düellolarda ve global ligde diğer oyunculara gösterilir. Takma adını istediğin zaman değiştirebilir, fotoğraf yerine oyunun maskotunu seçebilirsin.</p>
+<p>Takma adın, seviyen, avatar çerçeven, aylık lig puanın, arkadaş kodun ve oyunun avatar galerisinden seçtiğin profil görselinin adı. Bu bilgiler arkadaş listelerinde, oyun odalarında, düellolarda ve global ligde diğer oyunculara gösterilir. Takma adını istediğin zaman değiştirebilir, profil görselini oyunun hazır avatarları arasından seçebilirsin; kendi fotoğrafını yükleyemezsin.</p>
 
 <h3>2.4 Bulut yedeği</h3>
 <p>İlerlemenin bir kopyası (altın, XP, rünler, jokerler, istatistikler, açtığın kozmetikler) hesabına bağlı olarak saklanır; telefon değiştirdiğinde veya uygulamayı yeniden kurduğunda geri yüklenir. Bu yedeği yalnızca sen okuyabilirsin.</p>
@@ -195,12 +195,12 @@
 <h3>2.2 Account</h3>
 <ul>
   <li><strong>Anonymous account ID:</strong> created automatically with Firebase Authentication when you first open the app.</li>
-  <li><strong>Sign in with Google (optional, Android):</strong> your email address, Google name and profile photo address, used to back up your progress and restore it on another device. Your email address and Google name are never shown to other players. Your date of birth is also saved on your account, so the age-based settings stay the same on another device.</li>
+  <li><strong>Sign in with Google (optional, Android):</strong> your email address and Google name (your Google profile photo is not fetched or stored), used to back up your progress and restore it on another device. Your email address and Google name are never shown to other players. Your date of birth is also saved on your account, so the age-based settings stay the same on another device.</li>
   <li><strong>Web account (optional):</strong> the user name and password you choose. Your password is stored by Firebase Authentication; we cannot see it. Technically your user name is turned into an address of the form <code>username@users.karalak.com</code>; no email is ever sent to it.</li>
 </ul>
 
 <h3>2.3 Public profile (visible to other players)</h3>
-<p>Your nickname, level, avatar frame, monthly league score, friend code and — if you signed in with Google and chose to show your photo — the address of your Google profile photo. Other players see these in friend lists, game rooms, duels and the global league. You can change your nickname at any time and choose the game's mascot instead of your photo.</p>
+<p>Your nickname, level, avatar frame, monthly league score, friend code and the name of the profile picture you chose from the game's avatar gallery. Other players see these in friend lists, game rooms, duels and the global league. You can change your nickname at any time and pick your profile picture from the game's ready-made avatars; you cannot upload your own photo.</p>
 
 <h3>2.4 Cloud save</h3>
 <p>A copy of your progress (gold, XP, runes, jokers, statistics, unlocked cosmetics) is stored with your account and restored when you change phones or reinstall. Only you can read it.</p>

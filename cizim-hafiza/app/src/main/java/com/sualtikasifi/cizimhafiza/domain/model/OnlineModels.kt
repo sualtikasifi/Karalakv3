@@ -26,7 +26,7 @@ data class OnlinePlayer(
      * (including you) a frame you may not have picked.
      */
     val frameId: String = AvatarFrame.DEFAULT.name,
-    /** The Google photo URL this player published for their avatar, or "" for the Karalak mascot. */
+    /** What this player published for their avatar: "avatar:<id>" (a gallery picture, see AvatarGallery), or "" for the Karalak mascot. */
     val avatarUrl: String = "",
     val ready: Boolean = false,
     val finished: Boolean = false,

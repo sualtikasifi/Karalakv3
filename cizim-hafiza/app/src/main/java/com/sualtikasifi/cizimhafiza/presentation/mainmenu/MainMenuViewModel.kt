@@ -487,21 +487,17 @@ class MainMenuViewModel @Inject constructor(
         initialValue = AvatarFrame.entries.map { AvatarFrameUiItem(it, unlocked = it == AvatarFrame.DEFAULT, selected = it == AvatarFrame.DEFAULT) }
     )
 
-    /** The Google account picture, when signed in and the account has one. */
-    val googlePhotoUrl: StateFlow<String?> = authRepository.authState
-        .map { (it as? com.sualtikasifi.cizimhafiza.domain.repository.AuthState.Linked)?.photoUrl?.takeIf { url -> url.isNotBlank() } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-
-    /** "DINO", "GOOGLE" or "" (automatic) — the player's explicit choice, see [avatarPhoto]. */
+    /** "AVATAR:<id>" (a gallery picture, see AvatarGallery) or "DINO"/"" (the Karalak mascot) — the player's choice, see [avatarPhoto]. */
     val avatarSource: StateFlow<String> = settingsRepository.avatarSource
 
-    /** The picture inside the avatar frame: their Google photo when available and not opted out of, else the mascot. */
-    val avatarPhoto: StateFlow<com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto> = combine(googlePhotoUrl, settingsRepository.avatarSource) { url, source ->
-        when {
-            source == "DINO" || url == null -> com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino
-            else -> com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Url(url)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino)
+    /** The picture inside the avatar frame: the gallery picture they chose, else the mascot. */
+    val avatarPhoto: StateFlow<com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto> = settingsRepository.avatarSource
+        .map { com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOfSource(it) }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            com.sualtikasifi.cizimhafiza.presentation.common.avatarPhotoOfSource(settingsRepository.avatarSource.value)
+        )
 
     fun selectAvatarSource(source: String) = settingsRepository.setAvatarSource(source)
 

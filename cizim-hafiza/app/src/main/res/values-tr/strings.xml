@@ -1334,8 +1334,7 @@
     <string name="home_level_inline">Seviye %1$d</string>
     <string name="avatar_source_title">Profil görseli</string>
     <string name="avatar_source_karalak">Karalak</string>
-    <string name="avatar_source_google">Google fotoğrafım</string>
-    <string name="avatar_source_google_locked">Google fotoğrafını kullanmak için Google ile giriş yap.</string>
+    <string name="avatar_gallery_item_cd">Avatar %1$d</string>
     <string name="avatar_frame_section">Çerçeve</string>
     <string name="username_finalize_title">Kullanıcı adını sabitle</string>
     <string name="username_finalize_body">Google hesabın bağlandı. Kullanıcı adın ve profilin bu hesapla eşleşecek. Adı bu son seferde değiştirebilirsin, sonra kalıcı olur.</string>
