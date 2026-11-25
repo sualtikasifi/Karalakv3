@@ -158,6 +158,20 @@ for (const name of DEVICES) {
       if (await page.$(".pc-ov.cph")) problems.push(`[${name}] the coupon window's close button did not close it`);
     }
   } catch (e) { problems.push(`[${name}] coupon how: ${e.message.split("\n")[0]}`); }
+  // the friend-streak windows (a prize, a streak that ends today), opened straight from their module
+  for (const [which, prompt] of [["reward", { k: "reward", pair: "a_b", run: 1, name: "Ece", milestone: 7, reward: { gold: 100 } }], ["risk", { k: "risk", items: [{ pair: "a_b", uid: "b", name: "Ece", count: 4 }] }]]) {
+    current = "fstreak_" + which;
+    try {
+      await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
+      await page.evaluate(async (p) => { const m = await import("./fstreak.js"); m.showPrompt(window.__karalak, p, 1); }, prompt); await page.waitForTimeout(700);
+      if (!(await page.$(".aw-ov.fs-win"))) problems.push(`[${name}] the ${which} streak window did not open`);
+      else {
+        await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_fstreak_${which}.jpg`), type: "jpeg", quality: 72 });
+        await page.evaluate(() => document.querySelector(".aw-ov.fs-win .prim").click()); await page.waitForTimeout(300);
+        if (await page.$(".aw-ov.fs-win")) problems.push(`[${name}] the ${which} streak window's button did not close it`);
+      }
+    } catch (e) { problems.push(`[${name}] streak ${which}: ${e.message.split("\n")[0]}`); }
+  }
   // Hızlı Eşleş's two message states (pool empty / opponent not fetched), with "Tekrar Ara"
   for (const which of ["empty", "failed"]) {
     current = "qmsg_" + which;

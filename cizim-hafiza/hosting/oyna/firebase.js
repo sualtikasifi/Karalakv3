@@ -352,6 +352,19 @@ export async function inviteBlock(toUid) {
   const left = cd.exists() && Number(cd.data().declinedAt) ? Number(cd.data().declinedAt) + 5 * 60 * 1000 - Date.now() : 0;
   return left > 0 ? { minutes: Math.floor(left / 60000) + 1 } : null;
 }
+/** The friends list once (not a listener): who a streak belongs to, by name. */
+export async function friendsOnce() {
+  const { fs, db, auth } = await init();
+  return (await fs.getDocs(fs.collection(db, "users", auth.currentUser.uid, "friends"))).docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+/** This account's friend streaks (FriendStreakRepositoryImpl.observeStreaks), each with the other player's uid as friendUid. */
+export async function listenStreaks(cb) {
+  const { fs, db, auth } = await init(), me = auth.currentUser.uid;
+  return fs.onSnapshot(fs.query(fs.collection(db, "friendStreaks"), fs.where("uids", "array-contains", me)), (snap) => cb(snap.docs.map((d) => {
+    const x = d.data(), friendUid = (x.uids || []).find((u) => u !== me); if (!friendUid) return null;
+    return { pairId: d.id, friendUid, count: x.count || 0, best: x.best || 0, run: x.run || 1, lastDay: x.lastDay ?? -1e9, pendingDay: x.pendingDay ?? -1, repairs: x.repairs || 0, repairedBy: x.repairedBy || null };
+  }).filter(Boolean)), () => cb([]));
+}
 export async function sendInvite(toUid, roomCode, myNick) {
   const { fs, db, auth } = await init();
   await fs.addDoc(fs.collection(db, "users", toUid, "invites"), { fromUid: auth.currentUser.uid, fromNickname: myNick, roomCode, sentAt: Date.now() });

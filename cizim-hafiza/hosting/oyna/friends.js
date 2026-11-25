@@ -1,6 +1,7 @@
 import * as net from "./firebase.js";
 import { S } from "./i18n.js";
 import { friendInviteText, shareInvite, playChoiceDialog } from "./ui.js";
+import { streakOf, chip, watchStreaks } from "./fstreak.js";
 
 // The screen's words are the app's own (strings.json), so the web never drifts from it (the invite reward was once "500 XP" here
 // while the app paid gold). Only what the app does not say has its own words: it shows one "could not add" for a wrong code or
@@ -50,6 +51,7 @@ export async function openFriends(c) {
     unsubs.push(await net.listen("friends", (l) => { friends = l; renderFriends(c); }));
     unsubs.push(await net.listen("friendRequests", (l) => { requests = l; renderFriends(c); }));
     unsubs.push(await net.listen("blockedUsers", (l) => { blocked = l; renderFriends(c); }));
+    watchStreaks(() => { if (c.current() === "friends") renderFriends(c); });
   } catch { msg = S("error_friend_list_failed"); renderFriends(c); }
 }
 export function stop() { unsubs.forEach((u) => { try { u(); } catch {} }); unsubs = []; }
@@ -95,6 +97,7 @@ export function renderFriends(c) {
     const inv = el("button", "fr-pill", S("duel_challenge_action")), more = el("button", "fr-more", "⋮");
     inv.onclick = () => playChoiceDialog(c.$("stage"), { onRoom: () => c.inviteFriend(f), onDuel: () => c.openDuel({ uid: f.id, name: f.nickname || "?" }) });
     more.onclick = () => menu(c, f, x);
+    const sv = streakOf(f.id, net.turkeyDay()); if (sv) row.insertBefore(chip(sv), inv);
     row.append(inv, more); list.append(row);
   });
   if (blocked.length) {

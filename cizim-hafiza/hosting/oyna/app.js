@@ -27,6 +27,7 @@ import { exitDialog, appOnlyDialog, sparkFlight, PLAY_URL } from "./ui.js";
 import { makeGhostRun, loadGhostNames } from "./ghost.js";
 import { needsPrompt as legalNeeded, childMode, adultOnly, openAgeGate } from "./agegate.js";
 import { checkPenalties, lockGate } from "./penalty.js";
+import { checkStreakPrompt } from "./fstreak.js";
 import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
@@ -1150,7 +1151,7 @@ function afterSplash(fn, delay = 0) {
   if (!document.getElementById("splash")) return go();
   const t = setInterval(() => { if (!document.getElementById("splash")) { clearInterval(t); go(); } }, 100);
 }
-if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); if (legalNeeded()) openAgeGate(stage); }; } else { show("home"); afterSplash(() => { if (legalNeeded()) openAgeGate(stage); else if (current === "home") dailyRescue(ctx, () => {}); }, 600); afterSplash(() => { if (current === "home" && !legalNeeded()) checkPenalties(ctx); }, 2500); }
+if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); if (legalNeeded()) openAgeGate(stage); }; } else { show("home"); afterSplash(() => { if (legalNeeded()) openAgeGate(stage); else if (current === "home") dailyRescue(ctx, () => {}); }, 600); afterSplash(() => { if (current === "home" && !legalNeeded()) checkPenalties(ctx); }, 2500); afterSplash(() => { if (current === "home" && !legalNeeded() && !childMode()) checkStreakPrompt(ctx); }, 6000); }
 // The game is served at "/" while the worker file lives in /oyna/, so there it asks for the whole site (allowed by the
 // Service-Worker-Allowed header in firebase.json); opened as /oyna/ it keeps its own folder.
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js", location.pathname.startsWith("/oyna/") ? undefined : { scope: "/" }).catch(() => {});

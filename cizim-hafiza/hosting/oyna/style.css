@@ -1229,3 +1229,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .lw-b{display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden}.lw-b span{font-weight:700;color:#3a2416;line-height:1.2}
 .lw-btn{display:flex;align-items:center;justify-content:center;cursor:pointer}
 .cph-plain{font-weight:600;line-height:1.35;color:#3a2416;padding:calc(var(--u)*10) 0}.cph-foot{display:flex;flex-direction:column;gap:calc(var(--u)*14);width:100%}
+/* friend streaks (StreakChip, FriendStreakDialog) */
+.fs-chip{font-weight:800;font-size:calc(var(--u)*26);color:#6b4122;margin-left:auto;margin-right:calc(var(--u)*10);white-space:nowrap}.fs-chip.done{color:#e8630a}
+.fs-body{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*14);text-align:center}.fs-emoji{font-size:calc(var(--u)*92)}.fs-text{margin:0;font-weight:600;line-height:1.35;white-space:pre-line}
+.fs-extra{font-weight:800;font-size:calc(var(--u)*38)}.fs-foot{display:flex;flex-direction:column;gap:calc(var(--u)*12);width:100%;padding-top:calc(var(--u)*12)}
