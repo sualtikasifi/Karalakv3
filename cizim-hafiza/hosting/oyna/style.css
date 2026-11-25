@@ -1233,3 +1233,4 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .fs-chip{font-weight:800;font-size:calc(var(--u)*26);color:#6b4122;margin-left:auto;margin-right:calc(var(--u)*10);white-space:nowrap}.fs-chip.done{color:#e8630a}
 .fs-body{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*14);text-align:center}.fs-emoji{font-size:calc(var(--u)*92)}.fs-text{margin:0;font-weight:600;line-height:1.35;white-space:pre-line}
 .fs-extra{font-weight:800;font-size:calc(var(--u)*38)}.fs-foot{display:flex;flex-direction:column;gap:calc(var(--u)*12);width:100%;padding-top:calc(var(--u)*12)}
+.fs-foot .prim.cream{background:#fff3d6;color:#b94b06;box-shadow:0 calc(var(--u)*8) 0 #d9b27a}.fs-foot .prim.cream:active{box-shadow:0 calc(var(--u)*2) 0 #d9b27a}
