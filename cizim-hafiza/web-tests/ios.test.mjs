@@ -146,6 +146,18 @@ for (const name of DEVICES) {
       if (await page.$(".pc-ov.lw")) problems.push(`[${name}] the league prize window's button did not close it`);
     }
   } catch (e) { problems.push(`[${name}] league win: ${e.message.split("\n")[0]}`); }
+  // "Kupon kodunu nasıl kazanırım?" (the painted window in Turkish, as in the app)
+  current = "coupon_how";
+  try {
+    await page.evaluate(() => window.__karalak.show("settings")); await page.waitForTimeout(500);
+    await page.evaluate(() => document.getElementById("se-how").click()); await page.waitForTimeout(900);
+    if (!(await page.$(".pc-ov.cph"))) problems.push(`[${name}] the coupon window did not open`);
+    else {
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_coupon_how.jpg`), type: "jpeg", quality: 72 });
+      await page.evaluate(() => document.querySelector(".pc-ov.cph .pc-btn").click()); await page.waitForTimeout(300);
+      if (await page.$(".pc-ov.cph")) problems.push(`[${name}] the coupon window's close button did not close it`);
+    }
+  } catch (e) { problems.push(`[${name}] coupon how: ${e.message.split("\n")[0]}`); }
   // Hızlı Eşleş's two message states (pool empty / opponent not fetched), with "Tekrar Ara"
   for (const which of ["empty", "failed"]) {
     current = "qmsg_" + which;

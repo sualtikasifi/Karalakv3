@@ -133,7 +133,7 @@ export async function redeemCoupon(rawCode) {
       if ((await tx.get(rref)).exists()) return { status: "used" };
       tx.set(rref, { redeemedAt: now });
       tx.update(cref, { usedCount: (c.usedCount || 0) + 1 });
-      return { status: "ok", gold: Math.min(c.gold || 0, 10000000), xp: Math.min(c.xp || 0, 100000), chests: (c.chestSilver || 0) + (c.chestGold || 0) + (c.chestRare || 0) };
+      return { status: "ok", gold: Math.min(c.gold || 0, 10000000), xp: Math.min(c.xp || 0, 100000), chests: [["SILVER", c.chestSilver], ["GOLD", c.chestGold], ["RARE", c.chestRare]].flatMap(([t, n]) => Array(Math.max(0, Math.min(20, n | 0))).fill(t)) };
     });
   } catch (e) { return { status: "network" }; }
 }

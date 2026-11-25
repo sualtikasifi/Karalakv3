@@ -1,4 +1,8 @@
 import * as net from "./firebase.js";
+import { S, useAppTexts, getLang } from "./i18n.js";
+import * as eco from "./economy.js";
+import { openNow } from "./chests.js";
+import { paintedCard, appWindow, primary } from "./ui.js";
 
 const L = {
   tr: { title: "Ayarlar", sound: "Ses ve Titreşim", rows: ["Tüm Sesler", "Müzik", "Titreşim", "Bildirimler"], code: "Kupon kodu", use: "Kullan", how: "Kodlar nasıl kazanılır?",
@@ -65,16 +69,48 @@ export function renderSettings(c) {
   const nav = (id, label, right) => { $(id).innerHTML = `<span>${label}</span><span>${right || ""}</span>`; };
   nav("se-lang", x.lang, flag); nav("se-tut", x.tut); nav("se-bug", x.bug); nav("se-acc", x.acc); nav("se-rate", x.rate);
   $("se-priv-t").textContent = "🛡 " + x.priv; $("se-ver").textContent = x.ver; $("se-priv").href = PRIV + "?lang=" + lang();
+  // Wrong codes in a row (SettingsViewModel.miss): five, and the box rests for thirty seconds
   $("se-use").onclick = async () => {
     const code = $("se-code").value; if (!code.trim()) return;
+    if (Date.now() < couponLockedUntil) { $("se-msg").textContent = S("coupon_error_wait"); return; }
     $("se-msg").textContent = "…";
     const r = await net.redeemCoupon(code).catch(() => ({ status: "network" }));
-    if (r.status === "ok") { P.gold += r.gold; P.xp += r.xp; c.saveP(); c.refreshHome(); $("se-msg").textContent = x.won(r.gold, r.xp, r.chests); $("se-code").value = ""; }
-    else $("se-msg").textContent = x.err[r.status] || x.err.network;
+    if (r.status === "ok") {
+      couponFails = 0; P.gold += r.gold; eco.addXp(P, r.xp, 0); c.saveP(); c.refreshHome();
+      $("se-msg").textContent = [r.gold > 0 && S("coupon_won_gold", r.gold), r.xp > 0 && S("coupon_won_xp", r.xp), r.chests.length > 0 && S("coupon_won_chest")].filter(Boolean).join("  ·  ") || S("coupon_won_nothing");
+      $("se-code").value = "";
+      // each chest is opened right now, one opening scene after another
+      const queue = [...r.chests], next = () => { const t = queue.shift(); if (t) openNow(c, t, next); }; next();
+    } else {
+      if (["notfound", "expired", "exhausted"].includes(r.status) && ++couponFails >= 5) { couponFails = 0; couponLockedUntil = Date.now() + 30000; }
+      $("se-msg").textContent = S("coupon_error_" + ({ notfound: "not_found" }[r.status] || r.status));
+    }
   };
-  $("se-how").onclick = () => c.info(x.howBody);
+  $("se-how").onclick = () => couponHow(c);
   $("se-lang").onclick = () => openLangMenu(c);
   $("se-tut").onclick = () => c.startTutorial();
   $("se-rate").onclick = () => window.open(RATE, "_blank", "noopener");
   $("se-bug").onclick = () => c.open("report"); $("se-acc").onclick = () => c.open("account");
+}
+
+let couponFails = 0, couponLockedUntil = 0;
+useAppTexts(L, { code: "coupon_hint", use: "coupon_use", how: "coupon_how_button", howBody: "coupon_how_body", close: "coupon_how_close" });
+const SOCIAL = { instagram: "https://www.instagram.com/karalakapp", tiktok: "https://www.tiktok.com/@karalakapp" };
+// ls_coupon_frame (one per language: the buttons are painted in): [w, h], then left/top/right/bottom of close, Instagram, TikTok and the "close" word (coupon_art.xml)
+const COUPON_ART = { tr: [987, 1371, 841, 294, 966, 419, 150, 818, 852, 976, 150, 1004, 852, 1154, 360, 1199, 625, 1270], es: [1064, 1478, 887, 302, 1027, 442, 165, 854, 885, 1028, 165, 1046, 885, 1218, 395, 1255, 650, 1315], pt: [1064, 1478, 887, 302, 1027, 442, 165, 856, 885, 1030, 165, 1052, 885, 1225, 395, 1262, 650, 1322] };
+/** "Kupon kodunu nasıl kazanırım?": the painted window in Turkish, Spanish and Portuguese, the plain one in English (as in the app). */
+export function couponHow(c) {
+  const lang = getLang(), art = COUPON_ART[lang], open = (u) => window.open(u, "_blank", "noopener");
+  if (art) {
+    const card = paintedCard(c.$("stage"), { art: "ls_coupon_frame_" + lang, w: art[0], h: art[1], cls: "cph" });
+    const hit = (i, label, fn) => { const e = card.put("pc-btn", art.slice(i, i + 4), ""); e.setAttribute("role", "button"); e.setAttribute("aria-label", label); e.onclick = fn; };
+    hit(2, S("coupon_how_close"), () => card.close()); hit(6, S("coupon_how_instagram"), () => open(SOCIAL.instagram));
+    hit(10, S("coupon_how_tiktok"), () => open(SOCIAL.tiktok)); hit(14, S("coupon_how_close"), () => card.close());
+    return card;
+  }
+  const body = document.createElement("div"); body.className = "cph-plain"; body.textContent = S("coupon_how_body");
+  const foot = document.createElement("div"); foot.className = "cph-foot";
+  let ov; foot.append(primary(S("coupon_how_instagram"), () => open(SOCIAL.instagram)), primary(S("coupon_how_tiktok"), () => open(SOCIAL.tiktok)), primary(S("coupon_how_close"), () => ov.close(), "cream"));
+  ov = appWindow(c.$("stage"), { title: S("coupon_how_title"), body, footer: foot });
+  return ov;
 }

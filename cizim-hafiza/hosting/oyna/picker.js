@@ -1,4 +1,4 @@
-import { S } from "./i18n.js";
+import { S, useAppTexts } from "./i18n.js";
 import { appWindow, penWindow } from "./ui.js";
 import { penList, frameList, frameRing } from "./store.js";
 import { childMode } from "./agegate.js";
@@ -92,6 +92,7 @@ export function openFramePicker(c) {
   });
   body.append(grid);
 }
+useAppTexts(T, { nick: "nickname_edit_title", save: "nickname_edit_save", nickHint: "nickname_edit_warning", nickLocked: "nickname_locked_hint", nick_taken: "username_error_taken", nick_invalid: "username_error_invalid", nick_net: "username_error_network" });
 export function openNickEdit(c) {
   const { P, lang } = c, x = T[lang()], d = c.$("pick"); d.classList.remove("hidden"); d.replaceChildren();
   const locked = (P.nameChanges || 0) >= 1;
