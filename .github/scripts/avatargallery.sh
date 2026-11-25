@@ -101,6 +101,12 @@ printf '%s\n' "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map><int
   | adb shell "run-as $PKG sh -c 'cat > shared_prefs/cizim_hafiza_settings.xml'"
 adb shell am start -n $ACT >/dev/null; sleep 14; dismiss; handle_consent; dismiss; handle_consent; sleep 2
 for i in 1 2 3 4 5 6; do tap_text "Close" || tap_text "Skip" || true; sleep 3; done
+# the "What's new" window (a plain close button without a label) can still be up: close it by its corner button
+for i in 1 2 3; do
+  sleep 3; dump_ui _tmp
+  if grep -q "See the runes" "$OUT/_tmp.xml" 2>/dev/null; then echo "whats-new window up, closing"; adb shell input tap 972 505; else break; fi
+done
+sleep 2
 shot g_01_home_fox
 # the avatar opens the picture window
 tap_text "Change frame" || tap_text "frame" || adb shell input tap 220 560
