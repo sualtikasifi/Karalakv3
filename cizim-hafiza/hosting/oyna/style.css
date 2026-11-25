@@ -1214,3 +1214,10 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .lk-clock span{color:#ffe7b0;font-weight:800;white-space:nowrap;font-size:calc(var(--k)*var(--ph,92)*.74px);font-variant-numeric:tabular-nums}
 .lk-why span{color:#4a2814;font-weight:600;font-size:calc(var(--k)*31px);line-height:1.2}
 .lk-back{position:absolute;left:max(10px,env(safe-area-inset-left));top:max(10px,env(safe-area-inset-top));width:44px;height:44px;border-radius:50%;border:2px solid #d9892b;background:#4a2814e0;color:#ffe7b0;font-size:30px;line-height:1;cursor:pointer}
+/* Hızlı Eşleş message states + the search screen's back button */
+#s-back,#qm-back{position:absolute;left:calc(var(--u)*20);top:calc(var(--u)*20);width:calc(var(--u)*150);height:calc(var(--u)*150);padding:0;z-index:5}
+#s-back[hidden]{display:none}#s-back img,#qm-back img{width:100%;height:100%;display:block}
+#qm-col{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*40);padding:0 calc(var(--u)*40)}
+#qm-pad{width:100%;box-sizing:border-box;border:solid transparent;border-width:calc(var(--u)*56);border-image:url(img/qm_pad.webp) 120 fill/calc(var(--u)*56) stretch;padding:calc(var(--u)*18) calc(var(--u)*30) calc(var(--u)*14);text-align:center;color:#2b1a10;display:flex;flex-direction:column;gap:calc(var(--u)*16)}
+#qm-pad b{font-size:calc(var(--u)*52);font-weight:800}#qm-pad p{margin:0;font-size:calc(var(--u)*33);font-weight:600;line-height:1.3;color:#5a3a24}
+#qm-go{padding:0 calc(var(--u)*70)}

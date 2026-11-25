@@ -134,6 +134,16 @@ for (const name of DEVICES) {
       if (await page.$(".lk-ov")) problems.push(`[${name}] the lockout scene's back button did not close it`);
     }
   } catch (e) { problems.push(`[${name}] penalty/lock: ${e.message.split("\n")[0]}`); }
+  // Hızlı Eşleş's two message states (pool empty / opponent not fetched), with "Tekrar Ara"
+  for (const which of ["empty", "failed"]) {
+    current = "qmsg_" + which;
+    try {
+      await page.evaluate((w) => window.__karalak.quickMessage(w), which); await page.waitForTimeout(700);
+      const t = await page.evaluate(() => document.getElementById("qm-t").textContent.trim());
+      if (!t || (await page.evaluate(() => window.__karalak.current())) !== "qmsg") problems.push(`[${name}] the ${which} message did not open (title "${t}")`);
+      else await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_qm_${which}.jpg`), type: "jpeg", quality: 72 });
+    } catch (e) { problems.push(`[${name}] qm ${which}: ${e.message.split("\n")[0]}`); }
+  }
   // taps: a home tile and a rune must answer
   current = "tap"; await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
   await page.tap("#tl-settings").catch((e) => problems.push(`[${name}] tap on Ayarlar failed: ${e.message.split("\n")[0]}`));

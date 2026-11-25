@@ -99,6 +99,7 @@ const ctx = {
   },
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height, fillH: () => (safeRows[current] ? safeRows[current].b * u : stage.getBoundingClientRect().height),
+  quickMessage: (w) => quickMessage(w),
   inviteFriend: async (f) => { if (!(await lockGate(ctx, () => ctx.inviteFriend(f)))) return; await quickInvite(ctx, f); stopFriends(); show("onw"); },
   sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
@@ -644,22 +645,40 @@ async function pickOpponent() {
 }
 // SearchingScene.kt texts: the sign reads "Rakip / aranıyor…" with its dots ticking, the plate says what is going on.
 function paintSearching() {
+  $("s-back").hidden = false;
   $("s-text").innerHTML = `<span>${S("quick_match_searching_title")}</span><span>${S("quick_match_searching_title2").replace(/[….s]+$/, "")}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
   $("s-sub").replaceChildren(Object.assign(document.createElement("b"), { textContent: S("quick_match_searching_sub") }), Object.assign(document.createElement("small"), { textContent: S(childMode() ? "quick_match_opponent_note_child" : "quick_match_opponent_note") }));
 }
 async function startQuick() {
   levelRun = null; kind = "quick"; relaxed = false; quickOpp = null; quickItems = []; quickItemsP = null;
+  const run = ++quickRun; searchCancelled = false;
   await ensureWords(); await loadGhostNames().catch(() => {}); paintSearching(); show("search");
   const minWait = new Promise((r) => setTimeout(r, 2000 + Math.random() * 3000));
-  try { quickOpp = await Promise.race([pickOpponent(), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]); } catch {}
+  let failed = false;
+  try { quickOpp = await Promise.race([pickOpponent(), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]); } catch { failed = true; }
   await minWait;
-  if (current !== "search") return;
+  if (current !== "search" || run !== quickRun || searchCancelled) return;
   const byId = new Map(words.map((w) => [w.id, w]));
   const picked = quickOpp ? (quickOpp.wordIds || []).map((id) => byId.get(id)).filter(Boolean) : [];
-  if (!quickOpp || picked.length < 10) { quickOpp = null; msgNoOpp(); return; }
+  if (!quickOpp || picked.length < 10) { quickOpp = null; quickMessage(failed || navigator.onLine === false ? "failed" : "empty"); return; }
   quickItemsP = net.loadItems(quickOpp.id, new Map(words.map((w) => [w.id, w.text])), POINTS, SPEED_BONUS).then((it) => (quickItems = it)).catch(() => quickItems);
   showFound(quickOpp, () => begin(picked));
 }
+let quickRun = 0, searchCancelled = false;
+/** Backing out while the search runs (QuickMatchScreen `leave`): the search stops at once, the sign says it is being cancelled, the screen closes after a moment. */
+function cancelSearch() {
+  if (searchCancelled || current !== "search" || kind !== "quick") return;
+  searchCancelled = true; quickRun++;
+  $("s-text").innerHTML = `<span>${S("quick_match_cancelling_title")}</span><span>${S("quick_match_cancelling_title2").replace(/[….s]+$/, "")}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
+  $("s-sub").replaceChildren(Object.assign(document.createElement("b"), { textContent: S("quick_match_cancelling_sub") }));
+  setTimeout(() => { if (current === "search") show("home"); }, 1500);
+}
+/** The pool is empty / the opponent could not be fetched: a message on the wood with "Tekrar Ara" (QuickMatchState.Empty / Failed). */
+function quickMessage(which) {
+  $("qm-t").textContent = S("quick_match_" + which + "_title"); $("qm-b").textContent = S("quick_match_" + which + "_body"); $("qm-go").firstChild.textContent = S("quick_match_search_again");
+  show("qmsg");
+}
+$("s-back").onclick = cancelSearch; $("qm-back").onclick = () => show("home"); $("qm-go").onclick = () => startQuick();
 function msgNoOpp() { show("home"); msg(t().noOpp + inLang({ tr: ". Bir süre sonra tekrar dene ya da çevrimdışı oyna.", en: ". Try again in a bit or play offline.", pt: ". Tente de novo daqui a pouco ou jogue offline.", es: ". Inténtalo en un rato o juega sin conexión." })); }
 // Countdowns run on a DEADLINE, as in the app (util/Countdown.kt): the clock keeps running while the tab is hidden or the phone is
 // locked, and what is left is read off the clock, never counted in ticks. A countdown that ended AWAY_MS or more late hands that
@@ -911,7 +930,7 @@ function addRow(parent, strokes, ok, label, sub, pen) {
 function showWaiting() {
   const [a, b, sub] = inLang({ tr: ["Sonuçlar", "hazırlanıyor", "Puanlar hesaplanıyor…"], en: ["Getting your", "results", "Counting the points…"], pt: ["Preparando", "os resultados", "Contando os pontos…"], es: ["Preparando", "resultados", "Contando los puntos…"] });
   $("s-text").innerHTML = `<span>${a}</span><span>${b}<span id="s-dots"><i>.</i><i>.</i><i>.</i></span></span>`;
-  $("s-sub").innerHTML = `<b>${sub}</b>`;
+  $("s-sub").innerHTML = `<b>${sub}</b>`; $("s-back").hidden = true;
   show("search");
 }
 async function finish() {
