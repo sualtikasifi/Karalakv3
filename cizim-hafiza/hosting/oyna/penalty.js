@@ -93,7 +93,7 @@ export function lockScene(c, until, onFree) {
   const img = el("img"); img.src = `img/bg_locked_${lang}.webp`; img.alt = ""; box.append(img);
   const at = (cls, x, y, w, h, html) => { const e = el("div", cls, html); e.style.cssText = `left:${x / LW * 100}%;top:${y / LH * 100}%;width:${w / LW * 100}%;height:${h / LH * 100}%`; box.append(e); return e; };
   const clock = at("lk-clock", 190, pt, 460, ph, "<span></span>"); clock.style.setProperty("--ph", ph);
-  , why = at("lk-why", 110, bt, 620, bh, "<span></span>");
+  const why = at("lk-why", 110, bt, 620, bh, "<span></span>");
   why.firstChild.textContent = S("lock_screen_body");
   const back = el("button", "lk-back", "‹"); back.setAttribute("aria-label", "Back"); ov.append(back);
   let timer = 0; const close = () => { clearInterval(timer); window.removeEventListener("resize", size); ov.remove(); };
