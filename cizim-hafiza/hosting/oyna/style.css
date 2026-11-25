@@ -1200,3 +1200,17 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .pc-lbl{pointer-events:none}
 .pc-desc span{display:block;font-weight:800;color:#3b2314;line-height:1.212;text-align:center;padding:0 calc(var(--k,.4)*8px)}
 
+/* penalty window (PaintedPenaltyDialog) and the lockout scene (QuickMatchScreen LockedScene) */
+.pen-t,.pen-m,.pen-w{display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.12;overflow:hidden}
+.pen-t span{font-weight:800;color:#3a2416}
+.pen-m span{font-weight:700;color:#6b4122}
+.pen-w span{font-weight:800;color:#c0392b}
+.pen-b{display:flex;align-items:center;justify-content:center;cursor:pointer}
+.lk-ov{position:absolute;inset:0;z-index:70;overflow:hidden;background:#2a160c}
+.lk-box{position:absolute}
+.lk-box img{display:block;width:100%;height:100%}
+.lk-box>div{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center}
+.lk-clock{background:#4a2814;border:calc(var(--k)*5px) solid #d9892b;border-radius:999px;padding:0 calc(var(--k)*24px);box-sizing:border-box}
+.lk-clock span{color:#ffe7b0;font-weight:800;white-space:nowrap;font-size:calc(var(--k)*var(--ph,92)*.74px);font-variant-numeric:tabular-nums}
+.lk-why span{color:#4a2814;font-weight:600;font-size:calc(var(--k)*31px);line-height:1.2}
+.lk-back{position:absolute;left:max(10px,env(safe-area-inset-left));top:max(10px,env(safe-area-inset-top));width:44px;height:44px;border-radius:50%;border:2px solid #d9892b;background:#4a2814e0;color:#ffe7b0;font-size:30px;line-height:1;cursor:pointer}

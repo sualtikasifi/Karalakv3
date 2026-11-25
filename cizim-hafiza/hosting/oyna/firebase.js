@@ -264,6 +264,25 @@ export async function signOutAccount() {
 }
 
 // ================= Friends (same documents and rules as FriendRepositoryImpl) =================
+// ---------- penalties (PenaltyRepositoryImpl): penalties/{id} {uid, appliedAt 0 until applied, xpRevoked, goldRevoked, strike, lockedUntil, createdAt, breaksDailyStreak} ----------
+/** Penalties of this account that nobody has acknowledged yet (appliedAt == 0), newest first. Empty when the read fails. */
+export async function outstandingPenalties() {
+  const { fs, db, auth } = await init(), uid = auth.currentUser.uid;
+  const snap = await fs.getDocs(fs.query(fs.collection(db, "penalties"), fs.where("uid", "==", uid), fs.where("appliedAt", "==", 0)));
+  return snap.docs.map((d) => { const x = d.data(); return { id: d.id, xpRevoked: x.xpRevoked | 0, goldRevoked: x.goldRevoked | 0, strike: x.strike == null ? 1 : x.strike | 0, lockedUntil: Number(x.lockedUntil) || 0, createdAt: Number(x.createdAt) || 0, breaksDailyStreak: !!x.breaksDailyStreak }; })
+    .sort((p, q) => q.createdAt - p.createdAt);
+}
+/** The one field a player may write on a penalty (firestore.rules); throws when the write is refused. */
+export async function markPenaltyApplied(id) { const { fs, db } = await init(); await fs.updateDoc(fs.doc(db, "penalties", id), { appliedAt: Date.now() }); }
+/** The live lockout deadline (the largest lockedUntil of this account's penalties, if still ahead), or null. One equality filter: no composite index. */
+export async function lockedUntilMillis() {
+  try {
+    const { fs, db, auth } = await init();
+    const snap = await fs.getDocs(fs.query(fs.collection(db, "penalties"), fs.where("uid", "==", auth.currentUser.uid)));
+    const top = Math.max(0, ...snap.docs.map((d) => Number(d.data().lockedUntil) || 0));
+    return top > Date.now() ? top : null;
+  } catch { return null; }
+}
 export async function myUid() { return (await init()).auth.currentUser.uid; }
 /** "Videolarda öne çık": the player's yes or no on their public profile, where the app's video studio looks (same field as the app). */
 export async function publishFeatureConsent(consent) {

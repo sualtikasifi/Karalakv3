@@ -26,6 +26,7 @@ import { startSearch, stopSearch } from "./search.js";
 import { exitDialog, appOnlyDialog, sparkFlight, PLAY_URL } from "./ui.js";
 import { makeGhostRun, loadGhostNames } from "./ghost.js";
 import { needsPrompt as legalNeeded, childMode, adultOnly, openAgeGate } from "./agegate.js";
+import { checkPenalties, lockGate } from "./penalty.js";
 import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
 import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
@@ -98,7 +99,7 @@ const ctx = {
   },
   current: () => current, myPeriodXp: () => (P.periodId === periodId() ? P.periodXp || 0 : 0),
   $, get P() { return P; }, saveP: () => saveP(), lang: () => lang, place: (...x) => place(...x), u: () => u, stageH: () => stage.getBoundingClientRect().height, fillH: () => (safeRows[current] ? safeRows[current].b * u : stage.getBoundingClientRect().height),
-  inviteFriend: (f) => quickInvite(ctx, f).then(() => { stopFriends(); show("onw"); }),
+  inviteFriend: async (f) => { if (!(await lockGate(ctx, () => ctx.inviteFriend(f)))) return; await quickInvite(ctx, f); stopFriends(); show("onw"); },
   sfx, paint: (...a) => paint(...a), fitCanvas: (c) => fitCanvas(c),
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
@@ -621,7 +622,7 @@ async function startTutorial() {
 // LeagueScorePublisher: this month's score onto the public profile — never for a player who may be under 13 (agegate.js).
 function publishLeague() {
   if (childMode()) return;
-  net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
+  if (!P.leagueBanned) net.publishScore({ nickname: P.nick, periodXp: P.periodXp, periodId: periodId(), level: levelFor(P.xp), frameId: P.frame, totalXp: P.xp }).catch(() => {});
 }
 function endTutorial() { const first = !P.tutorialDone; P.tutorialDone = true; if (first) for (const k of ["FIRST_LETTER", "LETTER_COUNT", "EXTRA_TIME"]) P.jokers[k] = (P.jokers[k] || 0) + 3; saveP(); refreshHome(); show("home"); if (legalNeeded()) openAgeGate(stage); }
 async function startDaily() {
@@ -700,7 +701,7 @@ function showFound(opp, go) {
 }
 function highestFrameFor(lv) { try { const L = frameListSafe().filter((f) => f.level > 0 && !f.league && f.level <= lv); return (L.pop() || { id: "SCRIBBLER" }).id; } catch { return "SCRIBBLER"; } }
 async function start(k = "quick") {
-  if (k === "quick") return startQuick();
+  if (k === "quick") { if (!(await lockGate(ctx, () => start("quick")))) return; return startQuick(); }
   levelRun = null; kind = k; relaxed = false;
   await ensureWords();
   begin([...words].sort(() => Math.random() - 0.5).slice(0, WORD_COUNT));
@@ -1069,7 +1070,7 @@ function msg(text, extra) {
 const soon = (name) => () => msg(`${name} · ${t().soon}`);
 // Online sections need the internet; offline ones (Play Offline, Levels) keep working. Same words as the app's offline screen.
 const needNet = (fn) => (...a) => { if (navigator.onLine === false) return msg(S("offline_needed") + ". " + S("offline_screen_body")); return fn(...a); };
-$("tl-online").onclick = needNet(adultOnly(msg, async () => { await ensureWords(); show("onl"); }));
+$("tl-online").onclick = needNet(adultOnly(msg, async () => { if (!(await lockGate(ctx, () => $("tl-online").click()))) return; await ensureWords(); show("onl"); }));
 $("on-back").onclick = () => show("home"); $("oj-back").onclick = () => show("onl"); $("oc-back").onclick = () => show("onl");
 $("on-create").onclick = () => show("onc"); $("on-join").onclick = () => show("onj");
 $("ow-back").onclick = () => { ctx.confirm(t().leaveQ || "?", t().yes, () => leaveLobby(ctx)); };
@@ -1130,7 +1131,7 @@ function afterSplash(fn, delay = 0) {
   if (!document.getElementById("splash")) return go();
   const t = setInterval(() => { if (!document.getElementById("splash")) { clearInterval(t); go(); } }, 100);
 }
-if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); if (legalNeeded()) openAgeGate(stage); }; } else { show("home"); afterSplash(() => { if (legalNeeded()) openAgeGate(stage); else if (current === "home") dailyRescue(ctx, () => {}); }, 600); }
+if (!P.tutorialDone) { show("welcome"); $("w-go").onclick = startTutorial; $("w-skip").onclick = () => { P.tutorialDone = true; saveP(); show("home"); if (legalNeeded()) openAgeGate(stage); }; } else { show("home"); afterSplash(() => { if (legalNeeded()) openAgeGate(stage); else if (current === "home") dailyRescue(ctx, () => {}); }, 600); afterSplash(() => { if (current === "home" && !legalNeeded()) checkPenalties(ctx); }, 2500); }
 // The game is served at "/" while the worker file lives in /oyna/, so there it asks for the whole site (allowed by the
 // Service-Worker-Allowed header in firebase.json); opened as /oyna/ it keeps its own folder.
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js", location.pathname.startsWith("/oyna/") ? undefined : { scope: "/" }).catch(() => {});

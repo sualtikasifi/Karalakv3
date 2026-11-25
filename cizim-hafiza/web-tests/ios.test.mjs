@@ -111,6 +111,29 @@ for (const name of DEVICES) {
       }
     }
   } catch (e) { problems.push(`[${name}] play choice: ${e.message.split("\n")[0]}`); }
+  // the penalty window (taken from the app) and the lockout scene, both opened straight from their module: the test account has no penalties
+  current = "penalty";
+  try {
+    await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
+    await page.evaluate(async () => { const m = await import("./penalty.js"); m.penaltyDialog(window.__karalak, [{ id: "t", xpRevoked: 120, goldRevoked: 0, strike: 2, lockedUntil: Date.now() + 2 * 3600 * 1000 + 5000, createdAt: Date.now(), breaksDailyStreak: false }]); });
+    await page.waitForTimeout(900);
+    if (!(await page.$(".pc-ov.pen"))) problems.push(`[${name}] the penalty window did not open`);
+    else {
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_penalty.jpg`), type: "jpeg", quality: 72 });
+      await page.evaluate(() => document.querySelector(".pc-ov.pen .pen-b").click()); await page.waitForTimeout(300);
+      if (await page.$(".pc-ov.pen")) problems.push(`[${name}] the penalty window's button did not close it`);
+    }
+    await page.evaluate(async () => { const m = await import("./penalty.js"); window.__freed = false; m.lockScene(window.__karalak, Date.now() + 26 * 3600 * 1000 + 3723000, () => { window.__freed = true; }); });
+    await page.waitForTimeout(900);
+    if (!(await page.$(".lk-ov"))) problems.push(`[${name}] the lockout scene did not open`);
+    else {
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_locked.jpg`), type: "jpeg", quality: 72 });
+      const txt = await page.evaluate(() => document.querySelector(".lk-clock").textContent);
+      if (!/\d/.test(txt) || !/:/.test(txt)) problems.push(`[${name}] the lockout countdown shows "${txt}"`);
+      await page.evaluate(() => document.querySelector(".lk-back").click()); await page.waitForTimeout(200);
+      if (await page.$(".lk-ov")) problems.push(`[${name}] the lockout scene's back button did not close it`);
+    }
+  } catch (e) { problems.push(`[${name}] penalty/lock: ${e.message.split("\n")[0]}`); }
   // taps: a home tile and a rune must answer
   current = "tap"; await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
   await page.tap("#tl-settings").catch((e) => problems.push(`[${name}] tap on Ayarlar failed: ${e.message.split("\n")[0]}`));
