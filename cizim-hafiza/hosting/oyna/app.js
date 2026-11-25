@@ -106,7 +106,8 @@ const ctx = {
   kind: () => kind, addRow: (...a) => addRow(...a), startOnlineGame: (r, cd) => startOnlineGame(r, cd),
   pickRoomWords: (r) => pickRoomWords(r), startOffline: (o) => startOffline(o),
   startTutorial: () => playTutorial(), homeGain: (g, x) => homeGain(g, x), openDuel: (opp) => openCreateDuel(ctx, opp), startDuelChallenge: (opp, n) => startDuel({ mode: "new", opp }, n), playDuel: (d) => startDuel({ mode: "play", duel: d }),
-  fit: () => fitAll(), layout: () => layout(), syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
+  fit: () => fitAll(), layout: () => layout(), relayout: () => { delete safeRows[current]; layout(); }, // a widget that appears below the visible window would be taken for a list that may shrink: measure the page afresh
+  syncMusic: () => syncMusic(), refreshHome: () => refreshHome(), show: (id) => show(id),
   playLevel: (w, l) => startLevel(w, l),
   fit: () => fitAll(),
   setLang: (l) => { lang = l; applyLang(); if (current === "settings") renderSettings(ctx); },

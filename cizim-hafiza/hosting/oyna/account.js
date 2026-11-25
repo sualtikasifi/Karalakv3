@@ -92,7 +92,7 @@ function paint(c) {
   $("ak-out").style.display = linked ? "" : "none"; $("ak-out-t").textContent = S("account_sign_out");
   $("ak-edit").onclick = () => openNickEdit(c);
   $("ak-del").textContent = S("account_delete_action"); $("ak-del").style.display = ""; // a guest has data on the server too (profile, rounds, league score), so it can be deleted as well
-  const m = $("ak-msg"); m.textContent = msg; m.style.display = msg ? "" : "none"; m.classList.toggle("bad", msgBad); if (c.layout) requestAnimationFrame(() => c.layout());
+  const m = $("ak-msg"); m.textContent = msg; m.style.display = msg ? "" : "none"; m.classList.toggle("bad", msgBad); if (c.relayout) requestAnimationFrame(() => c.relayout());
   const done = (text, bad = false) => { msg = text; msgBad = bad; busy = false; c.refreshHome(); renderAccount(c); };
   const read = () => {
     const name = $("ak-user").value.trim().toLowerCase(), pass = $("ak-pass").value;
@@ -100,7 +100,7 @@ function paint(c) {
     if (pass.length < 6) { msg = x.badPass; msgBad = true; renderMsg(); return null; }
     return { name, pass };
   };
-  const renderMsg = () => { const e = $("ak-msg"); e.textContent = msg; e.style.display = msg ? "" : "none"; e.classList.toggle("bad", msgBad); c.layout && c.layout(); };
+  const renderMsg = () => { const e = $("ak-msg"); e.textContent = msg; e.style.display = msg ? "" : "none"; e.classList.toggle("bad", msgBad); c.relayout && c.relayout(); };
   const go = async (fn, okText) => {
     if (childMode()) { msg = S("child_feature_locked"); msgBad = true; renderMsg(); return; } // a web account is for ages 13 and up (agegate.js)
     if (busy) return; const v = read(); if (!v) return; busy = true; msg = "…"; msgBad = false; renderMsg();
