@@ -1174,7 +1174,7 @@ function warmImages() {
     document.querySelectorAll("#" + id + " img[data-src]").forEach((i) => add(localImg(i.dataset.src)));
   }
   // painted windows are built by script, so no stylesheet or tag mentions them: fetch them too, or the first open shows the words before the picture
-  for (const n of ["exit_game_dialog", "exit_dialog", "buy_frame", "joker_buy_first", "joker_buy_count", "joker_buy_time", "ls_frame", "ls_btn_claim", "st_daily_full", "st_card_joker", "rs_dialog_bg", "rs_level_blank", "friends_handshake", "lobby_crown", "lobby_adduser", "lobby_hourglass"]) add(`img/${n}.webp`);
+  for (const n of ["exit_game_dialog", "exit_dialog", "buy_frame", "joker_buy_first", "joker_buy_count", "joker_buy_time", "ls_frame", "ls_btn_claim", "ls_btn_great", "st_daily_full", "st_card_joker", "rs_dialog_bg", "rs_level_blank", "friends_handshake", "lobby_crown", "lobby_adduser", "lobby_hourglass"]) add(`img/${n}.webp`);
   try { for (const sh of document.styleSheets) for (const r of sh.cssRules) for (const m of (r.cssText || "").matchAll(/url\(["']?(img\/[^"')]+)/g)) add(m[1]); } catch {}
   let next = 0;
   const pump = () => {
