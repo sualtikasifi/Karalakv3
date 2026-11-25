@@ -59,7 +59,7 @@ function visibleRunes(P, pl) {
 }
 
 // ---------- plates, medallions, icon centring (tileArt, medallionShift, medallionIcon, RuneIconFix) ----------
-const FRAME = { CHEST: "red", LUCK: "pink", GREEN: "green", BLUE: "blue", PURPLE: "purple", CYAN: "cyan" };
+const FRAME = { CHEST: "red", LUCK: "pink", GREEN: "green", BLUE: "blue", PURPLE: "purple", CYAN: "cyan", LEGEND: "legend" };
 function tileArt(r, owned, unl, maxed) {
   if (r.id === "root") return "rune_root";
   if (keystone(r)) return owned ? "rune_key_" + (FRAME[r.branch] || "gold") : unl ? "rune_key_open" : "rune_key_locked";

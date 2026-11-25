@@ -81,3 +81,31 @@ Karar: yukarıda "salt görsel olduğundan web'in mevcut tasarımıyla kaldı" d
 - Testler: `ios.test.mjs` tohumuna `runesIntroSeen: true` eklendi; iki yeni durum (`chest_info`, `rune_intro`) ekran görüntüsü alıp pencerenin açılıp kapandığını denetliyor.
 - **Henüz yok (sırada):** Rünlerde rehberli ilk rün (el işareti + not, ana ekrandaki maskot teklifi), diğer ekranların sistemli karşılaştırması (mağaza, hesap, arkadaşlar, lig, ayarlar, başarımlar, düello). Android'deki haptik geri bildirim web'de yok (tarayıcı desteklemiyor).
 
+## Kasım 2026 tam analiz (otomatik karşılaştırma)
+İki betik her an yeniden çalıştırılabilir (`cizim-hafiza/scripts/`): `web_parity_texts.py` (Android'in Türkçe metinlerinden web kodunda ne anahtarıyla ne de aynen geçenler; ekran adı verilirse yalnız o ekran), `web_parity_images.py` (Android'in kullandığı ama webde dosyası olmayan resimler). Çıkan satırlar **aday**tır; aşağıdaki sınıflandırma elle yapıldı.
+
+Bu turda bulunup düzeltilen: efsane halkası (Rünler) için `rune_frame_legend` / `rune_key_legend` resimleri webde yoktu, o halkanın rünleri altın renkli çıkıyordu.
+
+### A. Bilerek webde yok (karar: web'de gerekmiyor ya da yapılamıyor)
+Reklam (`home_ad_*`, `xp_offer_*`, `streak_rescue_*`, `fstreak_ad_failed`, `chest_double_*`, `chest_speedup_*`, `result_watch_ad`, `store_pen_try/trial`, `chest_lost_watch`, `btn_ad_extra_time`) · Google girişi ve hesap bağlama (`account_sign_in_*`, `sign_in_prompt_*`, `username_finalize_*`, `avatar_source_google*`, `ic_google_g`) · Yenilikler turu (`tour_*`, `tour_card`) · bildirim izni (`chest_notif_*`) · Play Store puanlama istemi · zorunlu güncelleme (`forced_update_*`, `update_card`) · erişilebilirlik açıklamaları (`a11y_*`, `cd_*`) · video olarak paylaşma (`share_video_*`).
+
+### B. Webde var, ama metni elle yazılmış (Android'le ayrışabilir; anahtarlara bağlanmalı)
+Ayarlar (kupon hata ve ödül metinleri, "Kupon kodunu nasıl kazanırım?" penceresi, sürüm satırı, `coupon_clear`) · Hesap (kullanıcı adı hataları ve uyarıları, çıkış/silme pencereleri) · Arkadaşlar ve Çevrimiçi hata metinleri (`error_*`, `info_invite_sent`) · düello reddetme onayının başlığı · Başarımlar (`achievement_condition_label`, `achievement_gold_reward`) · Mağaza kalem sloganları (`pen_*_tagline`) ve uyarıları · Günün Meydan Okuması kartı metinleri · Kasalar kart metinleri (`chest_slot_*`, `chests_hint`).
+
+### C. Webde olmayan, oyuncuya görünen parçalar
+1. **Arkadaş serisi** (`fstreak_*`): seri satırı, "serin bitmek üzere" hatırlatması, "serin koptu / kurtarıldı" pencereleri, 3'lü ödül penceresi (Android'de var, web'de hiç yok).
+2. **"Nasıl oynayalım?" seçim penceresi** (`friends_pick_*`, `play_choice_window`): arkadaşa dokununca Düello / Odaya davet seçimi.
+3. **Ceza, kilit ve yasak ekranları**: tur geçersiz sayıldı (`penalty_*`), süreli kilit (`lock_screen_*`, `bg_locked`), kalıcı kapatılan hesap (`quick_match_banned_*`), "Bu mod geçici olarak kapalı".
+4. **Hızlı Eşleş durumları**: havuz boş, rakip getirilemedi, iptal ediliyor, "Tekrar Ara" (`quick_match_empty_*`, `_failed_*`, `_cancelling_*`, `_search_again`), eşleşme resimleri (`bg_qm_found`, `qm_pad`).
+5. **Lig**: ay sonu ödül penceresi (`league_win_*`, `league_win_frame`), boş tablo metinleri, ödül açıklamaları (`league_reward_explainer_*`).
+6. **Bil Bakalım (uygulama içi tahmin ekranı)**: `guess_*` metinlerinin çoğu, `guess_answer_bg`, `guess_notice_bg` (web'de yalnız `/b/KOD` sayfası var).
+7. **Kasalar**: ayrı "Kasalarım" sayfası (`chests_title`, `chests_hint`), yuva durumları ("Sırada", "Açmak için dokun!").
+8. **Çizim**: silgi ve geri al araçlarının adları, "Çizimi Bitir" Türkçe düğme resmi (`btn_finish_drawing_tr`), "Sonraki Kelime" resmi (`btn_next_word_tr`), paylaşma seçim penceresi (`share_drawing_choose`).
+9. **Sorun Bildir**: silme onay pencereleri (`report_bug_delete*`).
+10. **Boyalı pencereler** (Android'de resimle, webde düz): `duel_result_window`, `play_choice_window`, `league_win_frame`, `invite_window`, `ls_coupon_frame` (kupon ödülü), `penalty_card`, `streak_rescue_card`, `child_locked_window`, `offline_panel`, `window_frame`, `xp_offer_window*`.
+11. **Mağaza**: 18 kalem resmi (`st_pen_*`) webde farklı yolla çiziliyor, birebirliği ayrıca doğrulanacak; `st_tab_*` sekme resimleri.
+12. **Ana ekran**: `frame_chip_icon`, `pen_chip_icon`, `daily_streak_icon`, `home_tile_fill`, `karalak_logo_lettering` (web'de başka resimlerle çiziliyor olabilir, doğrulanacak).
+
+### Önerilen sıra
+1. B (metinleri Android anahtarlarına bağla; kayma biter) · 2. C-2, C-3, C-4, C-5 (oyuncunun sık gördüğü ekranlar) · 3. C-10 (boyalı pencereler) · 4. C-1 (arkadaş serisi: büyük) · 5. C-6, C-7, C-8, C-9, C-11, C-12.
+
