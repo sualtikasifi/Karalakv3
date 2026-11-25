@@ -46,6 +46,6 @@ class AvatarGalleryTest {
     @Test
     fun theGalleryIsNotEmpty() {
         assertNotNull(AvatarGallery.find("fox"))
-        assertTrue(AvatarGallery.entries.size >= 16)
+        assertTrue(AvatarGallery.entries.size >= 19)
     }
 }
