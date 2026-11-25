@@ -28,7 +28,7 @@ const T = {
 };
 // texts that are the app's own (strings.json), so they cannot drift from it
 useAppTexts(T, { linked: "account_signed_in_title", max: "level_max_reached", user: "account_section_username", welcome: "account_signed_in_restored" });
-let who = null, msg = "", busy = false, linkedNow = false;
+let who = null, msg = "", msgBad = false, busy = false, linkedNow = false;
 
 // The painted scene (bg_account) is 836 x 1882; the web's art units are 841 x 1870, so every box below is converted.
 const FX = 841 / 836, FY = 1870 / 1882;
@@ -43,8 +43,8 @@ export function layoutAccount(c) {
   pl($("ak-sec"), 168, 1166, 500, 68);
   pl($("ak-cov1"), 66, 1286, 82, 82); pl($("ak-cov2"), 632, 1256, 150, 124);
   pl($("ak-strip"), 156, 1277, 472, 106); pl($("ak-form"), 62, 1285, 708, 90);
-  pl($("ak-out"), 150, 1462, 535, 128); pl($("ak-login"), 150, 1462, 535, 128); pl($("ak-reg"), 215, 1722, 406, 66);
-  pl($("ak-del"), 157, 1610, 516, 95); pl($("ak-msg"), 60, 1802, 716, 66);
+  pl($("ak-out"), 150, 1462, 535, 128); pl($("ak-login"), 150, 1462, 535, 128); pl($("ak-reg"), 215, 1700, 406, 62);
+  pl($("ak-del"), 157, 1604, 516, 84); pl($("ak-msg"), 60, 1776, 716, 90);
 }
 
 function backupLine() {
@@ -92,34 +92,34 @@ function paint(c) {
   $("ak-out").style.display = linked ? "" : "none"; $("ak-out-t").textContent = S("account_sign_out");
   $("ak-edit").onclick = () => openNickEdit(c);
   $("ak-del").textContent = S("account_delete_action"); $("ak-del").style.display = ""; // a guest has data on the server too (profile, rounds, league score), so it can be deleted as well
-  const m = $("ak-msg"); m.textContent = msg; m.style.display = msg ? "" : "none";
-  const done = (text) => { msg = text; busy = false; c.refreshHome(); renderAccount(c); };
+  const m = $("ak-msg"); m.textContent = msg; m.style.display = msg ? "" : "none"; m.classList.toggle("bad", msgBad);
+  const done = (text, bad = false) => { msg = text; msgBad = bad; busy = false; c.refreshHome(); renderAccount(c); };
   const read = () => {
     const name = $("ak-user").value.trim().toLowerCase(), pass = $("ak-pass").value;
-    if (!net.validUserName(name)) { msg = x.badName; renderMsg(); return null; }
-    if (pass.length < 6) { msg = x.badPass; renderMsg(); return null; }
+    if (!net.validUserName(name)) { msg = x.badName; msgBad = true; renderMsg(); return null; }
+    if (pass.length < 6) { msg = x.badPass; msgBad = true; renderMsg(); return null; }
     return { name, pass };
   };
-  const renderMsg = () => { const e = $("ak-msg"); e.textContent = msg; e.style.display = msg ? "" : "none"; };
+  const renderMsg = () => { const e = $("ak-msg"); e.textContent = msg; e.style.display = msg ? "" : "none"; e.classList.toggle("bad", msgBad); c.fit && c.fit(); };
   const go = async (fn, okText) => {
-    if (childMode()) { msg = S("child_feature_locked"); renderMsg(); return; } // a web account is for ages 13 and up (agegate.js)
-    if (busy) return; const v = read(); if (!v) return; busy = true; msg = "…"; renderMsg();
+    if (childMode()) { msg = S("child_feature_locked"); msgBad = true; renderMsg(); return; } // a web account is for ages 13 and up (agegate.js)
+    if (busy) return; const v = read(); if (!v) return; busy = true; msg = "…"; msgBad = false; renderMsg();
     try {
       who = await fn(v.name, v.pass); markAccount(true); forgetRemote();
       const r = await syncNow(c); c.saveP();
       done(r === "restored" ? x.welcome : okText);
-    } catch (e) { done(errText(x, e)); }
+    } catch (e) { done(errText(x, e), true); }
   };
   $("ak-reg").onclick = () => go(net.signUpUserName, x.created);
   $("ak-login").onclick = () => go(net.signInUserName, x.loggedIn);
   $("ak-pass").onkeydown = (e) => { if (e.key === "Enter") $("ak-login").click(); };
   $("ak-out").onclick = () => c.confirm(S("account_sign_out_message"), S("account_sign_out_confirm"), async () => {
-    if ((await syncNow(c)) === "error") return done(S("account_sign_out_backup_failed"));
-    try { await net.signOutAccount(); markAccount(false); c.resetProgress(); forgetRemote(); done(S("account_signed_out_done")); } catch { done(S("account_sign_out_failed")); }
+    if ((await syncNow(c)) === "error") return done(S("account_sign_out_backup_failed"), true);
+    try { await net.signOutAccount(); markAccount(false); c.resetProgress(); forgetRemote(); done(S("account_signed_out_done")); } catch { done(S("account_sign_out_failed"), true); }
   });
   $("ak-del").onclick = () => c.confirm(S("account_delete_message"), S("account_delete_continue"), () => c.confirm(S("account_delete_final_message"), S("account_delete_final_confirm"), async () => {
     try { await net.deleteAccount(); markAccount(false); c.resetProgress(); forgetRemote(); done(S("account_delete_done")); }
-    catch (e) { done(e.code === "auth/requires-recent-login" ? S("account_delete_reauth_needed") : S("account_delete_failed")); }
+    catch (e) { done(e.code === "auth/requires-recent-login" ? S("account_delete_reauth_needed") : S("account_delete_failed"), true); }
   }));
 }
 

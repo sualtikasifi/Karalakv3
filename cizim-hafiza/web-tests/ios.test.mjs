@@ -164,6 +164,21 @@ for (const name of DEVICES) {
       if (await page.$(".pc-ov.cph")) problems.push(`[${name}] the coupon window's close button did not close it`);
     }
   } catch (e) { problems.push(`[${name}] coupon how: ${e.message.split("\n")[0]}`); }
+  // the Account page: the three stat labels stay clear of the paint splashes, and a wrong entry shows its message in red, under the buttons and inside the screen
+  current = "account_msg";
+  try {
+    await page.evaluate(() => window.__karalak.show("account")); await page.waitForTimeout(700);
+    await page.evaluate(() => { document.getElementById("ak-user").value = "a"; document.getElementById("ak-pass").value = "x"; document.getElementById("ak-reg").click(); }); await page.waitForTimeout(500);
+    const m = await page.evaluate(() => { const r = (id) => { const b = document.getElementById(id).getBoundingClientRect(); return { t: b.top, b: b.bottom, l: b.left, r: b.right }; }; const e = document.getElementById("ak-msg"); return { bad: e.classList.contains("bad"), shown: e.offsetParent !== null, color: getComputedStyle(e).color, msg: r("ak-msg"), reg: r("ak-reg"), del: r("ak-del"), vh: innerHeight, vw: innerWidth, over: e.scrollHeight > e.clientHeight + 1, stats: [0, 1, 2].map((i) => { const c = document.getElementById("ak-s" + i).getBoundingClientRect(), s = document.querySelector("#ak-s" + i + " small").getBoundingClientRect(); return { cl: c.left, cr: c.right, sl: s.left, sr: s.right }; }) }; });
+    console.log(`  ${name} account msg: ` + JSON.stringify(m));
+    if (!m.shown || !m.bad) problems.push(`[${name}] a wrong sign-up entry does not show its message as an error (shown ${m.shown}, bad ${m.bad})`);
+    if (m.msg.t < m.reg.b - 1) problems.push(`[${name}] the account message overlaps the "Hesap Oluştur" button (${Math.round(m.msg.t)} < ${Math.round(m.reg.b)})`);
+    if (m.reg.t < m.del.b - 1) problems.push(`[${name}] the "Hesap Oluştur" button overlaps the delete button`);
+    if (m.msg.b > m.vh + 1 || m.msg.l < -1 || m.msg.r > m.vw + 1) problems.push(`[${name}] the account message sticks out of the screen`);
+    if (m.over) problems.push(`[${name}] the account message does not fit its box`);
+    for (const [i, st] of m.stats.entries()) if (st.sl < st.cl + (st.cr - st.cl) * 0.12 || st.sr > st.cr - (st.cr - st.cl) * 0.12) problems.push(`[${name}] stat label ${i} runs into the card's corner splashes`);
+    await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_account_msg.jpg`), type: "jpeg", quality: 72 });
+  } catch (e) { problems.push(`[${name}] account msg: ${e.message.split("\n")[0]}`); }
   // the store's three tabs: each must sit inside the row (not spill past the screen) and show its label (a percentage padding once made them twice as wide, with no room for the words)
   current = "store_tabs";
   try {

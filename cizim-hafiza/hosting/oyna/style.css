@@ -233,7 +233,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #ak-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#fcec9c,#fccd15 20%,#feba17 50%,#fe9701 66%,#f36501);border-radius:99px 0 0 99px;min-width:6%}
 #ak-barl{position:relative;color:#fff;font-size:calc(var(--u)*30);font-weight:800;-webkit-text-stroke:calc(var(--u)*4) #3a1e08;paint-order:stroke fill}
 .ak-stat{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#3b2314}
-.ak-stat img{height:calc(var(--u)*72);width:auto;flex:none;object-fit:contain}.ak-stat b{font-size:calc(var(--u)*56);line-height:1.05}.ak-stat small{font-size:calc(var(--u)*26);font-weight:700;line-height:1.1;max-width:calc(var(--u)*172)}
+.ak-stat img{height:calc(var(--u)*66);width:auto;flex:none;object-fit:contain}.ak-stat b{font-size:calc(var(--u)*56);line-height:1.05}.ak-stat small{font-size:calc(var(--u)*26);font-weight:700;line-height:1.1;width:calc(var(--u)*132);max-width:calc(var(--u)*132);display:block}
 #ak-sec{font-size:calc(var(--u)*44)}
 .gbtn{display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*18);background:#fff;border:calc(var(--u)*4) solid #d9a566;border-radius:99px;font-size:calc(var(--u)*40);color:#3c4043;box-shadow:0 calc(var(--u)*8) 0 #b5510f}
 .gbtn:active{transform:translateY(calc(var(--u)*6));box-shadow:0 calc(var(--u)*2) 0 #b5510f}
@@ -245,7 +245,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .fcbtn .sw{flex:none;position:relative;width:calc(var(--u)*96);height:calc(var(--u)*52);border-radius:99px;background:linear-gradient(#cfc6b8,#b4aa9b);border:2px solid #8f8576;box-sizing:border-box}
 .fcbtn .sw::after{content:"";position:absolute;top:calc(var(--u)*4);left:calc(var(--u)*4);width:calc(var(--u)*40);height:calc(var(--u)*40);border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .18s}
 .fcbtn.on .sw{background:linear-gradient(#ff9a3c,#f26a1b);border-color:#c4500f}.fcbtn.on .sw::after{left:calc(100% - var(--u)*44)}
-.txt.capmsg{background:#fff6e4f2;border-radius:20px;font-size:calc(var(--u)*30);color:#14602a;padding:0 calc(var(--u)*14)}
+.txt.capmsg{background:#fff6e4f2;border-radius:20px;font-size:calc(var(--u)*30);color:#14602a;padding:0 calc(var(--u)*14);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15}.txt.capmsg.bad{color:#b3261e}
 .txt.sm2{white-space:normal;font-size:calc(var(--u)*23)}
 
 
