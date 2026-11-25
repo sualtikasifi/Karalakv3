@@ -117,6 +117,24 @@ export function paintedCard(host, { art, w, h, cls = "", onClose, below }) {
 }
 
 /**
+ * The painted vine-and-parchment window with its button built in (PaintedFrameDialog.kt): a title and a body written on the parchment, the
+ * body shrinking (down to half) to show whole, and `buttonText` on the painted orange button, which caves in under the finger. The picture
+ * is 966 x 1595; a tap on the dimmed screen around it does what the button does.
+ */
+const FRAME = { art: "dialog_frame_btn", w: 966, h: 1595, title: [150, 205, 820, 305], body: [140, 315, 830, 1290], button: [178, 1378, 795, 1516] };
+export function paintedFrameDialog(host, { title, body, buttonText, onClick }) {
+  let fired = false; const fire = () => { if (!fired) { fired = true; onClick && onClick(); } };
+  const card = paintedCard(host, { art: FRAME.art, w: FRAME.w, h: FRAME.h, cls: "pf", onClose: fire });
+  card.card.setAttribute("role", "dialog"); card.card.setAttribute("aria-label", title);
+  const t = card.put("pc-t", FRAME.title, "<span></span>"); t.firstChild.textContent = title;
+  const b = card.put("pf-body", FRAME.body, "<span></span>");
+  String(body).split("\n").forEach((line, i) => { if (i) b.firstChild.append(document.createElement("br")); b.firstChild.append(document.createTextNode(line)); });
+  const btn = card.put("pc-btn", FRAME.button, '<span class="pc-lt"></span>'); btn.firstChild.textContent = buttonText; btn.onclick = () => card.close();
+  card.fit(t, 66, 1, 0.6); card.fit(b, 42, 99, 0.5); card.fit(btn, 60, 1, 0.5);
+  return card;
+}
+
+/**
  * Ads only exist in the phone app, so every "watch an ad" spot on the web says so and sends the player to the store instead
  * of pretending to show one.
  */

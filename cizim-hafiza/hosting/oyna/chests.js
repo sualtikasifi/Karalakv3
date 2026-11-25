@@ -2,7 +2,7 @@
 // A port of ChestStore.kt (the rules), ChestDetail.kt (the window), ChestWonDialog.kt (the win scene), ChestComponents.kt (the opening
 // scene) and ChestInfoDialog.kt. The texts are the app's own (i18n.js / strings.json).
 import { penList } from "./store.js";
-import { S, fmtNum, ready as strReady } from "./i18n.js";
+import { S, fmtNum, getLang, ready as strReady } from "./i18n.js";
 import { el, primary, appWindow, paintedCard, appOnlyDialog } from "./ui.js";
 import { TIER, backdrop, wonScene, rewardScene, rgba, glowOf, lerpC } from "./chestfx.js";
 import { todayEpoch } from "./daily.js";
@@ -283,12 +283,15 @@ export function wonDialog(c, chest) {
 }
 
 // ---------- the info window (ChestInfoDialog) ----------
+// The guide is one finished picture per language, exactly as in the app (chests_info: drawable-nodpi = English, -tr, -es, -pt): the title,
+// the three steps, the three chests with their gold and jokers and the ad tip are painted into it, and so is the "Anladım" button, which
+// is only made tappable here. [width, height, left, top, right, bottom] of each picture, its size and its button, are the app's
+// res/values*/chest_info_art.xml. The numbers in the picture must be repainted when the chest values change.
+const INFO_ART = { en: [922, 1673, 175, 1498, 750, 1622], tr: [922, 1694, 175, 1500, 750, 1625], es: [922, 1673, 163, 1476, 748, 1598], pt: [925, 1700, 172, 1497, 752, 1628] };
 function infoDialog(c) {
-  const body = el("div", "ci-body");
-  const step = (n, emoji, title, text, first, last) => `<div class="ci-step ${first ? "first" : ""} ${last ? "last" : ""}"><div class="ci-rail"><i>${n}</i></div><div class="ci-tx"><b>${emoji}  ${title}</b><span>${text}</span></div></div>`;
-  body.innerHTML = step(1, "🏆", S("chest_info_step_win_title"), S("chest_info_step_win_body"), true, false) + step(2, "⏳", S("chest_info_step_open_title"), S("chest_info_step_open_body"), false, false) + step(3, "🔓", S("chest_info_step_slots_title"), S("chest_info_step_slots_body", SLOTS), false, true)
-    + `<div class="ci-h">${S("chest_info_contents_title")}</div>`
-    + ["SILVER", "GOLD", "RARE"].map((t) => { const T = TIER[t], j = { SILVER: ["chest_detail_jokers_silver", 30], GOLD: ["chest_detail_jokers_gold", 30], RARE: ["chest_detail_jokers_rare", 40] }[t];
-      return `<div class="ci-card" style="background:${rgba(T.accent, 0.1)};border-color:${rgba(T.accent, 0.5)}"><img src="img/${T.art}.webp" alt=""><div><div class="ci-n"><b>${S(T.label)}</b><span style="background:${T.accent}">⏱ ${durText(c, t)}</span></div><div class="ci-l">🪙 ${S("chest_detail_gold", GOLD[t][0], GOLD[t][1])}<br>🎲 ${S(j[0], j[1])}${t === "RARE" ? `<br>✏️ ${S("chest_detail_pen", 12)}` : ""}</div></div></div>`; }).join("");
-  const ov = appWindow(c.$("stage"), { title: S("home_chests_info_title"), body, footer: primary(S("home_chests_info_ok"), () => ov.close()) });
+  const lang = INFO_ART[getLang()] ? getLang() : "en", [w, h, l, t, r, b] = INFO_ART[lang];
+  const card = paintedCard(c.$("stage"), { art: `chests_info_${lang}`, w, h, cls: "ci2" });
+  card.card.setAttribute("role", "dialog"); card.card.setAttribute("aria-label", S("home_chests_info_title"));
+  // a tap on the picture is not a tap outside it (the card closes only from the dimmed screen around it), and the painted button caves in
+  const ok = card.put("pc-btn", [l, t, r, b], ""); ok.setAttribute("role", "button"); ok.setAttribute("aria-label", S("home_chests_info_ok")); ok.onclick = () => card.close();
 }
