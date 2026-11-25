@@ -158,6 +158,20 @@ for (const name of DEVICES) {
       if (await page.$(".pc-ov.cph")) problems.push(`[${name}] the coupon window's close button did not close it`);
     }
   } catch (e) { problems.push(`[${name}] coupon how: ${e.message.split("\n")[0]}`); }
+  // the store's three tabs: each must sit inside the row (not spill past the screen) and show its label (a percentage padding once made them twice as wide, with no room for the words)
+  current = "store_tabs";
+  try {
+    await page.evaluate(() => window.__karalak.show("store")); await page.waitForTimeout(700);
+    const t = await page.evaluate(() => { const row = document.getElementById("st-tabs").getBoundingClientRect(), vw = innerWidth; return { row: [row.left, row.right], vw, tabs: [...document.querySelectorAll("#st-tabs .tab")].map((b) => { const r = b.getBoundingClientRect(), s = b.firstElementChild.getBoundingClientRect(); return { l: r.left, r: r.right, label: b.textContent.trim(), lw: s.width, fs: parseFloat(getComputedStyle(b).fontSize) }; }) }; });
+    console.log(`  ${name} store tabs: ` + JSON.stringify(t));
+    if (t.tabs.length !== 3) problems.push(`[${name}] the store shows ${t.tabs.length} tabs, not 3`);
+    for (const b of t.tabs) {
+      if (b.r > t.vw + 2 || b.l < -2) problems.push(`[${name}] store tab "${b.label}" sticks out of the screen (${Math.round(b.l)}..${Math.round(b.r)} of ${t.vw})`);
+      if (b.r - b.l > (t.row[1] - t.row[0]) * 0.4) problems.push(`[${name}] store tab "${b.label}" is wider than a third of the row (${Math.round(b.r - b.l)} of ${Math.round(t.row[1] - t.row[0])})`);
+      if (!b.label || b.lw < 20 || b.fs < 7) problems.push(`[${name}] store tab "${b.label}" has no room for its label (width ${Math.round(b.lw)}, font ${b.fs})`);
+    }
+    await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_store_tabs.jpg`), type: "jpeg", quality: 72 });
+  } catch (e) { problems.push(`[${name}] store tabs: ${e.message.split("\n")[0]}`); }
   // the friend-streak windows (a prize, a streak that ends today), opened straight from their module
   for (const [which, prompt] of [["reward", { k: "reward", pair: "a_b", run: 1, name: "Ece", milestone: 7, reward: { gold: 100 } }], ["risk", { k: "risk", items: [{ pair: "a_b", uid: "b", name: "Ece", count: 4 }] }]]) {
     current = "fstreak_" + which;
