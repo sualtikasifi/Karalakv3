@@ -60,6 +60,9 @@ for (const name of DEVICES) {
     console.log(`  ${name} ${id}: stage ${Math.round(m.l)}..${Math.round(m.r)} of ${Math.round(m.w)}`);
     if (m.sw > m.iw + 1) problems.push(`[${name}] ${id}: the page scrolls sideways (${m.sw} > ${m.iw})`);
     if (m.l < -1 || m.r > m.w + 1) problems.push(`[${name}] ${id}: the game area sticks out of the window (${Math.round(m.l)}..${Math.round(m.r)} of ${Math.round(m.w)})`);
+    // a label wider than its own button is cut off (or spills): list them so a wrong-sized pill is seen in the log, not only by a player
+    const clipped = await page.evaluate(() => [...document.querySelectorAll(".screen.on button, .screen.on .pill, .screen.on .tab")].filter((b) => b.offsetParent && b.firstElementChild && b.firstElementChild.tagName === "SPAN").map((b) => { const sp = b.firstElementChild, cs = getComputedStyle(b), room = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight); return { t: sp.textContent.trim().slice(0, 30), w: Math.round(sp.scrollWidth), room: Math.round(room) }; }).filter((x) => x.t && x.room > 0 && x.w > x.room + 3));
+    if (clipped.length) console.log(`  CLIPPED [${name}] ${id}: ` + JSON.stringify(clipped));
     await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_${id}.jpg`), type: "jpeg", quality: 72 });
     // the same screen in Chrome's engine; the share of pixels that differ shows what is Safari-only
     try {
