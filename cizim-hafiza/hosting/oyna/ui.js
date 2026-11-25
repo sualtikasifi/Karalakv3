@@ -142,7 +142,7 @@ export function paintedFrameDialog(host, { title, body, buttonText, onClick }) {
 export function playChoiceDialog(host, { onRoom, onDuel }) {
   const card = paintedCard(host, { art: "play_choice_window", w: 948, h: 1152, cls: "pcw" }), { put, fit } = card;
   card.card.setAttribute("role", "dialog"); card.card.setAttribute("aria-label", S("friends_pick_title"));
-  const lettered = (r, text, outline, base, min, title) => { const e = put("pc-lbl" + (title ? " pc-t" : ""), r, '<span class="pc-lt"></span>'); e.style.setProperty("--ol", outline); e.firstChild.textContent = text; fit(e, base, 1, min); return e; };
+  const lettered = (r, text, outline, base, min, title) => { const e = put("pc-lbl", r, '<span class="pc-lt"></span>'); e.style.setProperty("--ol", outline); e.firstChild.textContent = text; fit(e, base, 1, min); return e; };
   lettered([225, 140, 735, 245], S("friends_pick_title"), "#3a0f5e", 84, 0.45, true);
   const choice = (label, desc, barTop, descTop, fn) => {
     const bar = put("pc-btn", [95, barTop, 850, barTop + 144], ""); bar.setAttribute("role", "button"); bar.setAttribute("aria-label", label);

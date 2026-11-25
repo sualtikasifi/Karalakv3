@@ -106,6 +106,9 @@ export function lockScene(c, until, onFree) {
     const left = Math.max(0, Math.floor((until - Date.now()) / 1000)), days = Math.floor(left / 86400);
     const hms = [Math.floor(left % 86400 / 3600), Math.floor(left % 3600 / 60), left % 60].map((n) => String(n).padStart(2, "0")).join(":");
     clock.firstChild.textContent = days > 0 ? S("lock_countdown_days", days, hms) : hms;
+    // "1 gün 03:02:02" is wider than "03:02:02": shrink the digits until they sit inside the pill (FitText)
+    const sp = clock.firstChild; sp.style.fontSize = ""; const room = clock.clientWidth - 2 * parseFloat(getComputedStyle(clock).paddingLeft || 0);
+    if (sp.scrollWidth > room && room > 0) sp.style.fontSize = parseFloat(getComputedStyle(sp).fontSize) * Math.max(0.6, room / sp.scrollWidth) + "px";
     if (left <= 0) { close(); onFree && onFree(); }
   };
   back.onclick = close; window.addEventListener("resize", size); c.$("stage").append(ov); size(); tick(); timer = setInterval(tick, 1000);
