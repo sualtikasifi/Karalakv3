@@ -43,8 +43,8 @@ export function layoutAccount(c) {
   pl($("ak-sec"), 168, 1166, 500, 68);
   pl($("ak-cov1"), 66, 1286, 82, 82); pl($("ak-cov2"), 632, 1256, 150, 124);
   pl($("ak-strip"), 156, 1277, 472, 106); pl($("ak-form"), 62, 1285, 708, 90);
-  pl($("ak-out"), 150, 1462, 535, 128); pl($("ak-login"), 150, 1462, 535, 128); pl($("ak-reg"), 215, 1700, 406, 62);
-  pl($("ak-del"), 157, 1604, 516, 84); pl($("ak-msg"), 60, 1776, 716, 90);
+  pl($("ak-out"), 150, 1450, 535, 120); pl($("ak-login"), 150, 1450, 535, 120); pl($("ak-reg"), 215, 1664, 406, 58);
+  pl($("ak-del"), 157, 1578, 516, 78); pl($("ak-msg"), 60, 1732, 716, 76); // the page ends near 1822: the message must end above it
 }
 
 function backupLine() {
