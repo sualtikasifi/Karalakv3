@@ -1197,3 +1197,6 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 /* a rune's last level: a gold wash over the screen, and the banner that says it is complete (GrandFinish) */
 .rs-wash{position:absolute;inset:0;z-index:55;pointer-events:none;background:#ffd35e61;opacity:0}
 .rs-banner{position:absolute;left:0;right:0;top:calc(var(--u)*307);z-index:56;pointer-events:none;text-align:center;font-weight:800;font-size:calc(var(--u)*70);color:#fff;white-space:nowrap;-webkit-text-stroke:calc(var(--u)*9) #8a3a00;paint-order:stroke fill;text-shadow:0 calc(var(--u)*4) 0 #8a3a00;opacity:0}
+.pc-lbl{pointer-events:none}
+.pc-desc span{display:block;font-weight:800;color:#3b2314;line-height:1.212;text-align:center;padding:0 calc(var(--k,.4)*8px)}
+

@@ -1,6 +1,6 @@
 import * as net from "./firebase.js";
 import { S } from "./i18n.js";
-import { friendInviteText, shareInvite } from "./ui.js";
+import { friendInviteText, shareInvite, playChoiceDialog } from "./ui.js";
 
 // The screen's words are the app's own (strings.json), so the web never drifts from it (the invite reward was once "500 XP" here
 // while the app paid gold). Only what the app does not say has its own words: it shows one "could not add" for a wrong code or
@@ -91,8 +91,9 @@ export function renderFriends(c) {
   }
   friends.forEach((f) => {
     const row = el("div", "fr-row", `<span class="nm">${esc(f.nickname || "?")}</span>`);
-    const inv = el("button", "fr-pill", x.invite), more = el("button", "fr-more", "⋮");
-    inv.onclick = () => c.inviteFriend(f);
+    // "Meydan Oku" asks how to play first: a live room right now, or a duel the friend answers whenever they like (FriendRow)
+    const inv = el("button", "fr-pill", S("duel_challenge_action")), more = el("button", "fr-more", "⋮");
+    inv.onclick = () => playChoiceDialog(c.$("stage"), { onRoom: () => c.inviteFriend(f), onDuel: () => c.openDuel({ uid: f.id, name: f.nickname || "?" }) });
     more.onclick = () => menu(c, f, x);
     row.append(inv, more); list.append(row);
   });
@@ -106,7 +107,6 @@ function menu(c, f, x) {
   const { $ } = c, d = $("fr-menu"); d.classList.remove("hidden"); d.replaceChildren();
   const box = el("div", "fr-mbox", `<b>${esc(f.nickname || "?")}</b>`);
   const a = (label, q, yes, fn) => { const b = el("button", "pill cream small", `<span>${label}</span>`); b.onclick = () => { d.classList.add("hidden"); c.confirm(q, yes, fn); }; box.append(b); };
-  const dl = el("button", "pill orange small", `<span>${S("duel_challenge_action")}</span>`); dl.onclick = () => { d.classList.add("hidden"); c.openDuel({ uid: f.id, name: f.nickname || "?" }); }; box.append(dl);
   a(x.remove, x.removeQ(f.nickname || "?"), x.yes, () => net.removeFriend(f.id));
   a(x.block, x.blockQ(f.nickname || "?"), x.yesBlock, () => net.blockUser(f.id, f.nickname || "?"));
   const cancel = el("button", "pill cream small", `<span>${x.no}</span>`); cancel.onclick = () => d.classList.add("hidden"); box.append(cancel);

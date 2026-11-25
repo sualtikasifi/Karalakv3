@@ -94,6 +94,23 @@ for (const name of DEVICES) {
       if (await page.$(".pc-ov.pf") || !(await page.evaluate(() => window.__karalak.P.runesIntroSeen))) problems.push(`[${name}] the Runes' window did not close and stay read`);
     }
   } catch (e) { problems.push(`[${name}] rune intro: ${e.message.split("\n")[0]}`); }
+  // the "how do you want to play?" window over a friend (opened straight from its module: the test has no friends)
+  current = "play_choice";
+  try {
+    await page.evaluate(() => window.__karalak.show("friends")); await page.waitForTimeout(500);
+    await page.evaluate(async () => { const m = await import("./ui.js"); window.__picked = []; m.playChoiceDialog(document.getElementById("stage"), { onRoom: () => window.__picked.push("room"), onDuel: () => window.__picked.push("duel") }); });
+    await page.waitForTimeout(900);
+    if (!(await page.$(".pc-ov.pcw"))) problems.push(`[${name}] the play choice window did not open`);
+    else {
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_play_choice.jpg`), type: "jpeg", quality: 72 });
+      const bars = await page.$$(".pc-ov.pcw .pc-btn");
+      if (bars.length !== 2) problems.push(`[${name}] the play choice window has ${bars.length} buttons, not 2`);
+      else {
+        await bars[1].tap(); await page.waitForTimeout(300);
+        if ((await page.evaluate(() => window.__picked.join())) !== "duel" || (await page.$(".pc-ov.pcw"))) problems.push(`[${name}] choosing a duel did not answer and close the window`);
+      }
+    }
+  } catch (e) { problems.push(`[${name}] play choice: ${e.message.split("\n")[0]}`); }
   // taps: a home tile and a rune must answer
   current = "tap"; await page.evaluate(() => window.__karalak.show("home")); await page.waitForTimeout(400);
   await page.tap("#tl-settings").catch((e) => problems.push(`[${name}] tap on Ayarlar failed: ${e.message.split("\n")[0]}`));
