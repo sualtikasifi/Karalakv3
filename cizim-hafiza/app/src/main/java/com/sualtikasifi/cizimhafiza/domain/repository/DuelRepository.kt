@@ -18,7 +18,9 @@ interface DuelRepository {
         challengerScore: Int,
         challengerCorrectCount: Int,
         /** The exact word ids this round drew, in order — see Duel.wordIds. */
-        wordIds: List<Int>
+        wordIds: List<Int>,
+        /** Gold each side puts in; 0 for an ordinary duel. The stake leaves this player's wallet once the duel is written. */
+        stake: Int = 0
     ): Result<Unit>
 
     /** One-shot fetch for the play screen — no live updates needed once the round is already loaded. */
@@ -48,6 +50,27 @@ interface DuelRepository {
     /** Clears a result's "new" mark on this phone. */
     fun markHistorySeen(duelId: String)
 
+    /** What this player has staked today (read from the server, so it fails offline) — for the picker and for [friendUid]. */
+    suspend fun stakeUsage(friendUid: String): Result<com.sualtikasifi.cizimhafiza.domain.model.StakeUsage>
+
+    /** Whether [friendUid] may take part in wagers (level, ban, Google, switch). Null when it could not be read. */
+    suspend fun friendStakeBlock(friendUid: String): com.sualtikasifi.cizimhafiza.domain.model.StakeBlock?
+
+    /** Takes a wager on: writes ACCEPTED with the day's counters and takes the stake from this wallet. */
+    suspend fun acceptWager(duel: Duel): Result<Unit>
+
+    /** Turns a wager down (the challenger's stake goes back to them). */
+    suspend fun declineWager(duelId: String): Result<Unit>
+
+    /**
+     * Takes what the wagers owe this player — refunds, wins, ties — once each, ending expired offers and forfeited rounds on
+     * the way. Returns what was paid ([StakeSettlement]); empty when nothing is due.
+     */
+    suspend fun settleWagers(): List<StakeSettlement>
+
     /** Either participant may remove a duel from their own view once it no longer needs to be there. */
     suspend fun deleteDuel(duelId: String): Result<Unit>
 }
+
+/** One wager settled on this device: who it was against, what it paid (0 = a loss) and how it ended. */
+data class StakeSettlement(val otherName: String, val stake: Int, val paid: Int, val status: com.sualtikasifi.cizimhafiza.domain.model.DuelStatus)

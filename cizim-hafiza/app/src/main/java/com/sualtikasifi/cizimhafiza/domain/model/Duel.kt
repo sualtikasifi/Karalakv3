@@ -1,7 +1,18 @@
 package com.sualtikasifi.cizimhafiza.domain.model
 
 /** Lifecycle of an asynchronous duel — see DuelRepository/firestore.rules' duels/{duelId}. */
-enum class DuelStatus { AWAITING_OPPONENT, COMPLETE }
+enum class DuelStatus {
+    AWAITING_OPPONENT, COMPLETE,
+
+    /** A wager (see [Duel.stake]) the opponent has taken on and is playing; they have [StakeRules.FINISH_MILLIS] to finish. */
+    ACCEPTED,
+    /** A wager the opponent turned down: the challenger's stake goes back. */
+    DECLINED,
+    /** A wager nobody answered within [StakeRules.ACCEPT_MILLIS]: the challenger's stake goes back. */
+    EXPIRED,
+    /** A wager accepted but not finished in time: the challenger takes the pot. */
+    FORFEIT
+}
 
 /**
  * One asynchronous duel: the challenger plays a normal solo round (see
@@ -39,8 +50,18 @@ data class Duel(
     val createdAt: Long = 0L,
     val completedAt: Long? = null,
     /** False right after the opponent completes it — clears once the challenger has opened the result once. */
-    val seenByChallenger: Boolean = true
+    val seenByChallenger: Boolean = true,
+    /** Gold each side puts in (0 = an ordinary duel). Settled on both devices from this document — see [StakeRules]. */
+    val stake: Int = 0,
+    val stakeAtMillis: Long = 0L,
+    val acceptedAtMillis: Long = 0L,
+    /** The challenger has not yet taken what the document owes them (stake back, or a win). */
+    val challengerOpen: Boolean = false,
+    /** Same for the opponent, from the moment they accept. */
+    val opponentOpen: Boolean = false
 ) {
+    val isWager: Boolean get() = stake > 0
+
     val totalWords: Int get() = items.size
 
     /** Null until COMPLETE. True if the challenger's own round outscored the opponent's guesses; null again on an exact tie. */

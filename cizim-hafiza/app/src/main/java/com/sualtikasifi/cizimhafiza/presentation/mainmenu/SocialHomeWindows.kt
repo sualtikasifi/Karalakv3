@@ -30,10 +30,11 @@ fun SocialHomeWindows(
     onShowing: (Boolean) -> Unit,
     inboxViewModel: GuessInboxViewModel = hiltViewModel(),
     streakViewModel: FriendStreakViewModel = hiltViewModel(),
-    giftViewModel: com.sualtikasifi.cizimhafiza.presentation.gifts.GiftInboxViewModel = hiltViewModel()
+    giftViewModel: com.sualtikasifi.cizimhafiza.presentation.gifts.GiftInboxViewModel = hiltViewModel(),
+    stakeViewModel: com.sualtikasifi.cizimhafiza.presentation.duel.StakeSettleViewModel = hiltViewModel()
 ) {
     val online = LocalOnline.current
-    LaunchedEffect(online, quiet) { if (online && quiet) { inboxViewModel.check(); giftViewModel.check() } }
+    LaunchedEffect(online, quiet) { if (online && quiet) { inboxViewModel.check(); giftViewModel.check(); stakeViewModel.check() } }
 
     val entries by inboxViewModel.entries.collectAsState()
     val prompt by streakViewModel.prompt.collectAsState()
@@ -45,6 +46,8 @@ fun SocialHomeWindows(
     var shown by remember { mutableStateOf<StreakPrompt?>(null) }
     val inboxOpen = quiet && entries.isNotEmpty()
     val giftOpen = quiet && !inboxOpen && (gifts.isNotEmpty() || giftResults.isNotEmpty())
+    val stakeResults by stakeViewModel.results.collectAsState()
+    val stakeOpen = quiet && !inboxOpen && !giftOpen && stakeResults.isNotEmpty()
     LaunchedEffect(prompt, quiet, inboxOpen) {
         val next = prompt
         if (quiet && !inboxOpen && shown == null && next != null) {
@@ -52,7 +55,7 @@ fun SocialHomeWindows(
             streakViewModel.onShown(next)
         }
     }
-    LaunchedEffect(inboxOpen, giftOpen, shown) { onShowing(inboxOpen || giftOpen || shown != null) }
+    LaunchedEffect(inboxOpen, giftOpen, stakeOpen, shown) { onShowing(inboxOpen || giftOpen || stakeOpen || shown != null) }
 
     if (inboxOpen) {
         GuessInboxDialog(entries = entries, rewardGold = inboxViewModel.rewardGold, onClose = inboxViewModel::claim)
@@ -61,6 +64,10 @@ fun SocialHomeWindows(
     if (giftOpen) {
         if (gifts.isNotEmpty()) com.sualtikasifi.cizimhafiza.presentation.gifts.GiftInboxDialog(gifts, onClaim = giftViewModel::claimAll)
         else com.sualtikasifi.cizimhafiza.presentation.gifts.GiftResultDialog(giftResults, onClose = giftViewModel::dismissResults)
+        return
+    }
+    if (stakeOpen) {
+        com.sualtikasifi.cizimhafiza.presentation.duel.StakeResultDialog(stakeResults, onClose = stakeViewModel::dismiss)
         return
     }
     val current = shown ?: return

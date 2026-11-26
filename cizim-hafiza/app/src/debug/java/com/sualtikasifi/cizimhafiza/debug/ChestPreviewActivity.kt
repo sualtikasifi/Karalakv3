@@ -38,6 +38,24 @@ class ChestPreviewActivity : ComponentActivity() {
                     )
                     return@CizimHafizaTheme
                 }
+                if (state.startsWith("stake")) {
+                    if (state == "stake_result") {
+                        val st = com.sualtikasifi.cizimhafiza.domain.model.DuelStatus.COMPLETE
+                        com.sualtikasifi.cizimhafiza.presentation.duel.StakeResultDialog(
+                            listOf(
+                                com.sualtikasifi.cizimhafiza.domain.repository.StakeSettlement("Elif", 500, 950, st),
+                                com.sualtikasifi.cizimhafiza.domain.repository.StakeSettlement("Can", 250, 0, st),
+                                com.sualtikasifi.cizimhafiza.domain.repository.StakeSettlement("Deniz", 100, 100, com.sualtikasifi.cizimhafiza.domain.model.DuelStatus.EXPIRED)
+                            )
+                        ) { finish() }
+                    } else {
+                        com.sualtikasifi.cizimhafiza.presentation.duel.StakePickerDialog(
+                            com.sualtikasifi.cizimhafiza.presentation.duel.StakePickerState(10, loading = false, usage = com.sualtikasifi.cizimhafiza.domain.model.StakeUsage(1500, 2, 500)),
+                            "Elif", 800, {}, { finish() }
+                        )
+                    }
+                    return@CizimHafizaTheme
+                }
                 if (state.startsWith("gift")) {
                     val g = com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendState("u", "Elif", loading = false, usage = com.sualtikasifi.cizimhafiza.domain.model.GiftUsage(300, 1, 300))
                     when (state) {

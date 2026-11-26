@@ -73,7 +73,7 @@ object Screen {
     // same duel instead of sending a new one.
     private const val GameRoute =
         "game/{wordCount}/{category}/{difficulty}/{mode}?worldId={worldId}&levelIndex={levelIndex}&daily={daily}" +
-            "&duelOpponentUid={duelOpponentUid}&duelOpponentName={duelOpponentName}&ghost={ghost}&duelIdToComplete={duelIdToComplete}"
+            "&duelOpponentUid={duelOpponentUid}&duelOpponentName={duelOpponentName}&ghost={ghost}&duelIdToComplete={duelIdToComplete}&duelStake={duelStake}"
     const val Game = GameRoute
     const val ArgWordCount = "wordCount"
     const val ArgCategory = "category"
@@ -86,6 +86,7 @@ object Screen {
     const val ArgDuelOpponentName = "duelOpponentName"
     const val ArgGhost = "ghost"
     const val ArgDuelIdToComplete = "duelIdToComplete"
+    const val ArgDuelStake = "duelStake"
     const val AllCategoriesArg = "all"
     const val AllDifficultiesArg = "all"
 
@@ -98,10 +99,11 @@ object Screen {
     // values), a nickname is free text that can contain Turkish letters,
     // spaces or "&" — left raw, any of those would corrupt the query string
     // or silently truncate the name at the first special character.
-    fun duelChallengeRoute(wordCount: Int, opponentUid: String, opponentName: String): String =
+    fun duelChallengeRoute(wordCount: Int, opponentUid: String, opponentName: String, stake: Int = 0): String =
         "game/$wordCount/$AllCategoriesArg/$AllDifficultiesArg/${GameMode.NORMAL.name}" +
             "?duelOpponentUid=${java.net.URLEncoder.encode(opponentUid, "UTF-8")}" +
-            "&duelOpponentName=${java.net.URLEncoder.encode(opponentName, "UTF-8")}"
+            "&duelOpponentName=${java.net.URLEncoder.encode(opponentName, "UTF-8")}" +
+            (if (stake > 0) "&duelStake=$stake" else "")
 
     // --- Hızlı Eşleş (quick match against a recorded round) ---
     const val QuickMatch = "quick_match"

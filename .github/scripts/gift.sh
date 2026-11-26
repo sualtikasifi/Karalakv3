@@ -10,7 +10,7 @@ APK=$(ls cizim-hafiza/app/build/outputs/apk/debug/*.apk | head -1)
 adb wait-for-device
 adb shell input keyevent 82 || true
 adb install -r -t "$APK"
-for state in gift gift_blocked gift_inbox; do
+for state in gift gift_blocked gift_inbox stake_picker stake_result; do
   adb shell am force-stop "$PKG"
   adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.ChestPreviewActivity" --es tier silver --es state "$state"
   sleep 5
