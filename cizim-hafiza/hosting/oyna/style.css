@@ -1240,3 +1240,8 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .fs-body{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*14);text-align:center}.fs-emoji{font-size:calc(var(--u)*92)}.fs-text{margin:0;font-weight:600;line-height:1.35;white-space:pre-line}
 .fs-extra{font-weight:800;font-size:calc(var(--u)*38)}.fs-foot{display:flex;flex-direction:column;gap:calc(var(--u)*12);width:100%;padding-top:calc(var(--u)*12)}
 .fs-foot .prim.cream{background:#fff3d6;color:#b94b06;box-shadow:0 calc(var(--u)*8) 0 #d9b27a}.fs-foot .prim.cream:active{box-shadow:0 calc(var(--u)*2) 0 #d9b27a}
+
+/* the player-report window: the sub-line, then the reasons as cream pills */
+.rp-win{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*24);text-align:center;color:#3b2314}
+.rp-sub{margin:0;font-size:calc(var(--u)*32);font-weight:700;color:#5a3a20}
+.rp-reasons{display:flex;flex-direction:column;gap:calc(var(--u)*18);width:100%}.rp-reasons .pill{width:100%;height:calc(var(--u)*100)}
