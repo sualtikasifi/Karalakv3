@@ -76,22 +76,24 @@ private fun giftName(kind: GiftKind, itemId: String, qty: Int): String = when (k
 @Composable
 fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit, onClose: () -> Unit) {
     AppWindowDialog(title = stringResource(R.string.gift_send_title, state.friendName), onDismiss = onClose) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
             when {
                 state.loading -> Note(stringResource(R.string.gift_loading))
-                state.blocked != null -> Note(stringResource(state.blocked.messageRes()))
+                state.blocked != null -> ErrorCard(stringResource(state.blocked.messageRes()))
                 state.sent != null -> Note(stringResource(R.string.gift_sent))
                 else -> {
                     val usage = state.usage ?: GiftUsage(0, 0, 0)
-                    Note(stringResource(R.string.gift_today_left, usage.countLeft, usage.goldLeft.coerceAtMost(usage.friendLeft)))
-                    state.error?.let { Note(stringResource(it.messageRes()), error = true) }
-                    Section(stringResource(R.string.gift_section_gold))
+                    AllowancePill(usage)
+                    state.error?.let { ErrorCard(stringResource(it.messageRes())) }
+                    Section(stringResource(R.string.gift_section_gold), stringResource(R.string.gift_fee_inline))
                     GiftRules.goldOffers().forEach { Offer(it, gold, usage, state.sending, onSend) }
                     val items = GiftRules.itemOffers()
                     if (items.isNotEmpty()) {
-                        Section(stringResource(R.string.gift_section_items))
+                        Section(stringResource(R.string.gift_section_items), null)
                         items.forEach { Offer(it, gold, usage, state.sending, onSend) }
                     }
+                    // room under the last row, so it never sits on the paint splashes in the window's lower corners
+                    Spacer(Modifier.height(40.dp))
                 }
             }
         }
@@ -99,41 +101,70 @@ fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit,
 }
 
 @Composable
-private fun Section(text: String) {
-    FitText(text, PaintedStyle(color = InkSoft, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Start),
-        contentAlignment = Alignment.CenterStart, modifier = Modifier.fillMaxWidth().height(24.dp).padding(top = 2.dp))
+private fun Section(text: String, hint: String?) {
+    Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth().padding(top = 6.dp, start = 4.dp, end = 4.dp)) {
+        androidx.compose.material3.Text(text, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
+        if (hint != null) androidx.compose.material3.Text(hint, color = InkSoft, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+    }
 }
 
 @Composable
-private fun Note(text: String, error: Boolean = false) {
+private fun Note(text: String) {
     androidx.compose.material3.Text(
-        text, color = if (error) Color(0xFFB3401A) else Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+        text, color = Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
         textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp)
+    )
+}
+
+/** What is left of today's allowance, as one small pill instead of a loose sentence. */
+@Composable
+private fun AllowancePill(usage: GiftUsage) {
+    val shape = RoundedCornerShape(50)
+    Row(
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 2.dp)
+            .background(Color(0x1F7A5A40), shape).padding(horizontal = 12.dp, vertical = 7.dp)
+    ) {
+        Image(painterResource(R.drawable.icon_gold_coin), null, Modifier.size(18.dp))
+        Spacer(Modifier.width(6.dp))
+        androidx.compose.material3.Text(
+            stringResource(R.string.gift_today_pill, usage.countLeft, usage.goldLeft.coerceAtMost(usage.friendLeft)),
+            color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun ErrorCard(text: String) {
+    val shape = RoundedCornerShape(14.dp)
+    androidx.compose.material3.Text(
+        text, color = Color(0xFF9A2F12), fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp)
+            .background(Color(0x26D9483B), shape).border(1.5.dp, Color(0x66D9483B), shape).padding(horizontal = 12.dp, vertical = 9.dp)
     )
 }
 
 @Composable
 private fun Offer(offer: GiftOffer, gold: Int, usage: GiftUsage, sending: Boolean, onSend: (GiftOffer) -> Unit) {
     val ok = gold >= offer.cost && usage.canAfford(offer) && !sending
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(14.dp)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp)
             .background(Brush.verticalGradient(listOf(Color(0xFFFFFAEC), Color(0xFFFBE9C4))), shape)
-            .border(2.dp, Color(0xFFE2C28A), shape)
+            .border(1.5.dp, Color(0xFFE2C28A), shape)
             .clickable(enabled = ok) { onSend(offer) }
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        Column(Modifier.weight(1f)) {
-            androidx.compose.material3.Text(
-                if (offer.kind == GiftKind.GOLD) stringResource(R.string.gift_gold_amount, offer.receives) else giftName(offer.kind, offer.itemId, offer.qty),
-                color = Ink, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1
-            )
-            if (offer.kind == GiftKind.GOLD) androidx.compose.material3.Text(stringResource(R.string.gift_fee_note), color = InkSoft, fontSize = 12.sp, maxLines = 1)
-        }
-        Image(painterResource(R.drawable.icon_gold_coin), null, Modifier.size(22.dp))
+        androidx.compose.material3.Text(
+            if (offer.kind == GiftKind.GOLD) stringResource(R.string.gift_gold_amount, offer.receives) else giftName(offer.kind, offer.itemId, offer.qty),
+            color = if (ok) Ink else Color(0xFFB0A090), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+        )
+        Spacer(Modifier.width(8.dp))
+        Image(painterResource(R.drawable.icon_gold_coin), null, Modifier.size(20.dp))
         Spacer(Modifier.width(4.dp))
-        androidx.compose.material3.Text("${offer.cost}", color = if (ok) Ink else Color(0xFFB0A090), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+        androidx.compose.material3.Text("${offer.cost}", color = if (ok) Ink else Color(0xFFB0A090), fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
     }
 }
 

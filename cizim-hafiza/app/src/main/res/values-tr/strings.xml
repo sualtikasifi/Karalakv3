@@ -1908,7 +1908,7 @@
     <string name="gift_block_level">Hediye göndermek için 10. seviye gerekir.</string>
     <string name="gift_block_age">Hediye göndermek için hesabın en az 7 günlük olmalı.</string>
     <string name="gift_block_friendship">Arkadaşlığınız en az 2 günlük olmalı.</string>
-    <string name="gift_block_friend">Bu arkadaş henüz hediye alamıyor (Google ile giriş yapmış olmalı).</string>
+    <string name="gift_block_friend">Bu arkadaş henüz hediye alamıyor. Uygulamanın son sürümünü kurup bir kez açması ve Google ile giriş yapmış olması gerekir.</string>
     <string name="gift_block_disabled">Hediye şu an kapalı.</string>
     <string name="gift_block_offline">Bağlantı yok. Çevrimiçi olunca tekrar dene.</string>
     <string name="gift_block_gold">Altının yetmiyor.</string>
@@ -1932,11 +1932,13 @@
     <string name="stake_settle_forfeit_win">%1$s süresinde bitiremedi: +%2$d altın</string>
     <string name="stake_settle_forfeit_loss">%1$s: süre doldu, %2$d altın gitti</string>
     <string name="stake_block_level">Altınlı düello 10. seviyede açılır.</string>
-    <string name="stake_block_friend">Bu arkadaş henüz bahse giremiyor (Google ile giriş yapmış olmalı).</string>
+    <string name="stake_block_friend">Bu arkadaş henüz altınlı düello oynayamıyor. Uygulamanın son sürümünü kurup bir kez açması ve Google ile giriş yapmış olması gerekir.</string>
     <string name="stake_block_friend_level">Bu arkadaş 10. seviyenin altında.</string>
     <string name="stake_block_banned">Bu oyuncu için altınlı düello kapalı.</string>
     <string name="stake_block_disabled">Altınlı düello şu an kapalı.</string>
     <string name="stake_block_limit">Bugünkü altınlı düello sınırına ulaşıldı.</string>
     <string name="stake_block_late">Bu teklifin süresi doldu.</string>
     <string name="stake_block_refused">Düello gönderilemedi. Altının geri verildi.</string>
+    <string name="gift_fee_inline">%20 hizmet payı</string>
+    <string name="gift_today_pill">Bugün kalan: %1$d hediye · %2$d altın</string>
 </resources>

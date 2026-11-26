@@ -1895,7 +1895,7 @@
     <string name="gift_block_level">You can send gifts from level 10.</string>
     <string name="gift_block_age">Your account must be at least 7 days old to send gifts.</string>
     <string name="gift_block_friendship">You must be friends for at least 2 days.</string>
-    <string name="gift_block_friend">This friend cannot receive gifts yet (they need to be signed in with Google).</string>
+    <string name="gift_block_friend">This friend cannot receive gifts yet. They need the latest version of the app, opened once, and a Google sign-in.</string>
     <string name="gift_block_disabled">Gifts are switched off for now.</string>
     <string name="gift_block_offline">No connection. Try again online.</string>
     <string name="gift_block_gold">Not enough gold.</string>
@@ -1919,11 +1919,13 @@
     <string name="stake_settle_forfeit_win">%1$s did not finish in time: +%2$d gold</string>
     <string name="stake_settle_forfeit_loss">%1$s: time ran out, you lost %2$d gold</string>
     <string name="stake_block_level">Duels for gold open at level 10.</string>
-    <string name="stake_block_friend">This friend cannot bet yet (they need to be signed in with Google).</string>
+    <string name="stake_block_friend">This friend cannot play for gold yet. They need the latest version of the app, opened once, and a Google sign-in.</string>
     <string name="stake_block_friend_level">This friend is below level 10.</string>
     <string name="stake_block_banned">Gold duels are closed for this player.</string>
     <string name="stake_block_disabled">Gold duels are switched off for now.</string>
     <string name="stake_block_limit">Today\'s gold duel limit is reached.</string>
     <string name="stake_block_late">This offer is no longer open.</string>
     <string name="stake_block_refused">The duel could not be sent. Your gold is back.</string>
+    <string name="gift_fee_inline">20% fee</string>
+    <string name="gift_today_pill">%1$d gifts left today · %2$d gold</string>
 </resources>
