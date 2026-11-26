@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.store
 
+import com.sualtikasifi.cizimhafiza.presentation.common.edgeFade
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -185,6 +186,8 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
+                    // the grid melts into the screen's lower edge instead of ending in a hard cut
+                    .edgeFade(top = 14.dp, bottom = 40.dp, topActive = { gridState.canScrollBackward }, bottomActive = { gridState.canScrollForward })
                     .padding(horizontal = 16.dp),
                 contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),

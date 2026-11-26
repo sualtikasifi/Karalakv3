@@ -235,20 +235,13 @@ fun WoodScreen(
         val startHeight = if (compact) 74.dp else 84.dp
         // Everything between the sign and the action scrolls; the cards melt away at the top edge.
         androidx.compose.runtime.CompositionLocalProvider(LocalPanelScale provides if (compact) 0.85f else 1f) {
+        val woodScroll = rememberScrollState()
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = yOf(0.212f), bottom = startHeight + 30.dp)
-                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                .drawWithContent {
-                    drawContent()
-                    val fade = 28.dp.toPx().coerceAtMost(size.height)
-                    drawRect(
-                        brush = Brush.verticalGradient(colorStops = arrayOf(0f to Color.Transparent, (fade / size.height) to Color.Black, 1f to Color.Black)),
-                        blendMode = BlendMode.DstIn
-                    )
-                }
-                .verticalScroll(rememberScrollState())
+                .edgeFade(top = 28.dp, bottom = 32.dp, bottomActive = { woodScroll.canScrollForward })
+                .verticalScroll(woodScroll)
                 .padding(horizontal = 20.dp, vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             content = content

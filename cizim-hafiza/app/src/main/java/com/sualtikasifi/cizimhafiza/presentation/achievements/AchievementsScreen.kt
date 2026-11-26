@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.achievements
 
+import com.sualtikasifi.cizimhafiza.presentation.common.edgeFade
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.animation.core.Animatable
@@ -150,19 +151,13 @@ fun AchievementsScreen(
         )
 
         // The cards scroll between the sign and the bottom edge.
+        val listState = androidx.compose.foundation.lazy.rememberLazyListState()
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = yOf(440f))
-                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                .drawWithContent {
-                    drawContent()
-                    val fade = 26.dp.toPx().coerceAtMost(size.height)
-                    drawRect(
-                        brush = Brush.verticalGradient(colorStops = arrayOf(0f to Color.Transparent, (fade / size.height) to Color.Black, 1f to Color.Black)),
-                        blendMode = BlendMode.DstIn
-                    )
-                },
+                .edgeFade(top = 26.dp, bottom = 36.dp, bottomActive = { listState.canScrollForward }),
             contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(9.dp)
         ) {

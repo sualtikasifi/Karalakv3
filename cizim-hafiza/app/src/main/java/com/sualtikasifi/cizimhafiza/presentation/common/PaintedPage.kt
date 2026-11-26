@@ -94,20 +94,13 @@ fun PaintedPage(
                     }
                 }
             }
+            val pageScroll = rememberScrollState()
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                    .drawWithContent {
-                        drawContent()
-                        val fade = 40.dp.toPx().coerceAtMost(size.height)
-                        drawRect(
-                            brush = Brush.verticalGradient(colorStops = arrayOf(0f to Color.Transparent, (fade / size.height) to Color.Black, 1f to Color.Black)),
-                            blendMode = BlendMode.DstIn
-                        )
-                    }
-                    .then(if (bodyScroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                    .edgeFade(top = 40.dp, bottom = 32.dp, bottomActive = { bodyScroll && pageScroll.canScrollForward })
+                    .then(if (bodyScroll) Modifier.verticalScroll(pageScroll) else Modifier)
                     .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 10.dp)
                     .navigationBarsPadding(),
                 content = content
