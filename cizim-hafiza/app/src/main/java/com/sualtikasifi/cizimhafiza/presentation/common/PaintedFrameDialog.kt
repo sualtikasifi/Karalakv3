@@ -3,6 +3,7 @@ package com.sualtikasifi.cizimhafiza.presentation.common
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -57,7 +58,9 @@ fun PaintedFrameDialog(
     body: String,
     buttonText: String,
     onClick: () -> Unit,
-    onDismiss: () -> Unit = onClick
+    onDismiss: () -> Unit = onClick,
+    /** A bold heading written on the parchment above [body] (an announcement's own title), for when [title] is the window's fixed name. */
+    heading: String? = null
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         BoxWithConstraints(
@@ -109,11 +112,31 @@ fun PaintedFrameDialog(
                         .size(u * (BodyRect[2] - BodyRect[0]), u * (BodyRect[3] - BodyRect[1]))
                 ) {
                     val bodyStyle = DescriptionStyle(fs(42f), fs(56f))
-                    val bodyScale = rememberFitScale(body, bodyStyle, Int.MAX_VALUE, 0.5f)
+                    // the heading is set larger than the body, so it counts twice when measuring what has to fit
+                    val measured = if (heading.isNullOrBlank()) body else "$heading\n$heading\n$body"
+                    val bodyScale = rememberFitScale(measured, bodyStyle, Int.MAX_VALUE, 0.5f)
                     Column(
                         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        if (!heading.isNullOrBlank()) {
+                            Text(
+                                text = heading,
+                                style = PaintedStyle(color = Color(0xFF3A2416), fontSize = fs(54f), textAlign = TextAlign.Center).scaledBy(bodyScale),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            // a thin painted rule between the heading and the text
+                            Box(
+                                Modifier
+                                    .padding(vertical = u * 22f)
+                                    .size(u * 220f, u * 6f)
+                                    .background(
+                                        androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0x00C99A5B), Color(0xFFC99A5B), Color(0x00C99A5B))),
+                                        androidx.compose.foundation.shape.RoundedCornerShape(50)
+                                    )
+                            )
+                        }
                         Text(text = body, style = bodyStyle.scaledBy(bodyScale), modifier = Modifier.fillMaxWidth())
                     }
                 }

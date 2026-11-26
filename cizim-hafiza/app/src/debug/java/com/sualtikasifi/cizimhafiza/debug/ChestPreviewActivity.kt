@@ -10,7 +10,7 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.CizimHafizaTheme
 
 /**
  * Debug builds only: shows the chest window on its own so its layout can be looked at in the CI emulator.
- * Extras: tier = silver|gold|rare, state = start|unlocking|ready|busy|used|won (won = the "you won a chest" window).
+ * Extras: tier = silver|gold|rare, state = start|unlocking|ready|busy|used|won|announce|announce_long (won = the "you won a chest" window; announce* = the developer-panel notice window).
  */
 class ChestPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,6 +29,15 @@ class ChestPreviewActivity : ComponentActivity() {
         }
         setContent {
             CizimHafizaTheme {
+                if (state.startsWith("announce")) {
+                    val long = state == "announce_long"
+                    com.sualtikasifi.cizimhafiza.presentation.common.AnnouncementDialog(
+                        title = if (long) "Yeni sezon başladı: Bahar Festivali ve sürpriz ödüller seni bekliyor!" else "Öğretmenler gününüz kutlu olsun!",
+                        body = if (long) "Bu hafta boyunca her günlük meydan okuma ekstra altın veriyor. Arkadaşlarınla düello yap, ligde yüksel ve özel Bahar kasasını kazan. Ayrıntılar için Ayarlar > Hakkında bölümüne göz atabilirsin. İyi eğlenceler!\n\nKodu girmeyi unutma: BAHAR2026" else "\"OGRETMEN\" kodu ile 500 altını kap!",
+                        onClose = { finish() }
+                    )
+                    return@CizimHafizaTheme
+                }
                 if (state == "won") {
                     com.sualtikasifi.cizimhafiza.presentation.common.ChestWonDialog(chest = chest, onDismiss = { finish() })
                     return@CizimHafizaTheme

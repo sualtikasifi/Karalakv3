@@ -32,6 +32,7 @@ on:
           - updatepreview.sh
           - chestpreview.sh
           - chestwon.sh
+          - announcement.sh
           - chestrewardpreview.sh
           - duelcreatepreview.sh
           - guessnoticepreview.sh

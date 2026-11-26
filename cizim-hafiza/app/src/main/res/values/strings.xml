@@ -283,6 +283,7 @@
 
     <!-- Avatar frame picker -->
     <string name="avatar_frame_change_cd">Change frame</string>
+    <string name="announcement_window_title">Announcement</string>
     <string name="avatar_frame_picker_title">Edit Profile</string>
     <string name="avatar_frame_locked_level">Level %1$d</string>
     <string name="cosmetic_locked_league">League prize</string>
