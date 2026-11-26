@@ -253,7 +253,7 @@ class GameRepositoryImpl @Inject constructor(
             lifetimeXp = settingsRepository.lifetimeXp.value
         )
         val alreadyUnlocked = achievementDao.getUnlockedIds().toSet()
-        val newlyUnlocked = Achievement.entries.filter { it.name !in alreadyUnlocked && it.isUnlocked(stats) }
+        val newlyUnlocked = Achievement.entries.filter { !it.retired && it.name !in alreadyUnlocked && it.isUnlocked(stats) }
         newlyUnlocked.forEach { achievement ->
             achievementDao.insert(UnlockedAchievementEntity(id = achievement.name, unlockedAtMillis = System.currentTimeMillis()))
         }

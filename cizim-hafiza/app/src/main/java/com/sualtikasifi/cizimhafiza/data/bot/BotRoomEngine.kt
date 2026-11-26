@@ -72,6 +72,10 @@ class BotRoomEngine @Inject constructor(
         // just picked to sit comfortably mid-ladder instead of the bottom or
         // the grind-only top tier.
         const val BOT_LEVEL = 37
+        // Sude's picture and ring: the artist cat from the avatar gallery (the value other players are shown, see
+        // AvatarGallery.published) in the cherry-blossom frame, so she looks like a player who chose both rather than the bare mascot.
+        const val BOT_AVATAR = "avatar:cat_artist"
+        val BOT_FRAME = com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame.CHERRY_BLOSSOM
         // The same name wherever it shows (lobby, scores, chat, results), here and on the web alike.
         private const val BOT_DISPLAY_NAME = "Sude"
         private const val WORD_COUNT_TARGET = 10

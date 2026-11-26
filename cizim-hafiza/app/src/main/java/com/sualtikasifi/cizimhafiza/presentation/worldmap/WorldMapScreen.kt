@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.worldmap
 
+import com.sualtikasifi.cizimhafiza.presentation.common.edgeFade
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -101,17 +102,7 @@ fun WorldMapScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                        .drawWithContent {
-                            drawContent()
-                            val fade = TopFade.toPx().coerceAtMost(size.height)
-                            drawRect(
-                                brush = Brush.verticalGradient(
-                                    colorStops = arrayOf(0f to Color.Transparent, (fade / size.height) to Color.Black, 1f to Color.Black)
-                                ),
-                                blendMode = BlendMode.DstIn
-                            )
-                        },
+                        .edgeFade(top = TopFade, bottom = 36.dp, bottomActive = { listState.canScrollForward }),
                     contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 40.dp, bottom = 24.dp + scaffoldPadding.calculateBottomPadding()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {

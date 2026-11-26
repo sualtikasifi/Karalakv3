@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.friends
 
+import com.sualtikasifi.cizimhafiza.presentation.common.edgeFade
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.SinkState
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink
@@ -457,18 +458,7 @@ private fun FriendsPanel(uiState: FriendsUiState, viewModel: FriendsViewModel, s
         state = listState,
         modifier = Modifier
             .fillMaxSize()
-            .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
-            .drawWithContent {
-                drawContent()
-                if (moreBelow) {
-                    drawRect(
-                        brush = Brush.verticalGradient(listOf(Color.Black, Color.Transparent), startY = size.height - fadePx, endY = size.height),
-                        topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - fadePx),
-                        size = androidx.compose.ui.geometry.Size(size.width, fadePx),
-                        blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
-                    )
-                }
-            },
+            .edgeFade(bottom = 30.dp, bottomActive = { moreBelow }),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         if (uiState.friendRequests.isNotEmpty()) {

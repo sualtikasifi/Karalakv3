@@ -84,7 +84,8 @@ class AchievementsViewModel @Inject constructor(
         stats
     ) { unlocked, stats ->
         val byId = unlocked.associateBy { it.id }
-        Achievement.entries.map { achievement ->
+        // an unreachable (retired) achievement is not offered any more, unless its owner already has it
+        Achievement.entries.filter { it.visibleTo(it.name in byId) }.map { achievement ->
             val row = byId[achievement.name]
             AchievementUiItem(
                 achievement = achievement,
@@ -97,7 +98,7 @@ class AchievementsViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = Achievement.entries.map { AchievementUiItem(it, unlocked = false, claimed = false, currentValue = 0) }
+            initialValue = Achievement.entries.filter { !it.retired }.map { AchievementUiItem(it, unlocked = false, claimed = false, currentValue = 0) }
         )
 
     /**

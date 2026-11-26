@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.chests
 
+import com.sualtikasifi.cizimhafiza.presentation.common.edgeFade
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -118,12 +119,15 @@ fun ChestsScreen(
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
+            val chestGrid = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
             LazyVerticalGrid(
+                state = chestGrid,
                 columns = GridCells.Fixed(2),
                 modifier = Modifier
                     .fillMaxSize()
                     .screenBackground()
                     .padding(padding)
+                    .edgeFade(bottom = 36.dp, bottomActive = { chestGrid.canScrollForward })
                     .padding(horizontal = 16.dp),
                 contentPadding = PaddingValues(top = TopActionsClearance, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),

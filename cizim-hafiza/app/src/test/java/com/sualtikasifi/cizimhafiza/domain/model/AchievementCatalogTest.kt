@@ -78,4 +78,35 @@ class AchievementCatalogTest {
         }
         assertEquals(Achievement.entries.size, Achievement.entries.map { it.name }.toSet().size)
     }
+
+    @Test
+    fun retiredAchievementsNameRealOnes() {
+        val names = Achievement.entries.map { it.name }.toSet()
+        Achievement.RETIRED.forEach { assertTrue("$it is retired but does not exist", it in names) }
+    }
+
+    @Test
+    fun everythingOfferedIsWithinReachOfARealPlayer() {
+        // about 1,000 games of 10 words at 5-7 points each; a streak of 100 days is the longest a day-by-day goal can be
+        val cap = mapOf(
+            AchievementMetric.GAMES to 1_000, AchievementMetric.WORDS to 10_000, AchievementMetric.SCORE to 50_000,
+            AchievementMetric.XP to 100_000, AchievementMetric.PERFECT to 250, AchievementMetric.ONLINE_WIN to 150,
+            AchievementMetric.STREAK to 100
+        )
+        Achievement.entries.filter { !it.retired }.forEach {
+            assertTrue("${it.name} asks for ${it.target}, more than ${cap[it.metric]} is within reach", it.target <= cap.getValue(it.metric))
+        }
+        // and nothing below the line was retired by mistake
+        Achievement.entries.filter { it.retired }.forEach {
+            assertTrue("${it.name} is retired but within reach", it.target > cap.getValue(it.metric))
+        }
+    }
+
+    @Test
+    fun aRetiredAchievementStaysVisibleOnlyToItsOwner() {
+        assertTrue(Achievement.STREAK_365.retired)
+        assertFalse(Achievement.STREAK_365.visibleTo(alreadyUnlocked = false))
+        assertTrue(Achievement.STREAK_365.visibleTo(alreadyUnlocked = true))
+        assertTrue(Achievement.STREAK_100.visibleTo(alreadyUnlocked = false))
+    }
 }

@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.duel
 
+import com.sualtikasifi.cizimhafiza.presentation.common.edgeFade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -91,11 +92,13 @@ fun DuelListScreen(
                 contentDescription = stringResource(R.string.duel_list_title),
                 modifier = Modifier.fillMaxWidth(0.82f).aspectRatio(1000f / 347f).padding(top = 6.dp, bottom = 4.dp)
             )
+            val duelScroll = rememberScrollState()
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
+                    .edgeFade(top = 16.dp, bottom = 36.dp, topActive = { duelScroll.canScrollBackward }, bottomActive = { duelScroll.canScrollForward })
+                    .verticalScroll(duelScroll)
                     .padding(horizontal = 14.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)

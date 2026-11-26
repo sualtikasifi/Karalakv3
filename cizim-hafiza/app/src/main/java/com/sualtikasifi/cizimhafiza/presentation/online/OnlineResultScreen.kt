@@ -460,7 +460,7 @@ fun OnlineResultScreen(
 internal fun PlayerPicture(player: OnlinePlayer, size: androidx.compose.ui.unit.Dp) {
     if (player.uid == BotRoomEngine.BOT_UID) {
         // The same framed picture the waiting room gives Sude, not the older bare mascot.
-        LevelAvatar(BotRoomEngine.BOT_LEVEL, AvatarFrame.highestUnlockedFor(BotRoomEngine.BOT_LEVEL), size = size, photo = avatarPhotoOf(""))
+        LevelAvatar(BotRoomEngine.BOT_LEVEL, BotRoomEngine.BOT_FRAME, size = size, photo = avatarPhotoOf(BotRoomEngine.BOT_AVATAR))
     } else {
         LevelAvatar(player.level, AvatarFrame.resolve(player.frameId, player.level), size = size, photo = avatarPhotoOf(player.avatarUrl))
     }

@@ -509,6 +509,37 @@ enum class Achievement(
     val rewardType: AchievementRewardType
         get() = if (ordinal % 2 == 0) AchievementRewardType.XP else AchievementRewardType.GOLD
 
+    /**
+     * Out of reach for a real player, so it is no longer offered (see [RETIRED]): a goal nobody can finish is not a goal.
+     * The constant itself stays, for two reasons: it is persisted by name (an unlock that already exists must not be
+     * orphaned), and [rewardType] alternates by declaration position, so deleting one would flip the reward type of every
+     * achievement after it. A retired achievement is hidden from the list unless its owner already has it, and is
+     * never newly unlocked.
+     */
+    val retired: Boolean get() = name in RETIRED
+
+    /** Whether the Achievements screen shows it: everything that is not retired, plus a retired one its owner already earned. */
+    fun visibleTo(alreadyUnlocked: Boolean): Boolean = !retired || alreadyUnlocked
+
+    companion object {
+        /**
+         * What a player can really reach. A round is 10–50 words (10 by default), a correct word is worth about 5–7 points
+         * and one XP per point, and a day on the streak needs a day: so about 1,000 games (10,000 words, 50,000 points)
+         * is the most anyone does, and a year without a missed day (STREAK_365) is not a game goal. The tiers above those
+         * limits are retired: STREAK 150/200/365, GAMES 1,500/2,000/5,000, WORDS 15,000 and up, SCORE 75,000 and up,
+         * XP 250,000 and up, PERFECT 500/1,000 and ONLINE_WIN 250/500.
+         */
+        val RETIRED: Set<String> = setOf(
+            "STREAK_150", "STREAK_200", "STREAK_365",
+            "GAMES_1500", "GAMES_2000", "GAMES_5000",
+            "WORDS_15000", "WORDS_25000", "WORDS_50000", "WORDS_100000",
+            "SCORE_75000", "SCORE_100000", "SCORE_250000",
+            "XP_250000", "XP_500000", "XP_1000000",
+            "PERFECT_500", "PERFECT_1000",
+            "ONLINE_WIN_250", "ONLINE_WIN_500"
+        )
+    }
+
     /** Only meaningful when [rewardType] is GOLD — see [xpReward]. */
     val goldReward: Int
         // Rounded to the nearest 5 so the chip reads "+35", never "+37".

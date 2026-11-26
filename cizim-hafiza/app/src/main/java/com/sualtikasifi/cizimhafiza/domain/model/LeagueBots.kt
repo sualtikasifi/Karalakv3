@@ -14,8 +14,9 @@ import kotlin.math.sqrt
  * pure function of the month and the clock — the same on every phone, always current, nothing to publish.
  *
  * Names and the clock-driven growth follow functions/src/index.ts (botNicknamesForPeriod / botPeriodXp), which is
- * still what an older app version reads. Levels and pace are spread out here (see [startXp] and [pace]): every bot
- * used to start between levels 25 and 55 and earn at nearly the same rate, so by mid-month they all sat at the cap.
+ * still what an older app version reads: the league scores are as high as ever (a bot earns 3,000–5,500 XP a day), so
+ * there is something to chase. The levels are spread out here (see [startXp] and [shownLevel]): every bot used to start
+ * between levels 25 and 55, and the month's league XP was added in full, so by mid-month they all sat at the cap.
  */
 object LeagueBots {
     const val COUNT = 21
@@ -23,13 +24,14 @@ object LeagueBots {
     private const val GROWTH_INTERVAL_MS = 50L * 60 * 1000
     private const val GROWTH_MIN = 60
     private const val GROWTH_MAX = 260
-    // A bot's pace runs from a crawl to a sprint, and follows its level: the higher the level, the more it plays.
-    private const val PACE_MIN = 0.05
-    private const val PACE_MAX = 1.0
-    private const val PACE_CURVE = 2.2
-    private const val PACE_FROM_LEVEL = 0.7
-    private const val MIN_START_LEVEL = 4
-    private const val MAX_START_LEVEL = 58
+    // The pace is what it always was (0.65–1.2: about 3,000–5,500 XP a day); half of it follows the level, so higher levels tend to lead.
+    private const val PACE_MIN = 0.65
+    private const val PACE_MAX = 1.2
+    private const val PACE_FROM_LEVEL = 0.5
+    // The level a bot shows moves only with a fifth of its league XP, so the table keeps rookies and veterans all month.
+    private const val LEVEL_FROM_LEAGUE = 0.2
+    private const val MIN_START_LEVEL = 8
+    private const val MAX_START_LEVEL = 60
     private const val MAX_SHOWN_LEVEL = 70
     private const val MAX_LEVEL = 100
     private val ISTANBUL = ZoneId.of("Europe/Istanbul")
@@ -72,7 +74,7 @@ object LeagueBots {
         return rnd.next() to rnd.next()
     }
 
-    /** Lifetime XP at the start of the month: the level is spread evenly over 4..58, so the table shows every rank from rookies to veterans. */
+    /** Lifetime XP at the start of the month: the level is spread evenly over 8..60, so the table shows every rank from rookies to veterans. */
     private fun startXp(periodId: Long, index: Int): Int {
         val (u1, u2) = startDraws(periodId, index)
         val level = MIN_START_LEVEL + floor(u1 * (MAX_START_LEVEL - MIN_START_LEVEL + 1)).toInt()
@@ -80,16 +82,16 @@ object LeagueBots {
         return totalXpForLevel(level) + floor(u2 * span).toInt()
     }
 
-    /**
-     * How fast bot [index] earns XP. Three quarters of it comes from the level it starts at, so a veteran also has the
-     * higher league score and a rookie a modest one — the level never contradicts the score. The level shown is worked out
-     * from lifetime XP (start + league XP), so it is always at least what the league XP alone would give.
-     */
+    /** How fast bot [index] earns XP: half of its own luck, half of its starting level, so the high levels tend to be up the table. */
     private fun pace(periodId: Long, index: Int): Double {
         val own = Seeded(periodId * 131 + index * 977L + 5).next()
         val x = (1 - PACE_FROM_LEVEL) * own + PACE_FROM_LEVEL * startDraws(periodId, index).first
-        return PACE_MIN + (PACE_MAX - PACE_MIN) * Math.pow(x, PACE_CURVE)
+        return PACE_MIN + (PACE_MAX - PACE_MIN) * x
     }
+
+    /** The level a bot wears: its starting XP plus a fifth of this month's league XP, up to the shown maximum. */
+    private fun shownLevel(periodId: Long, index: Int, periodXp: Int): Int =
+        minOf(MAX_SHOWN_LEVEL, levelForXp(startXp(periodId, index) + (periodXp * LEVEL_FROM_LEAGUE).toInt()))
 
     /** What bot [index] has earned by [nowMillis], counting growth ticks since [monthStartMillis]. */
     fun periodXp(periodId: Long, index: Int, nowMillis: Long, monthStartMillis: Long): Int {
@@ -114,7 +116,7 @@ object LeagueBots {
     fun bots(periodId: Long, nowMillis: Long, monthStartMillis: Long): List<Bot> =
         nicknames(periodId).mapIndexed { index, name ->
             val xp = periodXp(periodId, index, nowMillis, monthStartMillis)
-            Bot(name, xp, minOf(MAX_SHOWN_LEVEL, levelForXp(startXp(periodId, index) + xp)))
+            Bot(name, xp, shownLevel(periodId, index, xp))
         }
 
     val NAMES = listOf(

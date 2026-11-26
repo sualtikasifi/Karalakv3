@@ -213,9 +213,9 @@ fun WaitingRoomScreen(
             uid = player.uid,
             name = player.displayName,
             level = if (isBot) BotRoomEngine.BOT_LEVEL else player.level,
-            avatarUrl = if (isBot) "" else player.avatarUrl,
+            avatarUrl = if (isBot) BotRoomEngine.BOT_AVATAR else player.avatarUrl,
             frame = if (isBot) {
-                AvatarFrame.highestUnlockedFor(BotRoomEngine.BOT_LEVEL)
+                BotRoomEngine.BOT_FRAME
             } else {
                 AvatarFrame.resolve(player.frameId, player.level)
             },

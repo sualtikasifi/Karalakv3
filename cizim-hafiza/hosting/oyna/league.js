@@ -26,13 +26,13 @@ const nicknames = (periodId, count = 21) => {
   for (let i = pool.length - 1; i >= 1; i--) { const j = Math.floor(r() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
   return pool.slice(0, count);
 };
-// Levels and pace are spread out (the app's LeagueBots.kt does the same): a bot starts anywhere from level 4 to 58 and its pace follows its level
+// Levels and pace are spread out (the app's LeagueBots.kt does the same): a bot starts anywhere from level 8 to 60; its pace is the old 0.65-1.2, half of it following its level, and the level shown moves with a fifth of its league XP
 const startDraws = (pid, idx) => { const r = seeded(BigInt(pid) * 7919n + BigInt(idx) * 104729n + 17n); return [r(), r()]; };
 function startXp(pid, idx) {
-  const [u1, u2] = startDraws(pid, idx), level = 4 + Math.floor(u1 * 55), span = totalXpForLevel(level + 1) - totalXpForLevel(level);
+  const [u1, u2] = startDraws(pid, idx), level = 8 + Math.floor(u1 * 53), span = totalXpForLevel(level + 1) - totalXpForLevel(level);
   return totalXpForLevel(level) + Math.floor(u2 * span);
 }
-const botPace = (pid, idx) => 0.05 + 0.95 * Math.pow(0.3 * seeded(BigInt(pid) * 131n + BigInt(idx) * 977n + 5n)() + 0.7 * startDraws(pid, idx)[0], 2.2);
+const botPace = (pid, idx) => 0.65 + 0.55 * (0.5 * seeded(BigInt(pid) * 131n + BigInt(idx) * 977n + 5n)() + 0.5 * startDraws(pid, idx)[0]);
 function botPeriodXp(pid, idx, now, monthStart) {
   const pace = botPace(pid, idx);
   const IV = 50 * 60 * 1000;
@@ -41,7 +41,7 @@ function botPeriodXp(pid, idx, now, monthStart) {
   return xp;
 }
 function bots(pid, now, monthStart) {
-  return nicknames(pid).map((nick, i) => { const xp = botPeriodXp(pid, i, now, monthStart); return { nickname: nick, periodXp: xp, level: Math.min(70, levelForXp(startXp(pid, i) + xp)), bot: true }; });
+  return nicknames(pid).map((nick, i) => { const xp = botPeriodXp(pid, i, now, monthStart); return { nickname: nick, periodXp: xp, level: Math.min(70, levelForXp(startXp(pid, i) + Math.floor(xp * 0.2))), bot: true }; });
 }
 // ---- Turkey time ----
 function turkeyToday() {

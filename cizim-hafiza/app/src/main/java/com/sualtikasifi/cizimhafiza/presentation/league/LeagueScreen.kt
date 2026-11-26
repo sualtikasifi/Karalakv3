@@ -1,5 +1,6 @@
 package com.sualtikasifi.cizimhafiza.presentation.league
 
+import com.sualtikasifi.cizimhafiza.presentation.common.edgeFade
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
 import androidx.compose.foundation.Image
@@ -179,19 +180,8 @@ fun LeagueScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = yOf(655f))
-                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                .drawWithContent {
-                    drawContent()
-                    // The melt at the top edge belongs to rows scrolling UNDER it: at rest the first row sits right
-                    // there and used to come out faded.
-                    if (listState.canScrollBackward) {
-                        val fade = 22.dp.toPx().coerceAtMost(size.height)
-                        drawRect(
-                            brush = Brush.verticalGradient(colorStops = arrayOf(0f to Color.Transparent, (fade / size.height) to Color.Black, 1f to Color.Black)),
-                            blendMode = BlendMode.DstIn
-                        )
-                    }
-                },
+                // The melt at the top edge belongs to rows scrolling UNDER it: at rest the first row sits right there.
+                .edgeFade(top = 22.dp, bottom = 36.dp, topActive = { listState.canScrollBackward }, bottomActive = { listState.canScrollForward }),
             contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
