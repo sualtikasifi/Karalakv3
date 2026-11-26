@@ -47,7 +47,7 @@ function show() {
 }
 
 const TABS = { reports: ["Oyuncu raporları", reportsView], feedback: ["Geri bildirim", feedbackView], players: ["Oyuncu ara", playersView], summary: ["Özet", summaryView], economy: ["Ekonomi", economyView],
-  announce: ["Duyuru", announceView], push: ["Bildirim", pushView], jobs: ["İşler", jobsView], audit: ["Denetim", auditView] };
+  wagers: ["Bahisler", wagersView], announce: ["Duyuru", announceView], push: ["Bildirim", pushView], jobs: ["İşler", jobsView], audit: ["Denetim", auditView] };
 let current = "reports";
 function tabs() {
   $("#tabs").innerHTML = Object.entries(TABS).map(([k, [t]]) => `<button data-k="${k}" class="${k === current ? "on" : ""}">${t}</button>`).join("");
@@ -73,6 +73,53 @@ async function feedbackBadge() {
 
 async function audit(action, target, detail) {
   try { await q().addDoc(q().collection(db, "adminAudit"), { action, target, detail: String(detail || "").slice(0, 200), by: user.email || "", at: q().serverTimestamp() }); } catch {}
+}
+
+// ---------------------------------------------------------------- gold wagers (staked duels) and gifts
+// Keep in step with domain/model/StakeRules.kt: the winner is paid 2 x stake less a 5% burn.
+const winnerPayout = (stake) => stake * 2 - Math.floor((stake * 2 * 5) / 100);
+async function switchRow(name, label) {
+  const { doc, getDoc } = q();
+  const on = (await getDoc(doc(db, "config", name))).data()?.enabled !== false;
+  return `<div class="card"><h3>${label}</h3><div class="${on ? "mute" : "bad"}">Şu an: ${on ? "AÇIK" : "KAPALI"}</div>
+    <div class="row" style="margin-top:8px"><button class="${on ? "ghost" : "primary"}" data-sw="${name}" data-on="${on ? 0 : 1}">${on ? "Kapat" : "Aç"}</button></div></div>`;
+}
+async function wagersView(v) {
+  const { collection, query, where, getDocs, limit, doc, setDoc } = q();
+  const snap = await getDocs(query(collection(db, "duels"), where("stake", ">=", 100), limit(500)));
+  const duels = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const pairs = new Map(), people = new Map(), names = new Map();
+  const bump = (m, k, f) => m.set(k, f(m.get(k) || { won: 0, lost: 0, gold: 0 }));
+  let open = 0, pot = 0;
+  for (const d of duels) {
+    names.set(d.challengerUid, d.challengerName); names.set(d.opponentUid, d.opponentName);
+    if (d.cOpen || d.oOpen) open++;
+    let winner = null;
+    if (d.status === "COMPLETE") winner = d.challengerScore > d.opponentScore ? d.challengerUid : d.challengerScore < d.opponentScore ? d.opponentUid : null;
+    else if (d.status === "FORFEIT") winner = d.challengerUid;
+    if (!winner) continue;
+    const loser = winner === d.challengerUid ? d.opponentUid : d.challengerUid, net = winnerPayout(d.stake) - d.stake;
+    pot += d.stake * 2;
+    bump(pairs, winner + ">" + loser, (x) => ({ ...x, won: x.won + 1, gold: x.gold + net }));
+    bump(people, winner, (x) => ({ ...x, won: x.won + 1, gold: x.gold + net }));
+    bump(people, loser, (x) => ({ ...x, lost: x.lost + 1, gold: x.gold - d.stake }));
+  }
+  const nm = (u) => esc(names.get(u) || u.slice(0, 6));
+  // A pair where one side takes the gold again and again is the sign of a transfer between two accounts.
+  const flows = [...pairs].map(([k, x]) => { const [w, l] = k.split(">"), back = pairs.get(l + ">" + w); return { w, l, ...x, back: back ? back.won : 0 }; })
+    .filter((x) => x.won >= 3 && x.won >= 3 * (x.back + 1)).sort((a, b) => b.gold - a.gold);
+  const top = [...people].map(([u, x]) => ({ u, ...x })).sort((a, b) => b.gold - a.gold).slice(0, 10);
+  v.innerHTML = `
+    ${await switchRow("stakes", "Altınlı düello")}${await switchRow("gifts", "Arkadaşa hediye")}
+    <div class="card"><h3>Son ${duels.length} bahisli düello</h3><div class="mute">Açık (henüz alınmamış) bakiye: ${open} · bitenlerin toplam havuzu: ${pot} altın</div></div>
+    <div class="card"><h3>Tek yönlü altın akışı (şüpheli çiftler)</h3>${flows.length ? flows.map((x) =>
+      `<div class="${x.gold >= 3000 ? "bad" : "mute"}">${nm(x.w)} ← ${nm(x.l)}: ${x.won} galibiyet (karşı yön ${x.back}), +${x.gold} altın</div>`).join("") : '<div class="mute">Şüpheli akış yok.</div>'}</div>
+    <div class="card"><h3>En çok kazanan / kaybeden</h3>${top.map((x) => `<div class="mute">${nm(x.u)}: ${x.won} galibiyet, ${x.lost} yenilgi, ${x.gold >= 0 ? "+" : ""}${x.gold} altın</div>`).join("") || '<div class="mute">Henüz kayıt yok.</div>'}</div>`;
+  v.querySelectorAll("button[data-sw]").forEach((b) => (b.onclick = async () => {
+    b.disabled = true;
+    try { await setDoc(doc(db, "config", b.dataset.sw), { enabled: b.dataset.on === "1" }, { merge: true }); await audit("switch-" + b.dataset.sw, "config", b.dataset.on === "1" ? "açık" : "kapalı"); tabs(); }
+    catch (e) { b.textContent = "Olmadı: " + (e.code || e.message); }
+  }));
 }
 
 // ---------------------------------------------------------------- player actions (mirror util/PlayerAdmin.kt)
@@ -207,7 +254,8 @@ async function playersView(v) {
       <div class="${c.locked ? "bad" : "mute"}">Ceza: ${c.strikes} · rapor: ${c.reports}${c.locked ? " · KİLİTLİ " + when(c.locked) + "'e kadar" : ""}</div>
       <div class="mute">${esc(c.uid)}</div>
       <div class="row" style="margin-top:8px"><button class="ghost" data-a="name" data-i="${i}">Adı sıfırla</button>
-      <button class="ghost" data-a="${c.locked ? "unlock" : "lock"}" data-i="${i}">${c.locked ? "Kilidi aç" : "Kilitle"}</button></div>
+      <button class="ghost" data-a="${c.locked ? "unlock" : "lock"}" data-i="${i}">${c.locked ? "Kilidi aç" : "Kilitle"}</button>
+      <button class="ghost" data-a="stakeban" data-i="${i}">${c.d.stakeBan ? "Bahis engelini kaldır" : "Bahisten engelle"}</button></div>
       <div class="row" style="margin-top:8px"><input type="number" id="g${i}" placeholder="Altın" style="width:110px"><input type="number" id="x${i}" placeholder="XP" style="width:110px">
       <input id="n${i}" placeholder="Not" style="flex:1"><button class="primary" data-a="grant" data-i="${i}">Telafi gönder</button></div>
       <div class="msg" id="m${i}"></div></div>`).join("") : '<p class="mute">Böyle bir oyuncu bulunamadı.</p>';
@@ -216,6 +264,11 @@ async function playersView(v) {
       try {
         if (b.dataset.a === "name") m.textContent = "Yeni ad: " + (await resetName(c.uid, c.d.nickname || ""));
         else if (b.dataset.a === "lock") m.textContent = "Kilitli: " + when(await lockPlayer(c.uid));
+        else if (b.dataset.a === "stakeban") {
+          const on = !c.d.stakeBan;
+          await q().updateDoc(q().doc(db, "users", c.uid), { stakeBan: on }); c.d.stakeBan = on;
+          await audit(on ? "stake-ban" : "stake-unban", c.uid, ""); m.textContent = on ? "Altınlı düellodan engellendi." : "Bahis engeli kaldırıldı."; b.textContent = on ? "Bahis engelini kaldır" : "Bahisten engelle";
+        }
         else if (b.dataset.a === "unlock") m.textContent = (await unlockPlayer(c.uid)) + " kilit kaldırıldı.";
         else {
           const gold = Math.max(0, Math.min(100000, +$(`#g${b.dataset.i}`).value | 0)), xp = Math.max(0, Math.min(100000, +$(`#x${b.dataset.i}`).value | 0));
