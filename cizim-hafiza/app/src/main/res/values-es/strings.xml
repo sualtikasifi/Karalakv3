@@ -1896,7 +1896,7 @@
     <string name="gift_block_level">Puedes enviar regalos desde el nivel 10.</string>
     <string name="gift_block_age">Tu cuenta debe tener al menos 7 días para enviar regalos.</string>
     <string name="gift_block_friendship">Debéis ser amigos desde hace al menos 2 días.</string>
-    <string name="gift_block_friend">Este amigo aún no puede recibir regalos (debe haber iniciado sesión con Google).</string>
+    <string name="gift_block_friend">Este amigo aún no puede recibir regalos. Necesita la última versión de la app, abierta una vez, y haber iniciado sesión con Google.</string>
     <string name="gift_block_disabled">Los regalos están desactivados por ahora.</string>
     <string name="gift_block_offline">Sin conexión. Inténtalo de nuevo en línea.</string>
     <string name="gift_block_gold">No tienes suficiente oro.</string>
@@ -1920,11 +1920,13 @@
     <string name="stake_settle_forfeit_win">%1$s no terminó a tiempo: +%2$d de oro</string>
     <string name="stake_settle_forfeit_loss">%1$s: se acabó el tiempo, perdiste %2$d de oro</string>
     <string name="stake_block_level">Los duelos por oro se abren en el nivel 10.</string>
-    <string name="stake_block_friend">Este amigo aún no puede apostar (debe haber iniciado sesión con Google).</string>
+    <string name="stake_block_friend">Este amigo aún no puede jugar por oro. Necesita la última versión de la app, abierta una vez, y haber iniciado sesión con Google.</string>
     <string name="stake_block_friend_level">Este amigo está por debajo del nivel 10.</string>
     <string name="stake_block_banned">Los duelos por oro están cerrados para este jugador.</string>
     <string name="stake_block_disabled">Los duelos por oro están desactivados por ahora.</string>
     <string name="stake_block_limit">Se alcanzó el límite de duelos por oro de hoy.</string>
     <string name="stake_block_late">Esta oferta ya no está abierta.</string>
     <string name="stake_block_refused">No se pudo enviar el duelo. Tu oro ha vuelto.</string>
+    <string name="gift_fee_inline">20% de comisión</string>
+    <string name="gift_today_pill">Hoy quedan %1$d regalos · %2$d de oro</string>
 </resources>
