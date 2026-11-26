@@ -531,6 +531,8 @@ await check("a player cannot mark a report seen", assertFails(updateDoc(doc(db("
   };
   await check("a gold gift to a friend of two days goes through", assertSucceeds(send(linked(S), id(1), R)));
   await check("the recipient reads and removes it", assertSucceeds(getDoc(doc(linked(R), "users", R, "giftInbox", id(1)))));
+  await check("the received-today counter is readable by the sender", assertSucceeds(getDoc(doc(linked(S), "users", R, "giftStats", "in_" + day))));
+  await check("another player's sent counter is private", assertFails(getDoc(doc(linked(R), "users", S, "giftStats", day))));
   await check("a stranger cannot read someone's inbox", assertFails(getDoc(doc(linked("zz"), "users", R, "giftInbox", id(1)))));
   await check("a gift cannot be edited", assertFails(updateDoc(doc(linked(S), "users", R, "giftInbox", id(1)), { cost: 1000 })));
   await check("a counter cannot be deleted to reset the ceiling", assertFails(deleteDoc(doc(linked(S), "users", S, "giftStats", day))));

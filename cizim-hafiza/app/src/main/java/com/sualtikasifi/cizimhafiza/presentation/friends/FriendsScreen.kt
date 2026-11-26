@@ -41,6 +41,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
@@ -416,6 +417,16 @@ private fun FriendsMessage(info: UiText?, error: UiText?, scene: Scene) {
 private fun FriendsPanel(uiState: FriendsUiState, viewModel: FriendsViewModel, scene: Scene, onDuel: (String, String) -> Unit) {
     // The friend streaks: a flame and the days next to each friend, and a way to mend a broken one with an ad.
     val streakViewModel: FriendStreakViewModel = hiltViewModel()
+    val giftViewModel: com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendViewModel = hiltViewModel()
+    val giftState by giftViewModel.state.collectAsState()
+    val giftGold by giftViewModel.gold.collectAsState()
+    giftState?.let { g ->
+        com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendDialog(
+            state = g, gold = giftGold,
+            onSend = { offer -> giftViewModel.send(offer, uiState.nickname) },
+            onClose = giftViewModel::close
+        )
+    }
     val allStreaks by streakViewModel.streaks.collectAsState()
     val today = com.sualtikasifi.cizimhafiza.util.TurkeyTime.today().toEpochDay().toInt()
     val streakViews = remember(allStreaks, today) {
@@ -492,6 +503,7 @@ private fun FriendsPanel(uiState: FriendsUiState, viewModel: FriendsViewModel, s
                 onInvite = { viewModel.inviteFriend(friend) },
                 onRemove = { viewModel.confirmRemoveFriend(friend) },
                 onBlock = { viewModel.confirmBlockFriend(friend) },
+                onGift = { giftViewModel.open(friend.uid, friend.nickname) },
                 onDuel = { onDuel(friend.uid, friend.nickname) },
                 streak = streakViews[friend.uid]?.takeIf { it.status != com.sualtikasifi.cizimhafiza.domain.model.StreakStatus.Lost },
                 onRescueStreak = { v -> activity?.let { streakViewModel.rescue(it, friend.uid, v.streak.pairId) } },
@@ -592,6 +604,7 @@ private fun FriendRow(
     onInvite: () -> Unit,
     onRemove: () -> Unit,
     onBlock: () -> Unit,
+    onGift: () -> Unit = {},
     onDuel: () -> Unit,
     streak: com.sualtikasifi.cizimhafiza.domain.model.StreakView? = null,
     onRescueStreak: (com.sualtikasifi.cizimhafiza.domain.model.StreakView) -> Unit = {},
@@ -627,6 +640,11 @@ private fun FriendRow(
                     )
                 }
                 DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.gift_action)) },
+                        leadingIcon = { Icon(Icons.Filled.CardGiftcard, contentDescription = null) },
+                        onClick = { menuExpanded = false; onGift() }
+                    )
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.friends_remove_action)) },
                         leadingIcon = { Icon(Icons.Filled.PersonRemove, contentDescription = null) },

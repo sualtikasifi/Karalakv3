@@ -33,6 +33,7 @@ on:
           - chestpreview.sh
           - chestwon.sh
           - announcement.sh
+          - gift.sh
           - chestrewardpreview.sh
           - duelcreatepreview.sh
           - guessnoticepreview.sh

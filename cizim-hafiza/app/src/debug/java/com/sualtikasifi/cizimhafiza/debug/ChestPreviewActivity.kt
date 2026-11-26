@@ -10,7 +10,7 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.CizimHafizaTheme
 
 /**
  * Debug builds only: shows the chest window on its own so its layout can be looked at in the CI emulator.
- * Extras: tier = silver|gold|rare, state = start|unlocking|ready|busy|used|won|announce|announce_long (won = the "you won a chest" window; announce* = the developer-panel notice window).
+ * Extras: tier = silver|gold|rare, state = start|unlocking|ready|busy|used|won|announce|announce_long|gift|gift_blocked|gift_inbox (won = the "you won a chest" window; announce* = the developer-panel notice window).
  */
 class ChestPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +36,20 @@ class ChestPreviewActivity : ComponentActivity() {
                         body = if (long) "Bu hafta boyunca her günlük meydan okuma ekstra altın veriyor. Arkadaşlarınla düello yap, ligde yüksel ve özel Bahar kasasını kazan. Ayrıntılar için Ayarlar > Hakkında bölümüne göz atabilirsin. İyi eğlenceler!\n\nKodu girmeyi unutma: BAHAR2026" else "\"OGRETMEN\" kodu ile 500 altını kap!",
                         onClose = { finish() }
                     )
+                    return@CizimHafizaTheme
+                }
+                if (state.startsWith("gift")) {
+                    val g = com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendState("u", "Elif", loading = false, usage = com.sualtikasifi.cizimhafiza.domain.model.GiftUsage(300, 1, 300))
+                    when (state) {
+                        "gift_blocked" -> com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendDialog(g.copy(usage = null, blocked = com.sualtikasifi.cizimhafiza.domain.model.GiftBlock.LEVEL), 900, {}, { finish() })
+                        "gift_inbox" -> com.sualtikasifi.cizimhafiza.presentation.gifts.GiftInboxDialog(
+                            listOf(
+                                com.sualtikasifi.cizimhafiza.domain.model.IncomingGift("a", "u", "Elif", com.sualtikasifi.cizimhafiza.domain.model.GiftKind.GOLD, "", 1, 500, 400),
+                                com.sualtikasifi.cizimhafiza.domain.model.IncomingGift("b", "u", "Can", com.sualtikasifi.cizimhafiza.domain.model.GiftKind.JOKER, "FIRST_LETTER", 3, 495, 0)
+                            )
+                        ) { finish() }
+                        else -> com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendDialog(g, 900, {}, { finish() })
+                    }
                     return@CizimHafizaTheme
                 }
                 if (state == "won") {

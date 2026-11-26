@@ -1098,7 +1098,9 @@ service cloud.firestore {
           return resource == null ? 0 : resource.data[field];
         }
 
-        allow read: if signedIn() && request.auth.uid == uid;
+        // The received-today counter is readable by any signed-in player: the sender must know the running sum to write
+        // the next one, and it holds nothing but a daily total.
+        allow read: if signedIn() && (request.auth.uid == uid || key.matches('in_[0-9]{8}'));
         allow delete: if false;
 
         allow create, update: if signedIn() && request.auth.uid == uid && key == giftDay()

@@ -18,6 +18,7 @@ enum class EarnSource(val key: String, val label: String) {
     REFERRAL("referral", "Davet"),
     FRIEND_STREAK("friendstreak", "Arkadaş serisi"),
     GUESS("guess", "Bil Bakalım"),
+    GIFT("gift", "Arkadaş hediyesi"),
     OTHER("other", "Diğer");
 
     /**
@@ -26,7 +27,7 @@ enum class EarnSource(val key: String, val label: String) {
      * month's league prize — raise the player's level but not their place in the table.
      */
     val countsForLeague: Boolean
-        get() = this != ACHIEVEMENT && this != COUPON && this != LOGIN && this != REFERRAL && this != FRIEND_STREAK && this != CHEST && this != LEAGUE
+        get() = this != ACHIEVEMENT && this != GIFT && this != COUPON && this != LOGIN && this != REFERRAL && this != FRIEND_STREAK && this != CHEST && this != LEAGUE
 
     companion object {
         fun labelOf(key: String): String = entries.firstOrNull { it.key == key }?.label ?: key

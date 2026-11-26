@@ -29,18 +29,22 @@ fun SocialHomeWindows(
     onOpenFriends: () -> Unit,
     onShowing: (Boolean) -> Unit,
     inboxViewModel: GuessInboxViewModel = hiltViewModel(),
-    streakViewModel: FriendStreakViewModel = hiltViewModel()
+    streakViewModel: FriendStreakViewModel = hiltViewModel(),
+    giftViewModel: com.sualtikasifi.cizimhafiza.presentation.gifts.GiftInboxViewModel = hiltViewModel()
 ) {
     val online = LocalOnline.current
-    LaunchedEffect(online, quiet) { if (online && quiet) inboxViewModel.check() }
+    LaunchedEffect(online, quiet) { if (online && quiet) { inboxViewModel.check(); giftViewModel.check() } }
 
     val entries by inboxViewModel.entries.collectAsState()
     val prompt by streakViewModel.prompt.collectAsState()
+    val gifts by giftViewModel.gifts.collectAsState()
+    val giftResults by giftViewModel.results.collectAsState()
 
     // The window stays as it was first shown even if a later snapshot would no longer ask for it (the reminder is marked
     // as given the moment it appears).
     var shown by remember { mutableStateOf<StreakPrompt?>(null) }
     val inboxOpen = quiet && entries.isNotEmpty()
+    val giftOpen = quiet && !inboxOpen && (gifts.isNotEmpty() || giftResults.isNotEmpty())
     LaunchedEffect(prompt, quiet, inboxOpen) {
         val next = prompt
         if (quiet && !inboxOpen && shown == null && next != null) {
@@ -48,10 +52,15 @@ fun SocialHomeWindows(
             streakViewModel.onShown(next)
         }
     }
-    LaunchedEffect(inboxOpen, shown) { onShowing(inboxOpen || shown != null) }
+    LaunchedEffect(inboxOpen, giftOpen, shown) { onShowing(inboxOpen || giftOpen || shown != null) }
 
     if (inboxOpen) {
         GuessInboxDialog(entries = entries, rewardGold = inboxViewModel.rewardGold, onClose = inboxViewModel::claim)
+        return
+    }
+    if (giftOpen) {
+        if (gifts.isNotEmpty()) com.sualtikasifi.cizimhafiza.presentation.gifts.GiftInboxDialog(gifts, onClaim = giftViewModel::claimAll)
+        else com.sualtikasifi.cizimhafiza.presentation.gifts.GiftResultDialog(giftResults, onClose = giftViewModel::dismissResults)
         return
     }
     val current = shown ?: return
