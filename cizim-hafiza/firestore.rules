@@ -686,6 +686,12 @@ service cloud.firestore {
       return request.time + duration.value(3, 'h');
     }
 
+    // Today's date on that calendar, as a string such as "20261126" — the key of the daily gift counters.
+    function giftDay() {
+      let t = istanbulNow();
+      return string(t.year() * 10000 + t.month() * 100 + t.day());
+    }
+
     function currentPeriodId() {
       return istanbulNow().year() * 12 + istanbulNow().month() - 1;
     }
@@ -774,6 +780,11 @@ service cloud.firestore {
              && (!changed.hasAny(['frameId']) || !('frameId' in after) || (after.frameId is string && after.frameId.size() <= 64))
              // The month's start moves only together with the score (plausibleMonthScore checks it there).
              && (!changed.hasAny(['periodStartAt']) || changed.hasAny(['periodXp', 'periodId']))
+             // When the account was made, stamped once by the device (the sender of a gift must be a week old) and never moved.
+             && (!changed.hasAny(['joinedAt']) || !('joinedAt' in after)
+                || (!('joinedAt' in before) && after.joinedAt is int && after.joinedAt <= request.time.toMillis() + 600000))
+             // Whether this account may receive gifts (signed in with Google, not in child mode).
+             && (!changed.hasAny(['giftsOk']) || !('giftsOk' in after) || after.giftsOk is bool)
              // The friend code is the account's one code (see friendCodes) and never changes once given.
              && (!('friendCode' in before) || !('friendCode' in after) || after.friendCode == before.friendCode);
     }
@@ -1026,6 +1037,94 @@ service cloud.firestore {
                       && get(/databases/$(database)/documents/guessLinks/$(request.resource.data.linkId)).data.ownerUid == uid
                       && !exists(/databases/$(database)/documents/users/$(uid)/blockedUsers/$(request.auth.uid));
         allow update: if false;
+      }
+
+      // ---- gifts between friends (gold or a store item) -------------------------------------------------------
+      //
+      // A gift is one document in the recipient's giftInbox, written by the sender in the SAME batch as three counter
+      // documents (giftStats) that carry the daily ceilings: what the sender has sent today, what they have sent this
+      // one friend today, and what the recipient has received today. There is no server code on this plan to count
+      // for us, so each counter rule checks, with getAfter, that it moved by exactly this gift's cost, and the gift
+      // rule checks that all three moved. Nothing can be deleted or lowered, so the ceilings cannot be reset.
+      // The wallet itself lives on the device (see EconomyLedger); these rules bound how much can LEAVE one account,
+      // and the app settles the gold on both ends. config/gifts {enabled:false} switches the whole thing off.
+      match /giftInbox/{giftId} {
+        function giftsEnabled() {
+          return !exists(/databases/$(database)/documents/config/gifts)
+                 || get(/databases/$(database)/documents/config/gifts).data.get('enabled', true) != false;
+        }
+
+        function giftShapeOk(d) {
+          return d.keys().hasOnly(['fromUid', 'fromName', 'kind', 'itemId', 'qty', 'cost', 'gold', 'at'])
+                 && d.keys().hasAll(['fromUid', 'fromName', 'kind', 'itemId', 'qty', 'cost', 'gold', 'at'])
+                 && d.fromUid == request.auth.uid
+                 && shortName(d.fromName)
+                 && d.at == request.time
+                 && d.qty is int && d.qty >= 1 && d.qty <= 3
+                 && d.cost is int && d.cost >= 100 && d.cost <= 1000
+                 && d.itemId is string && d.itemId.size() <= 40
+                 && d.gold is int
+                 && ((d.kind == 'gold' && d.itemId == '' && d.qty == 1 && d.gold == d.cost - d.cost * 20 / 100)
+                     || ((d.kind == 'pen' || d.kind == 'frame' || d.kind == 'joker') && d.itemId.size() > 0 && d.gold == 0));
+        }
+
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+        allow update: if false;
+        allow create: if signedIn() && request.auth.uid != uid
+                      && request.auth.token.firebase.sign_in_provider != 'anonymous'
+                      && giftId.matches('[A-Za-z0-9]{20}')
+                      && giftShapeOk(request.resource.data)
+                      && giftsEnabled()
+                      && !exists(/databases/$(database)/documents/users/$(uid)/blockedUsers/$(request.auth.uid))
+                      // a friendship of at least two days, as the recipient holds it
+                      && get(/databases/$(database)/documents/users/$(uid)/friends/$(request.auth.uid)).data.get('addedAt', request.time.toMillis()) <= request.time.toMillis() - 172800000
+                      // the sender: level 10 and a week-old account (joinedAt is stamped once, by the profile rules)
+                      && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('level', 1) >= 10
+                      && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('joinedAt', request.time.toMillis()) <= request.time.toMillis() - 604800000
+                      // the recipient has switched gifts on (signed in with Google, not in child mode)
+                      && get(/databases/$(database)/documents/users/$(uid)).data.get('giftsOk', false) == true
+                      // the three counters moved with this gift
+                      && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/giftStats/$(giftDay())).data.lastGift == giftId
+                      && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/giftStats/$(giftDay() + '_' + uid)).data.lastGift == giftId
+                      && getAfter(/databases/$(database)/documents/users/$(uid)/giftStats/$('in_' + giftDay())).data.lastGift == giftId;
+      }
+
+      // Daily counters. Never lowered, never deleted. Three kinds, told apart by their name:
+      //   <day>            what the owner has sent today   {gold, count, lastGift, lastTo}  — at most 5000 gold, 3 gifts
+      //   <day>_<friend>   what the owner has sent to one friend today {gold, lastGift}     — at most 1000 gold
+      //   in_<day>         what the owner has received today, written by the sender {gold, lastGift} — at most 5000 gold
+      match /giftStats/{key} {
+        function before(field) {
+          return resource == null ? 0 : resource.data[field];
+        }
+
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow delete: if false;
+
+        allow create, update: if signedIn() && request.auth.uid == uid && key == giftDay()
+                              && request.resource.data.keys().hasOnly(['gold', 'count', 'lastGift', 'lastTo'])
+                              && request.resource.data.keys().hasAll(['gold', 'count', 'lastGift', 'lastTo'])
+                              && request.resource.data.lastGift is string && request.resource.data.lastTo is string
+                              && getAfter(/databases/$(database)/documents/users/$(request.resource.data.lastTo)/giftInbox/$(request.resource.data.lastGift)).data.fromUid == uid
+                              && request.resource.data.gold == before('gold') + getAfter(/databases/$(database)/documents/users/$(request.resource.data.lastTo)/giftInbox/$(request.resource.data.lastGift)).data.cost
+                              && request.resource.data.count == before('count') + 1
+                              && request.resource.data.gold <= 5000 && request.resource.data.count <= 3;
+
+        allow create, update: if signedIn() && request.auth.uid == uid && key.matches(giftDay() + '_[A-Za-z0-9]{1,128}')
+                              && request.resource.data.keys().hasOnly(['gold', 'lastGift'])
+                              && request.resource.data.keys().hasAll(['gold', 'lastGift'])
+                              && request.resource.data.lastGift is string
+                              && getAfter(/databases/$(database)/documents/users/$(key.split('_')[1])/giftInbox/$(request.resource.data.lastGift)).data.fromUid == uid
+                              && request.resource.data.gold == before('gold') + getAfter(/databases/$(database)/documents/users/$(key.split('_')[1])/giftInbox/$(request.resource.data.lastGift)).data.cost
+                              && request.resource.data.gold <= 1000;
+
+        allow create, update: if signedIn() && request.auth.uid != uid && key == 'in_' + giftDay()
+                              && request.resource.data.keys().hasOnly(['gold', 'lastGift'])
+                              && request.resource.data.keys().hasAll(['gold', 'lastGift'])
+                              && request.resource.data.lastGift is string
+                              && getAfter(/databases/$(database)/documents/users/$(uid)/giftInbox/$(request.resource.data.lastGift)).data.fromUid == request.auth.uid
+                              && request.resource.data.gold == before('gold') + getAfter(/databases/$(database)/documents/users/$(uid)/giftInbox/$(request.resource.data.lastGift)).data.cost
+                              && request.resource.data.gold <= 5000;
       }
 
       match /blockedUsers/{blockedUid} {

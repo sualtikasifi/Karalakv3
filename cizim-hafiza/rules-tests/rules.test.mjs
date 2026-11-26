@@ -504,6 +504,83 @@ await check("a player cannot mark a report seen", assertFails(updateDoc(doc(db("
   await check("either of them ends it with the friendship", assertSucceeds(deleteDoc(doc(db(B), "friendStreaks", P))));
 }
 
+// ---- gifts between friends
+{
+  const S = "gs", R = "gr";
+  const day = (() => { const t = new Date(Date.now() + 3 * 3600e3); return String(t.getUTCFullYear() * 10000 + (t.getUTCMonth() + 1) * 100 + t.getUTCDate()); })();
+  const old = Date.now() - 10 * 86400e3;
+  await seed(["users", S], { nickname: "Sender", level: 12, joinedAt: old, giftsOk: true });
+  await seed(["users", R], { nickname: "Recip", level: 3, giftsOk: true });
+  await seed(["users", R, "friends", S], { nickname: "Sender", addedAt: Date.now() - 3 * 86400e3 });
+  await seed(["users", S, "friends", R], { nickname: "Recip", addedAt: Date.now() - 3 * 86400e3 });
+  const gift = (o = {}) => ({ fromUid: S, fromName: "Sender", kind: "gold", itemId: "", qty: 1, cost: 500, gold: 400, at: serverTimestamp(), ...o });
+  const id = (n) => String(n).padStart(20, "a");
+  // One send = the gift plus its three counters, in one batch (what GiftRepositoryImpl does).
+  const send = async (who, gid, recipient, o = {}, counters = {}) => {
+    const d = who.firestore ? who : who;
+    const g = gift(o);
+    const b = writeBatch(d);
+    b.set(doc(d, "users", recipient, "giftInbox", gid), g);
+    const sd = counters.sd === undefined ? { gold: counters.sdGold ?? g.cost, count: counters.sdCount ?? 1, lastGift: gid, lastTo: recipient } : counters.sd;
+    const pd = { gold: counters.pdGold ?? g.cost, lastGift: gid };
+    const rd = { gold: counters.rdGold ?? g.cost, lastGift: gid };
+    b.set(doc(d, "users", S, "giftStats", day), sd);
+    b.set(doc(d, "users", S, "giftStats", day + "_" + recipient), pd);
+    b.set(doc(d, "users", recipient, "giftStats", "in_" + day), rd);
+    return b.commit();
+  };
+  await check("a gold gift to a friend of two days goes through", assertSucceeds(send(linked(S), id(1), R)));
+  await check("the recipient reads and removes it", assertSucceeds(getDoc(doc(linked(R), "users", R, "giftInbox", id(1)))));
+  await check("a stranger cannot read someone's inbox", assertFails(getDoc(doc(linked("zz"), "users", R, "giftInbox", id(1)))));
+  await check("a gift cannot be edited", assertFails(updateDoc(doc(linked(S), "users", R, "giftInbox", id(1)), { cost: 1000 })));
+  await check("a counter cannot be deleted to reset the ceiling", assertFails(deleteDoc(doc(linked(S), "users", S, "giftStats", day))));
+  await check("a counter cannot be lowered", assertFails(setDoc(doc(linked(S), "users", S, "giftStats", day), { gold: 0, count: 0, lastGift: id(1), lastTo: R })));
+  await check("a second gift to the same friend over 1000 is refused", assertFails(send(linked(S), id(2), R, { cost: 600, gold: 480 }, { sdGold: 1100, sdCount: 2 })));
+  await check("a counter that skips the increment is refused", assertFails(send(linked(S), id(3), R, { cost: 400, gold: 320 }, { sdGold: 500, sdCount: 2, pdGold: 900, rdGold: 900 })));
+  await check("a second gift within the friend's cap goes through", assertSucceeds(send(linked(S), id(4), R, { cost: 400, gold: 320 }, { sdGold: 900, sdCount: 2, pdGold: 900, rdGold: 900 })));
+  await seed(["users", "g3"], { nickname: "Third", giftsOk: true });
+  await seed(["users", "g3", "friends", S], { nickname: "Sender", addedAt: Date.now() - 3 * 86400e3 });
+  await seed(["users", "g4"], { nickname: "Fourth", giftsOk: true });
+  await seed(["users", "g4", "friends", S], { nickname: "Sender", addedAt: Date.now() - 3 * 86400e3 });
+  await check("a third gift today goes through", assertSucceeds(send(linked(S), id(5), "g3", { cost: 100, gold: 80 }, { sdGold: 1000, sdCount: 3 })));
+  await check("a fourth gift today is refused", assertFails(send(linked(S), id(6), "g4", { cost: 100, gold: 80 }, { sdGold: 1100, sdCount: 4 })));
+  // the attacks
+  await seed(["users", "fresh"], { nickname: "Fresh", level: 12, joinedAt: Date.now() - 86400e3, giftsOk: true });
+  await seed(["users", "low"], { nickname: "Low", level: 5, joinedAt: old, giftsOk: true });
+  await seed(["users", "newfriend"], { nickname: "NF", giftsOk: true });
+  await seed(["users", "newfriend", "friends", S], { nickname: "Sender", addedAt: Date.now() - 3600e3 });
+  await seed(["users", "off"], { nickname: "Off" });
+  await seed(["users", "off", "friends", S], { nickname: "Sender", addedAt: Date.now() - 3 * 86400e3 });
+  const as = async (who, to, fromFriendAge = 3 * 86400e3) => {
+    await seed(["users", to, "friends", who], { nickname: "X", addedAt: Date.now() - fromFriendAge });
+  };
+  const sendAs = async (who, gid, recipient, o = {}) => {
+    const d = linked(who);
+    const g = { ...gift({ fromUid: who }), ...o };
+    const b = writeBatch(d);
+    b.set(doc(d, "users", recipient, "giftInbox", gid), g);
+    b.set(doc(d, "users", who, "giftStats", day), { gold: g.cost, count: 1, lastGift: gid, lastTo: recipient });
+    b.set(doc(d, "users", who, "giftStats", day + "_" + recipient), { gold: g.cost, lastGift: gid });
+    b.set(doc(d, "users", recipient, "giftStats", "in_" + day), { gold: g.cost, lastGift: gid });
+    return b.commit();
+  };
+  await seed(["users", "dst"], { nickname: "Dst", giftsOk: true });
+  await as("fresh", "dst"); await as("low", "dst");
+  await check("an account under a week old cannot send", assertFails(sendAs("fresh", id(10), "dst")));
+  await check("a sender under level 10 cannot send", assertFails(sendAs("low", id(11), "dst")));
+  await check("a friendship under two days old cannot carry a gift", assertFails(send(linked(S), id(12), "newfriend")));
+  await check("a recipient who has not switched gifts on gets none", assertFails(send(linked(S), id(13), "off")));
+  await check("a guest account cannot send", assertFails((async () => { const d = guest(S); const b = writeBatch(d); b.set(doc(d, "users", "dst", "giftInbox", id(14)), gift()); b.set(doc(d, "users", S, "giftStats", day), { gold: 500, count: 1, lastGift: id(14), lastTo: "dst" }); return b.commit(); })()));
+  await check("a gift to a non-friend is refused", assertFails(send(linked(S), id(15), "dst")));
+  await check("a gift cannot claim a different sender", assertFails(send(linked(S), id(16), R, { fromUid: "other" })));
+  await check("a gold gift's payout must be 80 percent of its cost", assertFails(send(linked(S), id(17), "g4", { cost: 100, gold: 100 })));
+  await check("a gift over 1000 is refused", assertFails(send(linked(S), id(18), "g4", { cost: 1200, gold: 960 })));
+  await seed(["config", "gifts"], { enabled: false });
+  await seed(["users", "k"], { nickname: "K", giftsOk: true });
+  await seed(["users", "k", "friends", S], { nickname: "Sender", addedAt: Date.now() - 3 * 86400e3 });
+  await check("the kill switch stops every gift", assertFails(send(linked(S), id(19), "k")));
+}
+
 await env.cleanup();
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);
