@@ -583,7 +583,8 @@ private fun AvatarFramePickerSheet(
             }
             item(key = "avatar_mascot", span = { androidx.compose.foundation.lazy.grid.GridItemSpan(3) }) {
                 AvatarSourceOption(
-                    label = stringResource(R.string.avatar_source_karalak),
+                    label = null, // no caption under the mascot: the gallery pictures have none either (the name stays for screen readers)
+                    contentDescription = stringResource(R.string.avatar_source_karalak),
                     selected = chosen == null,
                     photo = com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhoto.Dino,
                     onClick = { onPhotoSource("DINO") }

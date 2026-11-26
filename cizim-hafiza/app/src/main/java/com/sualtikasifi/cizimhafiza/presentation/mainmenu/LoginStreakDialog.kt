@@ -94,7 +94,8 @@ internal fun LoginStreakDialog(
         is LoginPopup.Claim -> stringResource(R.string.login_streak_title)
     }
     // The painted button carries Turkish lettering, so only the Turkish resources turn it on.
-    val artButton = popup is LoginPopup.Claim && androidx.compose.ui.res.booleanResource(R.bool.login_streak_painted_art)
+    val artOn = androidx.compose.ui.res.booleanResource(R.bool.login_streak_painted_art)
+    val artButton = popup is LoginPopup.Claim && artOn
     val canDismiss = popup !is LoginPopup.Missed
     androidx.compose.ui.window.Dialog(
         onDismissRequest = onClose,
@@ -196,7 +197,15 @@ internal fun LoginStreakDialog(
                                     modifier = Modifier.weight(1f)
                                 )
                             }
-                            is LoginPopup.Claimed -> PaintedPillButton(
+                            // once the reward is taken the painted claim button turns into a painted "Great!" of the same make, not a plain pill
+                            is LoginPopup.Claimed -> if (artOn) {
+                                Image(
+                                    painterResource(R.drawable.ls_btn_great),
+                                    contentDescription = stringResource(R.string.login_streak_great),
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier.fillMaxHeight().pressable(pressedScale = 0.96f, onClick = onClose)
+                                )
+                            } else PaintedPillButton(
                                 text = stringResource(R.string.login_streak_great),
                                 onClick = onClose,
                                 modifier = Modifier.fillMaxWidth(0.8f)

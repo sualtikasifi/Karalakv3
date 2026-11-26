@@ -89,7 +89,7 @@ function dialog(c, popup) {
     const b = el("button", "ls-claim", ""); b.append(Object.assign(new Image(), { src: `img/ls_btn_claim${sfx(c.lang())}.webp`, alt: x.claim })); b.onclick = () => claim(c, popup);
     act.append(b);
   } else if (popup.k === "missed") act.append(pill(RESCUE[getLang()] || RESCUE.en, "orange", () => appOnlyDialog(c.$("stage"))), pill(x.restart, "cream", () => dialog(c, { k: "claim", before: 0 })));
-  else act.append(pill(x.great, "orange", close));
+  else { const g = el("button", "ls-claim", ""); g.append(Object.assign(new Image(), { src: `img/ls_btn_great${sfx(c.lang())}.webp`, alt: x.great })); g.onclick = close; act.append(g); } // the painted claim button turns into a painted "Great!" of the same make
   if (popup.k !== "missed") { const cx = el("button", "ls-x", ""); cx.onclick = close; fr.append(cx); d.onclick = (e) => { if (e.target === d) close(); }; }
   d.append(wrap);
 }

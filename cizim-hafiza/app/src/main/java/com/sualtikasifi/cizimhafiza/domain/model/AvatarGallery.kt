@@ -39,7 +39,10 @@ object AvatarGallery {
         Entry("tiger", R.drawable.avatar_gallery_tiger),
         Entry("frog", R.drawable.avatar_gallery_frog),
         Entry("unicorn", R.drawable.avatar_gallery_unicorn),
-        Entry("bear", R.drawable.avatar_gallery_bear)
+        Entry("bear", R.drawable.avatar_gallery_bear),
+        Entry("wolf", R.drawable.avatar_gallery_wolf),
+        Entry("panther", R.drawable.avatar_gallery_panther),
+        Entry("elephant", R.drawable.avatar_gallery_elephant)
     )
 
     fun find(id: String?): Entry? = if (id == null) null else entries.firstOrNull { it.id == id }
