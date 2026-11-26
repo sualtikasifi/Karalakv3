@@ -574,7 +574,8 @@ private fun DoubleGoldPill(state: Int, gold: Int, u: Dp, fs: (Float) -> androidx
                 Text("✓", style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(color = Color.White, fontSize = fs(46f), textAlign = TextAlign.Center))
             }
         }
-        Box(Modifier.align(Alignment.CenterEnd).fillMaxWidth(0.74f).fillMaxHeight().padding(end = maxWidth * 0.05f), contentAlignment = Alignment.Center) {
+        // the words are centred in the whole button (the play icon sits far enough left to leave them room), not in what is left of it
+        Box(Modifier.align(Alignment.Center).fillMaxWidth(0.74f).fillMaxHeight(), contentAlignment = Alignment.Center) {
             if (state == 1) {
                 androidx.compose.material3.CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier = Modifier.size(u * 52f))
             } else {
