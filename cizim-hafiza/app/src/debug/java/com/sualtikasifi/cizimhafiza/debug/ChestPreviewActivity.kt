@@ -10,7 +10,7 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.CizimHafizaTheme
 
 /**
  * Debug builds only: shows the chest window on its own so its layout can be looked at in the CI emulator.
- * Extras: tier = silver|gold|rare, state = start|unlocking|ready|busy|used.
+ * Extras: tier = silver|gold|rare, state = start|unlocking|ready|busy|used|won (won = the "you won a chest" window).
  */
 class ChestPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,6 +29,10 @@ class ChestPreviewActivity : ComponentActivity() {
         }
         setContent {
             CizimHafizaTheme {
+                if (state == "won") {
+                    com.sualtikasifi.cizimhafiza.presentation.common.ChestWonDialog(chest = chest, onDismiss = { finish() })
+                    return@CizimHafizaTheme
+                }
                 ChestDetailDialog(
                     chest = chest,
                     nowMillis = now,
