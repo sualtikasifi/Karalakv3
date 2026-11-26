@@ -68,7 +68,7 @@ fun stakeMessageRes(block: StakeBlock): Int = when (block) {
     StakeBlock.REFUSED -> R.string.stake_block_refused
 }
 
-data class StakePickerState(val wordCount: Int, val loading: Boolean = true, val usage: StakeUsage? = null)
+data class StakePickerState(val wordCount: Int, val loading: Boolean = true, val usage: StakeUsage? = null, val block: StakeBlock? = null)
 
 /** The "Altın bahsi ekle?" step of the challenge page. Skips itself whenever a wager cannot be offered. */
 @HiltViewModel
@@ -82,18 +82,30 @@ class StakeViewModel @Inject constructor(
     val picker: StateFlow<StakePickerState?> = _picker.asStateFlow()
     val gold get() = settings.goldBalance
 
-    /** Opens the picker, or calls [withoutStake] straight away when no wager can be made against [friendUid]. */
+    /**
+     * Opens the picker. A wager that cannot be offered says why (so a player testing it is never left guessing) and
+     * offers the plain duel; only a child, or a round too long for the ten minutes, goes straight on without a word.
+     */
     fun start(friendUid: String, wordCount: Int, withoutStake: () -> Unit) {
-        val eligible = !legal.childMode.value && auth.currentUser?.isAnonymous == false &&
-            settings.playerLevelNow() >= StakeRules.MIN_LEVEL && StakeRules.roundFits(wordCount) && friendUid.isNotEmpty() &&
-            settings.goldBalance.value >= StakeRules.STAKES.first()
-        if (!eligible) { withoutStake(); return }
+        if (legal.childMode.value || !StakeRules.roundFits(wordCount) || friendUid.isEmpty()) { withoutStake(); return }
+        val created = auth.currentUser?.metadata?.creationTimestamp ?: 0L
+        val mine = when {
+            auth.currentUser?.isAnonymous != false -> StakeBlock.NOT_LINKED
+            settings.playerLevelNow() < StakeRules.MIN_LEVEL -> StakeBlock.LEVEL
+            created > 0 && System.currentTimeMillis() - created < StakeRules.MIN_CHALLENGER_ACCOUNT_DAYS * 86_400_000L -> StakeBlock.ACCOUNT_AGE
+            settings.goldBalance.value < StakeRules.STAKES.first() -> StakeBlock.NO_GOLD
+            else -> null
+        }
+        if (mine != null) { _picker.value = StakePickerState(wordCount, loading = false, block = mine); return }
         _picker.value = StakePickerState(wordCount)
         viewModelScope.launch {
             val friend = repository.friendStakeBlock(friendUid)
             val usage = repository.stakeUsage(friendUid).getOrNull()
-            if (friend != null || usage == null) { _picker.value = null; withoutStake(); return@launch }
-            _picker.value = StakePickerState(wordCount, loading = false, usage = usage)
+            _picker.value = when {
+                friend != null -> StakePickerState(wordCount, loading = false, block = friend)
+                usage == null -> StakePickerState(wordCount, loading = false, block = StakeBlock.OFFLINE)
+                else -> StakePickerState(wordCount, loading = false, usage = usage)
+            }
         }
     }
 
@@ -109,7 +121,10 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
                 textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
             )
             val usage = state.usage
-            if (state.loading || usage == null) {
+            if (state.block != null) {
+                Text(stringResource(stakeMessageRes(state.block)), color = Color(0xFFB3401A), fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp))
+            } else if (state.loading || usage == null) {
                 Text(stringResource(R.string.gift_loading), color = InkSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             } else {
                 Text(
