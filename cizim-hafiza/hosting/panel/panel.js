@@ -46,17 +46,30 @@ function show() {
   if (user) tabs();
 }
 
-const TABS = { reports: ["Oyuncu raporları", reportsView], players: ["Oyuncu ara", playersView], summary: ["Özet", summaryView], economy: ["Ekonomi", economyView],
+const TABS = { reports: ["Oyuncu raporları", reportsView], feedback: ["Geri bildirim", feedbackView], players: ["Oyuncu ara", playersView], summary: ["Özet", summaryView], economy: ["Ekonomi", economyView],
   announce: ["Duyuru", announceView], push: ["Bildirim", pushView], jobs: ["İşler", jobsView], audit: ["Denetim", auditView] };
 let current = "reports";
 function tabs() {
   $("#tabs").innerHTML = Object.entries(TABS).map(([k, [t]]) => `<button data-k="${k}" class="${k === current ? "on" : ""}">${t}</button>`).join("");
   $("#tabs").querySelectorAll("button").forEach((b) => (b.onclick = () => { current = b.dataset.k; tabs(); }));
+  feedbackBadge();
   const v = $("#view"); v.innerHTML = '<p class="mute">Yükleniyor…</p>';
   TABS[current][1](v).catch((e) => { v.innerHTML = `<p class="bad">Hata: ${esc(e.code || e.message)}</p>`; });
 }
 
 const q = () => fb.fs;
+
+// How many suggestions / complaints nobody has marked seen yet, on the "Geri bildirim" tab. An unseen report has no seenAtMillis at all,
+// so it cannot be matched directly: all of them, minus those that have one (as the app's panel counts, BugReportRepositoryImpl.unseenCount).
+async function feedbackBadge() {
+  try {
+    const { collection, query, where, getCountFromServer } = q();
+    const all = (await getCountFromServer(collection(db, "bugReports"))).data().count;
+    const seen = (await getCountFromServer(query(collection(db, "bugReports"), where("seenAtMillis", ">", 0)))).data().count;
+    const n = Math.max(0, all - seen), b = $('#tabs button[data-k="feedback"]');
+    if (b && n > 0) b.innerHTML = `Geri bildirim <b>(${n})</b>`;
+  } catch { /* the tab itself says what went wrong */ }
+}
 
 async function audit(action, target, detail) {
   try { await q().addDoc(q().collection(db, "adminAudit"), { action, target, detail: String(detail || "").slice(0, 200), by: user.email || "", at: q().serverTimestamp() }); } catch {}
@@ -124,6 +137,48 @@ async function reportsView(v) {
       else { const w = writeBatch(db); g.ids.forEach((r) => w.delete(r)); await w.commit(); await audit("report-dismiss", g.uid, `${g.ids.length} rapor`); b.closest(".card").remove(); }
     } catch (e) { m.textContent = "Olmadı: " + (e.code || e.message); b.disabled = false; }
   }));
+}
+
+// Suggestions and complaints from "Sorun Bildir" (bugReports, written by the app and by the web game): newest first, the unseen ones on show.
+// The reviewer's only edit is marking one seen (seenAtMillis); deleting is allowed too. Both are written to the audit trail.
+async function feedbackView(v) {
+  const { collection, getDocs, limit, query, orderBy, writeBatch, updateDoc, deleteDoc } = q();
+  const snap = await getDocs(query(collection(db, "bugReports"), orderBy("submittedAt", "desc"), limit(300)));
+  const rows = snap.docs.map((d) => ({ ref: d.ref, id: d.id, ...d.data() }));
+  let filter = "new";
+  const FILTERS = [["new", "Yeni"], ["SUGGESTION", "Öneri"], ["COMPLAINT", "Şikayet"], ["all", "Hepsi"]];
+  const shown = () => rows.filter((r) => (filter === "all" ? true : filter === "new" ? !r.seenAtMillis : r.category === filter));
+  const render = () => {
+    const list = shown(), unseen = rows.filter((r) => !r.seenAtMillis).length;
+    v.innerHTML = `<div class="row" style="margin-bottom:10px">${FILTERS.map(([k, t]) => `<button class="${k === filter ? "primary" : "ghost"}" data-f="${k}">${t}${k === "new" ? ` (${unseen})` : ""}</button>`).join("")}
+      <span class="mute" style="flex:1"></span>${unseen ? '<button class="ghost" data-all="1">Hepsini görüldü yap</button>' : ""}</div>
+      <p class="mute">${rows.length} kayıt (en yeni 300) · ${unseen} yeni.</p>` +
+      (list.length ? "" : '<p class="mute">Bu filtrede geri bildirim yok.</p>') +
+      list.map((r, i) => `<div class="card"><h3>${r.category === "COMPLAINT" ? "Şikayet" : "Öneri"} ${r.seenAtMillis ? '<span class="mute">· görüldü ' + when(r.seenAtMillis) + "</span>" : '<span style="color:var(--accent)">· yeni</span>'}</h3>
+        <div style="white-space:pre-wrap;word-break:break-word">${esc(r.description)}</div>
+        <div class="mute" style="margin-top:6px">${when(r.submittedAt)} · ${esc(r.appVersionName || "?")}${r.deviceModel ? " · " + esc(String(r.deviceModel).slice(0, 60)) : ""} · ${esc(String(r.uid || "").slice(0, 8))}</div>
+        <div class="row" style="margin-top:8px">${r.seenAtMillis ? "" : `<button class="primary" data-a="seen" data-i="${i}">Görüldü</button>`}<button class="ghost" data-a="del" data-i="${i}">Sil</button></div>
+        <div class="msg" id="fm${i}"></div></div>`).join("");
+    v.querySelectorAll("button[data-f]").forEach((b) => (b.onclick = () => { filter = b.dataset.f; render(); }));
+    const all = v.querySelector("button[data-all]");
+    if (all) all.onclick = async () => {
+      all.disabled = true;
+      try {
+        const now = Date.now(), todo = rows.filter((r) => !r.seenAtMillis);
+        for (let i = 0; i < todo.length; i += 400) { const w = writeBatch(db); todo.slice(i, i + 400).forEach((r) => w.update(r.ref, { seenAtMillis: now })); await w.commit(); }
+        todo.forEach((r) => (r.seenAtMillis = now)); await audit("feedback-seen", "bugReports", `${todo.length} kayıt görüldü`); render(); feedbackBadge();
+      } catch (e) { all.disabled = false; alert("Olmadı: " + (e.code || e.message)); }
+    };
+    v.querySelectorAll("button[data-a]").forEach((b) => (b.onclick = async () => {
+      const r = list[+b.dataset.i], m = $(`#fm${b.dataset.i}`); b.disabled = true;
+      try {
+        if (b.dataset.a === "seen") { r.seenAtMillis = Date.now(); await updateDoc(r.ref, { seenAtMillis: r.seenAtMillis }); await audit("feedback-seen", r.id, r.category); }
+        else { if (!confirm("Bu geri bildirim silinsin mi?")) { b.disabled = false; return; } await deleteDoc(r.ref); rows.splice(rows.indexOf(r), 1); await audit("feedback-delete", r.id, r.category); }
+        render(); feedbackBadge();
+      } catch (e) { m.textContent = "Olmadı: " + (e.code || e.message); b.disabled = false; }
+    }));
+  };
+  render();
 }
 
 async function playersView(v) {
