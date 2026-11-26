@@ -7,10 +7,10 @@
 
 /** The amounts config/economy can change (EconomyConfig.kt); the defaults are the designed ones. */
 export const CFG = {
-  goldPerCorrectWord: 10, onlineWinGold: 100, achievementGold: 100, levelGoldPerNewStar: 50,
+  goldPerCorrectWord: 10, onlineWinGold: 100, levelGoldPerNewStar: 50,
   dailyGoldBase: 300, dailyGoldPerStreakDay: 30, chainBonusGold: 10, leagueMonthlyGold: 10000,
 };
-const RANGES = { goldPerCorrectWord: [1, 1000], onlineWinGold: [0, 10000], achievementGold: [0, 10000], levelGoldPerNewStar: [0, 10000], dailyGoldBase: [0, 100000], dailyGoldPerStreakDay: [0, 10000], chainBonusGold: [0, 1000], leagueMonthlyGold: [0, 1000000] };
+const RANGES = { goldPerCorrectWord: [1, 1000], onlineWinGold: [0, 10000], levelGoldPerNewStar: [0, 10000], dailyGoldBase: [0, 100000], dailyGoldPerStreakDay: [0, 10000], chainBonusGold: [0, 1000], leagueMonthlyGold: [0, 1000000] };
 const DEFAULTS = { ...CFG };
 
 /** Takes a config/economy document; a missing, wrong-typed or out-of-range field keeps its default (EconomyConfig.apply). */
@@ -39,11 +39,12 @@ export const dailyChallengeXp = (correct, streak) => (DAILY_COMPLETION_XP + Math
  * Pays [amount] XP the way SettingsRepository.addXp does: the XP runes speed up the player's LEVEL only, the league
  * (period) XP stays exactly what was earned. Returns what the level received.
  */
-export function addXp(P, amount, xpPercent) {
+export function addXp(P, amount, xpPercent, countsForLeague = true) {
   if (amount <= 0) return 0;
   const gained = amount + Math.floor((amount * Math.max(0, xpPercent)) / 100);
   P.xp += gained;
-  P.periodXp = (P.periodXp || 0) + amount;
+  // a windfall (a coupon, last month's league prize) raises the level but not the monthly league place (EarnSource.countsForLeague)
+  if (countsForLeague) P.periodXp = (P.periodXp || 0) + amount;
   return gained;
 }
 
@@ -66,14 +67,14 @@ export function chainBonus(has, correctInOrder) {
   return bonus;
 }
 
-const total = (g) => g.play + g.achievements + g.level + g.daily + g.win + g.room;
+const total = (g) => g.play + g.level + g.daily + g.win + g.room;
 
 /**
  * A solo round: a level, an offline game, a Quick Match or the daily challenge (RoundRewards.solo).
  * `newStars` is the stars beyond the level's best; `dailyStreak` is set only when this round completed today's challenge
  * for the first time; `quickWon` when a Quick Match was won outright.
  */
-export function soloGold({ fx, has, correctInOrder, isDaily, newAchievements, newStars, dailyStreak, quickWon }) {
+export function soloGold({ fx, has, correctInOrder, isDaily, newStars, dailyStreak, quickWon }) {
   const rawWords = correctInOrder.filter(Boolean).length * CFG.goldPerCorrectWord;
   const words = scaled(rawWords, fx("WORD"));
   const chain = chainBonus(has, correctInOrder);
@@ -82,28 +83,27 @@ export function soloGold({ fx, has, correctInOrder, isDaily, newAchievements, ne
   const daily = dailyStreak == null ? 0 : scaled(rawDaily, fx("DAILY"));
   const rawWin = quickWon ? CFG.onlineWinGold : 0;
   const win = quickWon ? scaled(rawWin, fx("WIN")) : 0;
-  const g = { play, achievements: newAchievements * CFG.achievementGold, level: Math.max(0, newStars) * CFG.levelGoldPerNewStar, daily, win, room: 0 };
+  const g = { play, level: Math.max(0, newStars) * CFG.levelGoldPerNewStar, daily, win, room: 0 };
   g.runeBonus = (isDaily ? 0 : words - rawWords + chain) + (daily - rawDaily) + (win - rawWin);
   g.total = total(g);
   return g;
 }
 
 /** The plain gold of an online room round, before any rune: what the room percentages are taken of. */
-export const roomRaw = (correctCount, won, newAchievements) =>
-  correctCount * CFG.goldPerCorrectWord + (won ? CFG.onlineWinGold : 0) + newAchievements * CFG.achievementGold;
+export const roomRaw = (correctCount, won) =>
+  correctCount * CFG.goldPerCorrectWord + (won ? CFG.onlineWinGold : 0);
 
 /**
  * An online room round. The word and win runes grow their own parts; the room runes (friends always, founder when `asHost`)
  * and the once-a-day Dostluk Bağı +50% are taken of the plain amount, so they do not multiply what the other runes added.
  */
-export function roomGold({ fx, correctCount, won, newAchievements, asHost, bestFriendBonus }) {
-  const raw = roomRaw(correctCount, won, newAchievements);
+export function roomGold({ fx, correctCount, won, asHost, bestFriendBonus }) {
+  const raw = roomRaw(correctCount, won);
   const words = scaled(correctCount * CFG.goldPerCorrectWord, fx("WORD"));
   const win = won ? scaled(CFG.onlineWinGold, fx("WIN")) : 0;
-  const achievements = newAchievements * CFG.achievementGold;
   const percent = fx("ROOM") + (asHost ? fx("HOST") : 0) + (bestFriendBonus ? 50 : 0);
   const room = raw > 0 ? Math.floor((raw * percent) / 100) : 0;
-  const g = { play: words, achievements, level: 0, daily: 0, win, room };
+  const g = { play: words, level: 0, daily: 0, win, room };
   g.total = total(g);
   g.runeBonus = g.total - raw;
   return g;

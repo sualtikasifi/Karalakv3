@@ -7,13 +7,13 @@ const none = { fx: () => 0, has: () => false };
 const withFx = (m, flags = []) => ({ fx: (k) => m[k] || 0, has: (k) => flags.includes(k) });
 
 test("a plain solo round pays ten gold per word and nothing from runes", () => {
-  const g = E.soloGold({ ...none, correctInOrder: [true, false, true, true], isDaily: false, newAchievements: 0, newStars: 0, dailyStreak: null, quickWon: false });
+  const g = E.soloGold({ ...none, correctInOrder: [true, false, true, true], isDaily: false, newStars: 0, dailyStreak: null, quickWon: false });
   assert.equal(g.play, 30); assert.equal(g.total, 30); assert.equal(g.runeBonus, 0);
 });
 
 test("the word rune grows the whole round so nothing is rounded away", () => {
   // Six words of 10 at +8%: 64, where 10 per word rounded down would have paid 60.
-  const g = E.soloGold({ ...withFx({ WORD: 8 }), correctInOrder: Array(6).fill(true), isDaily: false, newAchievements: 0, newStars: 0, dailyStreak: null, quickWon: false });
+  const g = E.soloGold({ ...withFx({ WORD: 8 }), correctInOrder: Array(6).fill(true), isDaily: false, newStars: 0, dailyStreak: null, quickWon: false });
   assert.equal(g.play, 64); assert.equal(g.runeBonus, 4);
 });
 
@@ -26,37 +26,37 @@ test("the chain rune pays per full three in a row", () => {
 });
 
 test("the daily challenge pays its own gold instead of word gold", () => {
-  const g = E.soloGold({ ...none, correctInOrder: Array(5).fill(true), isDaily: true, newAchievements: 0, newStars: 0, dailyStreak: 3, quickWon: false });
+  const g = E.soloGold({ ...none, correctInOrder: Array(5).fill(true), isDaily: true, newStars: 0, dailyStreak: 3, quickWon: false });
   assert.equal(g.play, 0); assert.equal(g.daily, 300 + 3 * 30); assert.equal(g.total, g.daily);
 });
 
 test("stars, achievements and a quick match win add up", () => {
-  const g = E.soloGold({ ...none, correctInOrder: [true], isDaily: false, newAchievements: 2, newStars: 3, dailyStreak: null, quickWon: true });
-  assert.equal(g.achievements, 200); assert.equal(g.level, 150); assert.equal(g.win, 100);
-  assert.equal(g.total, g.play + g.achievements + g.level + g.win);
+  const g = E.soloGold({ ...none, correctInOrder: [true], isDaily: false, newStars: 3, dailyStreak: null, quickWon: true });
+  assert.equal(g.level, 150); assert.equal(g.win, 100);
+  assert.equal(g.total, g.play + g.level + g.win);
 });
 
 test("negative stars never take gold away", () => {
-  assert.equal(E.soloGold({ ...none, correctInOrder: [], isDaily: false, newAchievements: 0, newStars: -2, dailyStreak: null, quickWon: false }).total, 0);
+  assert.equal(E.soloGold({ ...none, correctInOrder: [], isDaily: false, newStars: -2, dailyStreak: null, quickWon: false }).total, 0);
 });
 
 test("room percentages are taken of the plain amount only", () => {
   assert.equal(E.roomRaw(4, true, 0), 140);
-  const plain = E.roomGold({ ...none, correctCount: 4, won: true, newAchievements: 0, asHost: false, bestFriendBonus: false });
+  const plain = E.roomGold({ ...none, correctCount: 4, won: true, asHost: false, bestFriendBonus: false });
   assert.equal(plain.total, 140); assert.equal(plain.runeBonus, 0);
-  const withRoom = E.roomGold({ ...withFx({ ROOM: 10 }), correctCount: 4, won: true, newAchievements: 0, asHost: false, bestFriendBonus: false });
+  const withRoom = E.roomGold({ ...withFx({ ROOM: 10 }), correctCount: 4, won: true, asHost: false, bestFriendBonus: false });
   assert.equal(withRoom.room, 14); assert.equal(withRoom.runeBonus, withRoom.total - 140);
 });
 
 test("the founder rune counts only for the host and the friend bonus adds half", () => {
   const f = withFx({ HOST: 10 });
-  assert.equal(E.roomGold({ ...f, correctCount: 5, won: false, newAchievements: 0, asHost: false, bestFriendBonus: false }).room, 0);
-  assert.equal(E.roomGold({ ...f, correctCount: 5, won: false, newAchievements: 0, asHost: true, bestFriendBonus: false }).room, 5);
-  assert.equal(E.roomGold({ ...none, correctCount: 5, won: false, newAchievements: 0, asHost: false, bestFriendBonus: true }).room, 25);
+  assert.equal(E.roomGold({ ...f, correctCount: 5, won: false, asHost: false, bestFriendBonus: false }).room, 0);
+  assert.equal(E.roomGold({ ...f, correctCount: 5, won: false, asHost: true, bestFriendBonus: false }).room, 5);
+  assert.equal(E.roomGold({ ...none, correctCount: 5, won: false, asHost: false, bestFriendBonus: true }).room, 25);
 });
 
 test("an empty room round pays nothing", () => {
-  const g = E.roomGold({ ...withFx({ ROOM: 40, HOST: 30 }), correctCount: 0, won: false, newAchievements: 0, asHost: true, bestFriendBonus: true });
+  const g = E.roomGold({ ...withFx({ ROOM: 40, HOST: 30 }), correctCount: 0, won: false, asHost: true, bestFriendBonus: true });
   assert.equal(g.total, 0); assert.equal(g.runeBonus, 0);
 });
 

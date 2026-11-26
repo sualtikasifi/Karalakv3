@@ -12,7 +12,7 @@ const tsMs = (t) => (t && t.toMillis ? t.toMillis() : 0);
 // The economy's fields and their ranges — keep in step with util/EconomyConfig.kt.
 const ECONOMY = [
   ["goldPerCorrectWord", "Doğru kelime başı altın", 1, 1000, 10], ["onlineWinGold", "Çevrimiçi galibiyet altını", 0, 10000, 100],
-  ["achievementGold", "Başarım altını", 0, 10000, 100], ["levelGoldPerNewStar", "Yeni yıldız başı altın", 0, 10000, 50],
+  ["levelGoldPerNewStar", "Yeni yıldız başı altın", 0, 10000, 50],
   ["dailyGoldBase", "Günlük ödül (taban)", 0, 100000, 300], ["dailyGoldPerStreakDay", "Seri günü başı ek altın", 0, 10000, 30],
   ["chainBonusGold", "Zincir bonusu", 0, 1000, 10], ["adGoldAmount", "Reklam altını", 0, 100000, 500],
   ["adGoldCooldownHours", "Reklam altını bekleme (saat)", 1, 48, 3], ["adChestCooldownHours", "Reklam kasası bekleme (saat)", 1, 48, 4],

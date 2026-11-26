@@ -8,7 +8,6 @@ package com.sualtikasifi.cizimhafiza.util
 object EconomyConfig {
     @Volatile var goldPerCorrectWord: Int = 10
     @Volatile var onlineWinGold: Int = 100
-    @Volatile var achievementGold: Int = 100
     @Volatile var levelGoldPerNewStar: Int = 50
     @Volatile var dailyGoldBase: Int = 300
     @Volatile var dailyGoldPerStreakDay: Int = 30
@@ -22,7 +21,6 @@ object EconomyConfig {
     internal val fields: List<Field> = listOf(
         Field("goldPerCorrectWord", 1..1_000, 10) { goldPerCorrectWord = it },
         Field("onlineWinGold", 0..10_000, 100) { onlineWinGold = it },
-        Field("achievementGold", 0..10_000, 100) { achievementGold = it },
         Field("levelGoldPerNewStar", 0..10_000, 50) { levelGoldPerNewStar = it },
         Field("dailyGoldBase", 0..100_000, 300) { dailyGoldBase = it },
         Field("dailyGoldPerStreakDay", 0..10_000, 30) { dailyGoldPerStreakDay = it },

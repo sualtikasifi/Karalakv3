@@ -160,9 +160,6 @@ object GameConstants {
     /** Extra gold for winning an online room with at least one opponent, or a Quick Match. */
     val ONLINE_WIN_GOLD: Int get() = EconomyConfig.onlineWinGold
 
-    /** Gold per achievement unlocked. */
-    val ACHIEVEMENT_GOLD: Int get() = EconomyConfig.achievementGold
-
     /** Gold per star gained beyond a level's previous best. */
     val LEVEL_GOLD_PER_NEW_STAR: Int get() = EconomyConfig.levelGoldPerNewStar
 

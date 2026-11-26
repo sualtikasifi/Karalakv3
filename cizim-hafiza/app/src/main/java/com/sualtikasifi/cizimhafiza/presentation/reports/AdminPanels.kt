@@ -92,7 +92,6 @@ private fun stamp(millis: Long): String =
 private val ECONOMY_LABELS = mapOf(
     "goldPerCorrectWord" to "Doğru kelime başı altın",
     "onlineWinGold" to "Çevrimiçi galibiyet altını",
-    "achievementGold" to "Başarım altını",
     "levelGoldPerNewStar" to "Yeni yıldız başı altın",
     "dailyGoldBase" to "Günlük ödül (taban)",
     "dailyGoldPerStreakDay" to "Seri günü başı ek altın",

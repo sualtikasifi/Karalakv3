@@ -295,9 +295,6 @@ internal fun resultStats(state: GamePhase.Result, xp: Int, withXpCard: Boolean):
     if (state.goldFromPlay > 0) {
         list += ResultStat(StatIcon.Art(R.drawable.icon_gold_coin), stringResource(R.string.result_stat_play_gold), stringResource(R.string.result_gold_amount, state.goldFromPlay), orange)
     }
-    if (state.goldFromAchievements > 0) {
-        list += ResultStat(StatIcon.Art(R.drawable.icon_league_trophy), stringResource(R.string.result_stat_achievement), stringResource(R.string.result_gold_amount, state.goldFromAchievements), orange)
-    }
     if (state.goldFromLevel > 0) {
         list += ResultStat(StatIcon.Art(R.drawable.rs_ic_crown), stringResource(R.string.result_stat_level_gold), stringResource(R.string.result_gold_amount, state.goldFromLevel), orange)
     }

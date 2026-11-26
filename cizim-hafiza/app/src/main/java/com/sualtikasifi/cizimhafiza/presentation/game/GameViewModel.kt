@@ -1208,7 +1208,6 @@ class GameViewModel @Inject constructor(
             levels = settingsRepository.runeLevels.value,
             correctInOrder = results.map { it.isCorrect },
             isDaily = isDaily,
-            newAchievements = newlyUnlocked.size,
             newStars = newStars,
             dailyStreak = dailyStreak,
             quickMatchWon = quickMatchWon
@@ -1305,7 +1304,6 @@ class GameViewModel @Inject constructor(
             },
             xpEarned = roundXpEarned,
             goldEarned = gold.total,
-            goldFromAchievements = gold.achievements,
             goldFromLevel = gold.level,
             goldFromDaily = gold.daily,
             goldFromPlay = gold.play,
