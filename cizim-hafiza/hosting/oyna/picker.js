@@ -78,7 +78,7 @@ export function openFramePicker(c) {
   const ov = appWindow(host, { title: S("avatar_frame_picker_title"), body });
   body.append(el("div", "fp-h", S("avatar_source_title")));
   const src = el("div", "fp-src");
-  const kar = el("button", "", `<span class="av"><img src="img/avatar_dino.webp" alt=""></span><b>${S("avatar_source_karalak")}</b>`);
+  const kar = el("button", "on", `<span class="av"><img src="img/avatar_dino.webp" alt=""></span><b>${S("avatar_source_karalak")}</b>`);
   src.append(kar); body.append(src);
   body.append(el("div", "fp-h", S("avatar_frame_section")));
   const grid = el("div", "fp-grid");
@@ -87,7 +87,8 @@ export function openFramePicker(c) {
     const b = el("button", "fp-card" + (P.frame === f.id ? " on" : "") + (own ? "" : " lock"), "");
     const r = frameRing(f, "fp-ring"); r.querySelector("img:first-child").style.display = f.level === 0 ? "none" : "none"; b.append(r);
     if (!own) b.append(el("div", "fp-lk", `${lock}<span>${f.price > 0 ? S("store_in_store") : S("avatar_frame_locked_level", f.level)}</span>`));
-    b.onclick = () => { if (!own) return; P.frame = f.id; c.saveP(); c.refreshHome(); ov.close(); };
+    // the window also holds the picture now, so choosing a ring leaves it open (the X closes it); only the marked card moves
+    b.onclick = () => { if (!own) return; P.frame = f.id; c.saveP(); c.refreshHome(); grid.querySelectorAll(".fp-card.on").forEach((x) => x.classList.remove("on")); b.classList.add("on"); };
     grid.append(b);
   });
   body.append(grid);

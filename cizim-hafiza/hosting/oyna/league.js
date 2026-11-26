@@ -182,7 +182,7 @@ const GRAD = [["#FFE0B2", "#FFB74D"], ["#C8E6C9", "#81C784"], ["#BBDEFB", "#64B5
 const EMOJI = ["🦊", "🐼", "🎨", "⚽", "🎸", "🌸", "🚀", "🐱", "🎮", "🌵", "🍕", "🐶", "🦁", "📚", "🏀", "🐧"];
 function personaFace(seed) {
   const d = document.createElement("div");
-  if (BOTPHOTO[seed]) { const i = document.createElement("img"); i.src = `img/bots/${BOTPHOTO[seed]}.jpg`; i.alt = ""; i.style.cssText = "width:100%;height:100%;object-fit:cover"; d.append(i); return d; }
+  if (BOTPHOTO[seed]) { const i = document.createElement("img"); i.src = `img/avatars/${BOTPHOTO[seed]}.webp`; i.alt = ""; i.style.cssText = "width:100%;height:100%;object-fit:cover"; d.append(i); return d; }
   let h = 11; for (const ch of seed) h = (Math.imul(h, 31) + ch.codePointAt(0)) | 0; h &= 0x7fffffff;
   const b = h % 20; d.style.cssText = "display:flex;align-items:center;justify-content:center;color:#fff;font-weight:500;line-height:1";
   if (b <= 2) { const i = document.createElement("img"); i.src = "img/avatar_dino.webp"; i.alt = ""; i.style.cssText = "width:100%;height:100%"; d.append(i); }
