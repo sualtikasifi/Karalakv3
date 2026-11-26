@@ -214,8 +214,10 @@ function renderLobby(c) {
   const seat = (p) => {
     const isMe = p.uid === myId, host = p.uid === room.hostUid, bub = bubbles[p.uid], ready = rdy(p);
     const card = el("div", "ow-card" + (ready ? " rdy" : "") + (bub || p.pendingNextRound ? " st" : ""));
-    const av = frameRing(frameById(p.frameId), "ow-av"); av.style.position = "relative";
-    const nm = isMe ? S("online_you_label", p.displayName) : p.displayName, lv = p.level || 1;
+    // Sude (the AI player of room 130246) wears the artist cat in the cherry-blossom ring, as in the app (BotRoomEngine.BOT_AVATAR / BOT_FRAME)
+    const isBot = p.uid === "karalak-bot", face = isBot ? Object.assign(new Image(), { src: "img/avatars/cat_artist.webp", alt: "" }) : null;
+    const av = frameRing(frameById(isBot ? "CHERRY_BLOSSOM" : p.frameId), "ow-av", face); av.style.position = "relative";
+    const nm = isMe ? S("online_you_label", p.displayName) : p.displayName, lv = isBot ? 37 : p.level || 1;
     const status = bub ? esc(messageOf(bub, lg)) : p.pendingNextRound ? S("online_pending_badge") : "";
     const txt = el("div", "ow-tx", `<div class="ow-n"><span class="fitw">${esc(nm)}</span>${host ? '<img src="img/lobby_crown.webp" alt="">' : ""}</div><div class="ow-rk">${rankLevelHtml(lv)}</div><div class="ow-s">${status}</div>`);
     card.append(av, txt);

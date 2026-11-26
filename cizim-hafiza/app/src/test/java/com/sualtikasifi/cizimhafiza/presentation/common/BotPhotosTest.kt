@@ -39,4 +39,13 @@ class BotPhotosTest {
         assertEquals("every gallery picture is worn by some bot", AvatarGallery.entries.size, perPicture.size)
         assertTrue("one picture is worn by too many bots: ${perPicture.values.max()}", perPicture.values.max() <= 18)
     }
+
+    @Test
+    fun sudeInTheBotRoomWearsAGalleryPicture() {
+        // her picture is a gallery avatar written the way other players' are published, so every client can draw it
+        val entry = AvatarGallery.find("cat_artist")
+        assertNotNull(entry)
+        assertEquals(AvatarGallery.published(entry!!), com.sualtikasifi.cizimhafiza.data.bot.BotRoomEngine.BOT_AVATAR)
+        assertEquals(entry, AvatarGallery.entryOfPublished(com.sualtikasifi.cizimhafiza.data.bot.BotRoomEngine.BOT_AVATAR))
+    }
 }
