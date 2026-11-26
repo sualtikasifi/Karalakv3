@@ -8,7 +8,6 @@ import com.sualtikasifi.cizimhafiza.util.GameConstants
  */
 data class GoldBreakdown(
     val play: Int = 0,
-    val achievements: Int = 0,
     val level: Int = 0,
     val daily: Int = 0,
     val win: Int = 0,
@@ -16,7 +15,7 @@ data class GoldBreakdown(
     val room: Int = 0,
     val runeBonus: Int = 0
 ) {
-    val total: Int get() = play + achievements + level + daily + win + room
+    val total: Int get() = play + level + daily + win + room
 }
 
 /**
@@ -48,7 +47,6 @@ object RoundRewards {
         levels: Map<String, Int>,
         correctInOrder: List<Boolean>,
         isDaily: Boolean,
-        newAchievements: Int,
         newStars: Int,
         dailyStreak: Int?,
         quickMatchWon: Boolean
@@ -64,7 +62,6 @@ object RoundRewards {
         val win = if (quickMatchWon) RuneEffects.winGold(levels, rawWin) else 0
         return GoldBreakdown(
             play = play,
-            achievements = newAchievements * GameConstants.ACHIEVEMENT_GOLD,
             level = newStars.coerceAtLeast(0) * GameConstants.LEVEL_GOLD_PER_NEW_STAR,
             daily = daily,
             win = win,
@@ -73,10 +70,9 @@ object RoundRewards {
     }
 
     /** The plain gold of an online room round, before any rune: what the room percentages are taken of. */
-    fun roomRaw(correctCount: Int, won: Boolean, newAchievements: Int): Int =
+    fun roomRaw(correctCount: Int, won: Boolean): Int =
         correctCount * GameConstants.GOLD_PER_CORRECT_WORD +
-            (if (won) GameConstants.ONLINE_WIN_GOLD else 0) +
-            newAchievements * GameConstants.ACHIEVEMENT_GOLD
+            (if (won) GameConstants.ONLINE_WIN_GOLD else 0)
 
     /**
      * An online room round. The word and win runes grow their own parts; the room runes (friends always, founder when
@@ -87,17 +83,15 @@ object RoundRewards {
         levels: Map<String, Int>,
         correctCount: Int,
         won: Boolean,
-        newAchievements: Int,
         asHost: Boolean,
         bestFriendBonus: Boolean
     ): GoldBreakdown {
-        val raw = roomRaw(correctCount, won, newAchievements)
+        val raw = roomRaw(correctCount, won)
         val words = RuneEffects.wordGold(levels, correctCount * GameConstants.GOLD_PER_CORRECT_WORD)
         val win = if (won) RuneEffects.winGold(levels, GameConstants.ONLINE_WIN_GOLD) else 0
-        val achievements = newAchievements * GameConstants.ACHIEVEMENT_GOLD
         val percent = RuneEffects.roomGoldPercent(levels, asHost) + if (bestFriendBonus) BEST_FRIEND_PERCENT else 0
         val room = if (raw > 0) raw * percent / 100 else 0
-        val breakdown = GoldBreakdown(play = words, achievements = achievements, win = win, room = room)
+        val breakdown = GoldBreakdown(play = words, win = win, room = room)
         return breakdown.copy(runeBonus = breakdown.total - raw)
     }
 

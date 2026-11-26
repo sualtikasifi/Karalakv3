@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -77,9 +78,20 @@ private val ButtonOutline = Color(0xFF8A3A00)
 @Composable
 fun CreateDuelScreen(
     opponentName: String,
+    opponentUid: String = "",
     onBack: () -> Unit,
-    onChallengeStarted: (wordCount: Int) -> Unit
+    onChallengeStarted: (wordCount: Int, stake: Int) -> Unit,
+    stakeViewModel: StakeViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
+    val picker by stakeViewModel.picker.collectAsState()
+    val goldNow by stakeViewModel.gold.collectAsState()
+    picker?.let { p ->
+        StakePickerDialog(
+            state = p, friendName = opponentName, gold = goldNow,
+            onPick = { stake -> stakeViewModel.close(); onChallengeStarted(p.wordCount, stake) },
+            onDismiss = stakeViewModel::close
+        )
+    }
     var selectedCount by remember { mutableIntStateOf(GameConstants.WORD_COUNT_OPTIONS.first()) }
     BackHandler(onBack = onBack)
 
@@ -191,7 +203,7 @@ fun CreateDuelScreen(
                     wellTop = Color(0xFF7A3508), wellBottom = Color(0xFFB85A10), dim = 0.12f)
                 .clickable(
                     interactionSource = startSink.source, indication = null,
-                    onClick = { onChallengeStarted(selectedCount) }
+                    onClick = { stakeViewModel.start(opponentUid, selectedCount) { onChallengeStarted(selectedCount, 0) } }
                 )
         )
         LetteredText(

@@ -501,19 +501,21 @@ enum class Achievement(
     }
 
     /**
-     * Every other achievement, in declaration (difficulty) order, pays Gold
-     * instead of XP — an even split, so both currencies are spread across the
-     * whole ladder rather than one of them clustering at the hard end. Derived
-     * from the position so no constructor call site has to change.
+     * What the reward is paid in follows what the achievement is about, not its position in the list (it used to
+     * alternate by position, so a hard goal paid XP or gold by accident): the ladders of sheer play volume (games,
+     * words, XP) pay XP, which is what levels the player up; the ladders of skill and loyalty (score, perfect rounds,
+     * online wins, daily streaks) pay gold, which is what can be spent. The web game's achievements.json carries the
+     * same choice (its `gold` flag) and a test keeps the two together.
      */
     val rewardType: AchievementRewardType
-        get() = if (ordinal % 2 == 0) AchievementRewardType.XP else AchievementRewardType.GOLD
+        get() = when (metric) {
+            AchievementMetric.GAMES, AchievementMetric.WORDS, AchievementMetric.XP -> AchievementRewardType.XP
+            AchievementMetric.SCORE, AchievementMetric.PERFECT, AchievementMetric.ONLINE_WIN, AchievementMetric.STREAK -> AchievementRewardType.GOLD
+        }
 
     /**
      * Out of reach for a real player, so it is no longer offered (see [RETIRED]): a goal nobody can finish is not a goal.
-     * The constant itself stays, for two reasons: it is persisted by name (an unlock that already exists must not be
-     * orphaned), and [rewardType] alternates by declaration position, so deleting one would flip the reward type of every
-     * achievement after it. A retired achievement is hidden from the list unless its owner already has it, and is
+     * The constant itself stays: it is persisted by name (an unlock that already exists must not be orphaned). A retired achievement is hidden from the list unless its owner already has it, and is
      * never newly unlocked.
      */
     val retired: Boolean get() = name in RETIRED

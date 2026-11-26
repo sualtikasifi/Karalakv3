@@ -31,6 +31,9 @@ on:
           - titles_preview.sh
           - updatepreview.sh
           - chestpreview.sh
+          - chestwon.sh
+          - announcement.sh
+          - gift.sh
           - chestrewardpreview.sh
           - duelcreatepreview.sh
           - guessnoticepreview.sh

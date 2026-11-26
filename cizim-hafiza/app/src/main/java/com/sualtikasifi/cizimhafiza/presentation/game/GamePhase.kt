@@ -103,7 +103,6 @@ sealed interface GamePhase {
         /** Gold this round paid out (achievements, level stars, daily challenge). */
         val goldEarned: Int = 0,
         /** Where [goldEarned] came from, so the result screen can say so. */
-        val goldFromAchievements: Int = 0,
         val goldFromLevel: Int = 0,
         val goldFromDaily: Int = 0,
         /** Gold for the words answered correctly (not paid by the daily challenge, which has its own). */

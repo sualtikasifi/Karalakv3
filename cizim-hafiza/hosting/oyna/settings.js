@@ -76,7 +76,7 @@ export function renderSettings(c) {
     $("se-msg").textContent = "…";
     const r = await net.redeemCoupon(code).catch(() => ({ status: "network" }));
     if (r.status === "ok") {
-      couponFails = 0; P.gold += r.gold; eco.addXp(P, r.xp, 0); c.saveP(); c.refreshHome();
+      couponFails = 0; P.gold += r.gold; eco.addXp(P, r.xp, 0, false); c.saveP(); c.refreshHome();
       $("se-msg").textContent = [r.gold > 0 && S("coupon_won_gold", r.gold), r.xp > 0 && S("coupon_won_xp", r.xp), r.chests.length > 0 && S("coupon_won_chest")].filter(Boolean).join("  ·  ") || S("coupon_won_nothing");
       $("se-code").value = "";
       // each chest is opened right now, one opening scene after another

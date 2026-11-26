@@ -161,7 +161,7 @@ export function playChoiceDialog(host, { onRoom, onDuel }) {
  */
 // ReportPlayerDialog: four fixed reasons in the game's painted window (as in the app), then a thank-you. [context] says where it came from.
 export function reportPlayerDialog(net, uid, nickname, context) {
-  const body = el("div", "rp-win"), foot = el("div", "ao-foot"), cancel = el("button", "pill cream small"), span = document.createElement("span");
+  const body = el("div", "rp-win"), foot = el("div", "ao-foot"), cancel = el("button", "pill orange small"), span = document.createElement("span"); // orange: apart from the cream reasons
   cancel.append(span); foot.append(cancel);
   const ov = appWindow(document.getElementById("stage"), { title: S("report_player_title"), body, footer: foot });
   cancel.onclick = () => ov.close();

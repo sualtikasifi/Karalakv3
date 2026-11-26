@@ -207,7 +207,8 @@ fun CizimHafizaNavGraph(
                 navArgument(Screen.ArgDuelOpponentUid) { type = NavType.StringType; nullable = true; defaultValue = null },
                 navArgument(Screen.ArgDuelOpponentName) { type = NavType.StringType; nullable = true; defaultValue = null },
                 navArgument(Screen.ArgGhost) { type = NavType.StringType; nullable = true; defaultValue = null },
-                navArgument(Screen.ArgDuelIdToComplete) { type = NavType.StringType; nullable = true; defaultValue = null }
+                navArgument(Screen.ArgDuelIdToComplete) { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument(Screen.ArgDuelStake) { type = NavType.StringType; nullable = true; defaultValue = null }
             )
         ) { backStackEntry ->
             val worldIdArg = backStackEntry.arguments?.getString(Screen.ArgWorldId)?.toIntOrNull()
@@ -427,9 +428,10 @@ fun CizimHafizaNavGraph(
             }
             CreateDuelScreen(
                 opponentName = opponentName,
+                opponentUid = opponentUid,
                 onBack = { navController.popBackStack() },
-                onChallengeStarted = { wordCount ->
-                    navController.navigate(Screen.duelChallengeRoute(wordCount, opponentUid, opponentName)) {
+                onChallengeStarted = { wordCount, stake ->
+                    navController.navigate(Screen.duelChallengeRoute(wordCount, opponentUid, opponentName, stake)) {
                         popUpTo(Screen.FriendsBase)
                     }
                 }

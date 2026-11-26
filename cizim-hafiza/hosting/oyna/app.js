@@ -30,7 +30,7 @@ import { checkPenalties, lockGate } from "./penalty.js";
 import { checkStreakPrompt } from "./fstreak.js";
 import { layoutBreak, startBreak, stopBreak } from "./brk.js";
 import { loadLeague, layoutLeague, renderLeague, periodId } from "./league.js";
-import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound, unlockedCount as achCount } from "./achievements.js";
+import { loadAchievements, layoutAchievements, renderAchievements, recordRound as achRound } from "./achievements.js";
 import { layoutSettings, renderSettings } from "./settings.js";
 import { loadStoreData, layoutStore, renderStore, frameRing, frameById, penById, frameList as frameListSafe } from "./store.js";
 
@@ -84,11 +84,11 @@ const ctx = {
     const me = players.find((p) => p.uid === myUid); if (!me) return null;
     const place = [...players].sort((a, b) => b.totalScore - a.totalScore).findIndex((p) => p.uid === myUid) + 1;
     const tied = place === 1 && players.filter((p) => p.totalScore === me.totalScore).length > 1;
-    const won = place === 1 && !tied && players.length >= 2, newAch = ctx.lastAch || 0;
-    const raw = eco.roomRaw(me.correctCount || 0, won, newAch);
+    const won = place === 1 && !tied && players.length >= 2;
+    const raw = eco.roomRaw(me.correctCount || 0, won);
     // Dostluk Bağı: +50% once a day, spent only on a round that pays something.
     const best = raw > 0 && runeHas(P, "BEST") && P.bestDay !== todayEpoch(); if (best) P.bestDay = todayEpoch();
-    const g = eco.roomGold({ fx: (k) => runeFx(P, k), correctCount: me.correctCount || 0, won, newAchievements: newAch, asHost: hostUid === myUid, bestFriendBonus: best });
+    const g = eco.roomGold({ fx: (k) => runeFx(P, k), correctCount: me.correctCount || 0, won, asHost: hostUid === myUid, bestFriendBonus: best });
     P.gold += g.total;
     const matchXp = Math.round((eco.ONLINE_MATCH_XP + (won ? eco.ONLINE_WIN_XP : 0)) * xpEventOnly);
     ctx.lastXp = (ctx.lastXp || 0) + eco.addXp(P, matchXp, runeFx(P, "XP"));
@@ -946,13 +946,11 @@ async function finish() {
   if (P.periodId !== periodId()) { P.periodId = periodId(); P.periodXp = 0; }
   // XP is paid per right word by difficulty and speed (see answer()); the XP runes speed up the level, never the league XP.
   eco.addXp(P, round.reduce((s, w) => s + (w.xp || 0), 0), fxp);
-  const ach0 = achCount(P);
   // an offline round with nothing guessed right counts for nothing (no achievement progress, so no achievement reward either)
   if (!(kind === "offline" && n === 0)) achRound(P, { score, words: round.length, perfect: n === round.length });
-  const newAch = Math.max(0, achCount(P) - ach0);
   if (qmBonus) P.qmDay = todayEpoch();
   const fx = (k) => runeFx(P, k), has = (k) => runeHas(P, k);
-  if (kind === "online") { ctx.lastXp = P.xp - xp0; ctx.lastAch = newAch; saveP(); refreshHome(); publishLeague(); return submitAndWait(ctx, round, score); }
+  if (kind === "online") { ctx.lastXp = P.xp - xp0; saveP(); refreshHome(); publishLeague(); return submitAndWait(ctx, round, score); }
   publishLeague();
   const me = {
     language: lang, nickname: "Web", wordIds: round.map((w) => w.id),
@@ -987,7 +985,7 @@ async function finish() {
   const quickWon = kind === "quick" && !!opp && score > opp.totalScore;
   gainOnce = null;
   // What the round pays in gold — one place, ported from RoundRewards.kt (see economy.js).
-  const gold = eco.soloGold({ fx, has, correctInOrder: round.map((w) => w.correct), isDaily: kind === "daily", newAchievements: newAch, newStars, dailyStreak: dailyRes ? dailyRes.streak : null, quickWon });
+  const gold = eco.soloGold({ fx, has, correctInOrder: round.map((w) => w.correct), isDaily: kind === "daily", newStars, dailyStreak: dailyRes ? dailyRes.streak : null, quickWon });
   P.gold += gold.total;
   let wonChest; if (quickWon) wonChest = awardChest(P, (k) => runeHas(P, k)) || null;
   saveP(); refreshHome(); gainOnce = { gold: gold.total, xp: P.xp - xp0 };

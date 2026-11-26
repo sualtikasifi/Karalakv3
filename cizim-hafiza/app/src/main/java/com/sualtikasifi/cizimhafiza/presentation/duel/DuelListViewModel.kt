@@ -79,6 +79,7 @@ class DuelListViewModel @Inject constructor(
     init {
         // Duels this player answered on an older version have no on-phone copy yet; listening here copies them
         // in once (the repository archives whatever a snapshot carries). Nothing is shown from this stream.
+        viewModelScope.launch { runCatching { duelRepository.settleWagers() } }
         duelRepository.observeCompletedReceivedDuels().catch { com.sualtikasifi.cizimhafiza.util.NonFatal.report("DuelListViewModel", "listener failed", it) }.launchIn(viewModelScope)
     }
 
@@ -91,7 +92,7 @@ class DuelListViewModel @Inject constructor(
         duelRepository.history
     ) { incoming, sent, requests, history ->
         DuelListUiState(
-            incoming = incoming,
+            incoming = incoming.filter { !it.isWager || System.currentTimeMillis() - it.stakeAtMillis < com.sualtikasifi.cizimhafiza.domain.model.StakeRules.ACCEPT_MILLIS },
             friendRequests = requests,
             pendingSent = sent.filter { it.status == DuelStatus.AWAITING_OPPONENT },
             recent = history.map { RecentDuel(it) }.sortedByDescending { it.finishedAt }.take(RECENT_LIMIT),
@@ -107,6 +108,19 @@ class DuelListViewModel @Inject constructor(
     fun markSeen(duelId: String) {
         duelRepository.markHistorySeen(duelId)
         viewModelScope.launch { runCatching { duelRepository.markSeenByChallenger(duelId) } }
+    }
+
+    /** Wagers (and only wagers) are taken on or turned down with a status; the plain duel keeps its old paths. */
+    fun acceptWager(duel: Duel, onAccepted: () -> Unit, onFailed: (com.sualtikasifi.cizimhafiza.domain.model.StakeBlock) -> Unit) {
+        viewModelScope.launch {
+            duelRepository.acceptWager(duel)
+                .onSuccess { onAccepted() }
+                .onFailure { onFailed((it as? com.sualtikasifi.cizimhafiza.domain.model.StakeException)?.block ?: com.sualtikasifi.cizimhafiza.domain.model.StakeBlock.OFFLINE) }
+        }
+    }
+
+    fun declineWager(duelId: String) {
+        viewModelScope.launch { runCatching { duelRepository.declineWager(duelId) } }
     }
 
     fun deleteDuel(duelId: String) {

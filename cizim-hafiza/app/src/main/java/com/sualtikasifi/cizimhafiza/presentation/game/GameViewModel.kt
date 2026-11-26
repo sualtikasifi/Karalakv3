@@ -163,6 +163,8 @@ class GameViewModel @Inject constructor(
         ?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrNull() }
     private val duelOpponentName: String? = savedStateHandle.get<String>(Screen.ArgDuelOpponentName)
         ?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrNull() }
+    // Gold the challenger puts on this duel (0 = none); see StakeRules and DuelRepositoryImpl.createWager.
+    private val duelStake: Int = savedStateHandle.get<String>(Screen.ArgDuelStake)?.toIntOrNull() ?: 0
     // See Screen.duelCompletionGameRoute — present only when this round IS
     // the answer to an incoming challenge. Mutually exclusive with
     // duelOpponentUid above: this round either creates a new duel or
@@ -1173,14 +1175,24 @@ class GameViewModel @Inject constructor(
         // failed challenge send is disappointing, not something worth
         // blocking the result screen over.
         duelOpponentUid?.let { opponentUid ->
-            duelRepository.createDuel(
+            val sent = duelRepository.createDuel(
                 opponentUid = opponentUid,
                 opponentName = duelOpponentName.orEmpty(),
                 items = resultItems,
                 challengerScore = totalScore,
                 challengerCorrectCount = correctCount,
-                wordIds = results.map { it.wordId }
+                wordIds = results.map { it.wordId },
+                stake = duelStake
             )
+            // A wager that could not start leaves the stake where it was; say so (an ordinary duel stays silent).
+            if (duelStake > 0) {
+                val block = (sent.exceptionOrNull() as? com.sualtikasifi.cizimhafiza.domain.model.StakeException)?.block
+                val note = when {
+                    sent.isFailure -> context.getString(com.sualtikasifi.cizimhafiza.presentation.duel.stakeMessageRes(block ?: com.sualtikasifi.cizimhafiza.domain.model.StakeBlock.OFFLINE))
+                    else -> context.getString(com.sualtikasifi.cizimhafiza.R.string.stake_sent, duelStake)
+                }
+                android.widget.Toast.makeText(context, note, android.widget.Toast.LENGTH_LONG).show()
+            }
         }
         // The other half of C2: this round answered someone else's
         // challenge rather than creating a new one (duelOpponentUid and
@@ -1196,6 +1208,8 @@ class GameViewModel @Inject constructor(
                 opponentScore = totalScore,
                 opponentCorrectCount = correctCount
             )
+            // The wager's pot is paid out by the same settlement that clears every other open wager.
+            if (duel.isWager && submitted.isSuccess) duelRepository.settleWagers()
             // A duel of ten words or more, played to the end, counts as today's day of the pair's friend streak.
             if (submitted.isSuccess && duel.wordIds.size >= com.sualtikasifi.cizimhafiza.domain.model.FriendStreaks.MIN_WORDS) {
                 friendStreakRepository.recordDuel(duel.challengerUid).onSuccess { gameAnalytics.friendStreakDuel() }
@@ -1208,7 +1222,6 @@ class GameViewModel @Inject constructor(
             levels = settingsRepository.runeLevels.value,
             correctInOrder = results.map { it.isCorrect },
             isDaily = isDaily,
-            newAchievements = newlyUnlocked.size,
             newStars = newStars,
             dailyStreak = dailyStreak,
             quickMatchWon = quickMatchWon
@@ -1305,7 +1318,6 @@ class GameViewModel @Inject constructor(
             },
             xpEarned = roundXpEarned,
             goldEarned = gold.total,
-            goldFromAchievements = gold.achievements,
             goldFromLevel = gold.level,
             goldFromDaily = gold.daily,
             goldFromPlay = gold.play,

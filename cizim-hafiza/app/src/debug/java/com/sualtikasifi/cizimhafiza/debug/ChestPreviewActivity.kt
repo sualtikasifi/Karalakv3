@@ -10,7 +10,7 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.CizimHafizaTheme
 
 /**
  * Debug builds only: shows the chest window on its own so its layout can be looked at in the CI emulator.
- * Extras: tier = silver|gold|rare, state = start|unlocking|ready|busy|used.
+ * Extras: tier = silver|gold|rare, state = start|unlocking|ready|busy|used|won|announce|announce_long|gift|gift_blocked|gift_inbox (won = the "you won a chest" window; announce* = the developer-panel notice window).
  */
 class ChestPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,6 +29,51 @@ class ChestPreviewActivity : ComponentActivity() {
         }
         setContent {
             CizimHafizaTheme {
+                if (state.startsWith("announce")) {
+                    val long = state == "announce_long"
+                    com.sualtikasifi.cizimhafiza.presentation.common.AnnouncementDialog(
+                        title = if (long) "Yeni sezon başladı: Bahar Festivali ve sürpriz ödüller seni bekliyor!" else "Öğretmenler gününüz kutlu olsun!",
+                        body = if (long) "Bu hafta boyunca her günlük meydan okuma ekstra altın veriyor. Arkadaşlarınla düello yap, ligde yüksel ve özel Bahar kasasını kazan. Ayrıntılar için Ayarlar > Hakkında bölümüne göz atabilirsin. İyi eğlenceler!\n\nKodu girmeyi unutma: BAHAR2026" else "\"OGRETMEN\" kodu ile 500 altını kap!",
+                        onClose = { finish() }
+                    )
+                    return@CizimHafizaTheme
+                }
+                if (state.startsWith("stake")) {
+                    if (state == "stake_result") {
+                        val st = com.sualtikasifi.cizimhafiza.domain.model.DuelStatus.COMPLETE
+                        com.sualtikasifi.cizimhafiza.presentation.duel.StakeResultDialog(
+                            listOf(
+                                com.sualtikasifi.cizimhafiza.domain.repository.StakeSettlement("Elif", 500, 950, st),
+                                com.sualtikasifi.cizimhafiza.domain.repository.StakeSettlement("Can", 250, 0, st),
+                                com.sualtikasifi.cizimhafiza.domain.repository.StakeSettlement("Deniz", 100, 100, com.sualtikasifi.cizimhafiza.domain.model.DuelStatus.EXPIRED)
+                            )
+                        ) { finish() }
+                    } else {
+                        com.sualtikasifi.cizimhafiza.presentation.duel.StakePickerDialog(
+                            com.sualtikasifi.cizimhafiza.presentation.duel.StakePickerState(10, loading = false, usage = com.sualtikasifi.cizimhafiza.domain.model.StakeUsage(1500, 2, 500)),
+                            "Elif", 800, {}, { finish() }
+                        )
+                    }
+                    return@CizimHafizaTheme
+                }
+                if (state.startsWith("gift")) {
+                    val g = com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendState("u", "Elif", loading = false, usage = com.sualtikasifi.cizimhafiza.domain.model.GiftUsage(300, 1, 300))
+                    when (state) {
+                        "gift_blocked" -> com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendDialog(g.copy(usage = null, blocked = com.sualtikasifi.cizimhafiza.domain.model.GiftBlock.LEVEL), 900, {}, { finish() })
+                        "gift_inbox" -> com.sualtikasifi.cizimhafiza.presentation.gifts.GiftInboxDialog(
+                            listOf(
+                                com.sualtikasifi.cizimhafiza.domain.model.IncomingGift("a", "u", "Elif", com.sualtikasifi.cizimhafiza.domain.model.GiftKind.GOLD, "", 1, 500, 400),
+                                com.sualtikasifi.cizimhafiza.domain.model.IncomingGift("b", "u", "Can", com.sualtikasifi.cizimhafiza.domain.model.GiftKind.JOKER, "FIRST_LETTER", 3, 495, 0)
+                            )
+                        ) { finish() }
+                        else -> com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendDialog(g, 900, {}, { finish() })
+                    }
+                    return@CizimHafizaTheme
+                }
+                if (state == "won") {
+                    com.sualtikasifi.cizimhafiza.presentation.common.ChestWonDialog(chest = chest, onDismiss = { finish() })
+                    return@CizimHafizaTheme
+                }
                 ChestDetailDialog(
                     chest = chest,
                     nowMillis = now,

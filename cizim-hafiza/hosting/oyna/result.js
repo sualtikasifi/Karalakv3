@@ -18,7 +18,6 @@ function statList(d, lang) {
   // The same rows, in the same order, as the Android result screen (ResultParts.kt).
   const g = d.gold || {};
   if (g.play > 0) list.push({ ic: "coin", label: T("result_stat_play_gold"), value: gold(g.play), color: or });
-  if (g.achievements > 0) list.push({ ic: "trophy", label: T("result_stat_achievement"), value: gold(g.achievements), color: or });
   if (g.level > 0) list.push({ ic: "crown", label: T("result_stat_level_gold"), value: gold(g.level), color: or });
   if (g.daily > 0) list.push({ ic: "cal", label: T("result_stat_daily_gold"), value: gold(g.daily), color: or });
   if (g.win > 0) list.push({ ic: "trophy", label: T("result_stat_win_gold"), value: gold(g.win), color: or });

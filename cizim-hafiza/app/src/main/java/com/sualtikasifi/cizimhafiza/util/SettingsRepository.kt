@@ -658,7 +658,7 @@ class SettingsRepository @Inject constructor(
         val updated = _lifetimeXp.value + gained
         prefs.edit { putInt(KEY_LIFETIME_XP, updated) }
         _lifetimeXp.value = updated
-        addPeriodXp(amount)
+        if (source.countsForLeague) addPeriodXp(amount)
         HomeShownStats.pendingXp += gained
     }
 

@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -45,6 +46,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -316,80 +318,122 @@ private fun ChestWonScene(chest: Chest, onDismiss: () -> Unit) {
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = stringResource(R.string.chest_win_title),
-                style = TextStyle(
-                    brush = Brush.verticalGradient(listOf(Color(0xFFFFF3B0), Color(0xFFFFC72E), Color(0xFFFF8A00))),
-                    shadow = Shadow(Color(0xFF3A1A00), Offset(0f, 6f), 10f),
-                    fontFamily = DisplayFont,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 38.sp,
-                    textAlign = TextAlign.Center
-                ),
+            // The title: gold lettering over a dark rounded outline, with a soft glow, so it reads on the bright rays and the confetti.
+            val titleText = stringResource(R.string.chest_win_title)
+            val titleBase = TextStyle(
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 38.sp,
+                letterSpacing = 1.sp,
+                textAlign = TextAlign.Center
+            )
+            Box(
                 modifier = Modifier.graphicsLayer {
                     scaleX = title.value
                     scaleY = title.value
                     alpha = title.value.coerceIn(0f, 1f)
-                }
-            )
-            Spacer(modifier = Modifier.height(12.dp))
+                },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = titleText,
+                    style = titleBase.copy(
+                        color = Color(0xFF3A1A00),
+                        drawStyle = Stroke(width = 16f, join = StrokeJoin.Round),
+                        shadow = Shadow(Color.Black.copy(alpha = 0.55f), Offset(0f, 8f), 12f)
+                    )
+                )
+                Text(
+                    text = titleText,
+                    style = titleBase.copy(
+                        brush = Brush.verticalGradient(listOf(Color(0xFFFFF7C2), Color(0xFFFFCB3D), Color(0xFFFF8F00))),
+                        shadow = Shadow(Color(0xAAFFB300), Offset.Zero, 28f)
+                    )
+                )
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            // The tier: three stars (the earned ones bright, the rest faint), its name, and its rarity as a small tag.
             Row(
                 modifier = Modifier
                     .graphicsLayer { alpha = info.value; translationY = (1f - info.value) * 24f }
                     .clip(RoundedCornerShape(50))
-                    .background(Brush.horizontalGradient(listOf(lerp(accent, Color.Black, 0.25f), accent)))
-                    .padding(horizontal = 18.dp, vertical = 8.dp),
+                    .background(Brush.horizontalGradient(listOf(lerp(accent, Color.Black, 0.3f), accent)))
+                    .padding(start = 16.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = "★".repeat(tier.rarityStars()) + "☆".repeat(3 - tier.rarityStars()),
-                    fontSize = 16.sp,
-                    color = Color(0xFFFFE066)
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    repeat(3) { i ->
+                        Icon(
+                            Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = if (i < tier.rarityStars()) Color(0xFFFFE066) else Color.White.copy(alpha = 0.3f),
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
+                }
                 Text(
                     text = stringResource(tier.labelRes()),
                     fontFamily = DisplayFont,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 18.sp,
+                    fontSize = 19.sp,
                     color = Color.White
                 )
                 Text(
-                    text = "· " + stringResource(tier.rarityLabelRes()),
+                    text = stringResource(tier.rarityLabelRes()),
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.9f)
+                    fontSize = 12.sp,
+                    letterSpacing = 0.5.sp,
+                    color = Color(0xFFFFF3B0),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(Color.Black.copy(alpha = 0.28f))
+                        .padding(horizontal = 10.dp, vertical = 3.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Column(
                 modifier = Modifier.graphicsLayer { alpha = info.value },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(Icons.Filled.Schedule, contentDescription = null, tint = Color(0xFFFFE066), modifier = Modifier.size(20.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Filled.Schedule, contentDescription = null, tint = Color(0xFFFFE066), modifier = Modifier.size(22.dp))
+                    val duration = tier.durationText()
+                    val unlockLine = stringResource(R.string.chest_win_unlock_time_text, duration)
+                    // the label in white, the time itself in gold: the one thing to read at a glance
                     Text(
-                        text = stringResource(R.string.chest_win_unlock_time_text, tier.durationText()),
+                        text = androidx.compose.ui.text.buildAnnotatedString {
+                            append(unlockLine)
+                            val at = unlockLine.indexOf(duration)
+                            if (at >= 0) addStyle(
+                                androidx.compose.ui.text.SpanStyle(color = Color(0xFFFFE066), fontWeight = FontWeight.ExtraBold),
+                                at, at + duration.length
+                            )
+                        },
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White.copy(alpha = 0.92f)
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = stringResource(R.string.chest_win_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.75f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.78f),
                     textAlign = TextAlign.Center
                 )
             }
-            Spacer(modifier = Modifier.height(22.dp))
-            PrimaryButton(
+            Spacer(modifier = Modifier.height(26.dp))
+            // The game's painted orange button, with the slow glint that draws the eye to a window's main action.
+            PaintedPillButton(
                 text = stringResource(R.string.chest_won_button),
                 onClick = onDismiss,
                 enabled = button.value > 0.95f,
+                height = 60.dp,
+                textSize = 22.sp,
+                attention = true,
                 modifier = Modifier
-                    .width(240.dp)
+                    .width(264.dp)
                     .graphicsLayer {
                         alpha = button.value
                         val s = buttonPulse.value

@@ -264,12 +264,11 @@ class OnlineResultViewModel @Inject constructor(
                     val won = placement == 1 && !tiedForFirst && roundPlayers.size >= 2
                     // The room runes (friends, founder, Dostluk Bağı) grow what a room round pays.
                     // Dostluk Bağı's daily +50% is only spent on a round that pays something.
-                    val raw = RoundRewards.roomRaw(me.correctCount, won, newlyUnlocked.size)
+                    val raw = RoundRewards.roomRaw(me.correctCount, won)
                     val breakdown = RoundRewards.room(
                         levels = settingsRepository.runeLevels.value,
                         correctCount = me.correctCount,
                         won = won,
-                        newAchievements = newlyUnlocked.size,
                         asHost = room.hostUid == myUidLocal,
                         bestFriendBonus = raw > 0 && settingsRepository.takeBestFriendBonus()
                     )

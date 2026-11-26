@@ -220,7 +220,7 @@ function collectPrize(c) {
   earned.push(gate);
   const rid = typeof lp.rewardId === "string" ? lp.rewardId : "";
   if (rid) { if (!earned.includes(rid)) earned.push(rid); const own = rid.replace(/^PEN:/, "pen:").replace(/^FRAME:/, "frame:"); if (/^(pen|frame):/.test(own) && !(P.owned = P.owned || []).includes(own)) P.owned.push(own); }
-  P.gold = (P.gold || 0) + eco.CFG.leagueMonthlyGold; eco.addXp(P, 10000, 0);
+  P.gold = (P.gold || 0) + eco.CFG.leagueMonthlyGold; eco.addXp(P, 10000, 0, false);
   c.saveP(); c.refreshHome && c.refreshHome();
   prizeDialog(c, rid, win.rank | 0);
 }

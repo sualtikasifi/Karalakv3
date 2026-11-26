@@ -113,7 +113,8 @@ private fun ReportReasonsWindow(
             PaintedPillButton(
                 text = stringResource(if (sendState == ReportSendState.Sent) R.string.close else R.string.report_drawing_cancel),
                 onClick = onDismiss,
-                primary = false,
+                // orange, the game's colour for a window's own button: it stands apart from the cream reasons above it
+                primary = true,
                 modifier = Modifier.fillMaxWidth()
             )
         }

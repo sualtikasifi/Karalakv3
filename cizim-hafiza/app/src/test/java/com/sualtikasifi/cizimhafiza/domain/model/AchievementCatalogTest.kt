@@ -109,4 +109,28 @@ class AchievementCatalogTest {
         assertTrue(Achievement.STREAK_365.visibleTo(alreadyUnlocked = true))
         assertTrue(Achievement.STREAK_100.visibleTo(alreadyUnlocked = false))
     }
+
+    @Test
+    fun theRewardIsPaidInWhatTheAchievementIsAbout() {
+        Achievement.entries.forEach {
+            val want = when (it.metric) {
+                AchievementMetric.GAMES, AchievementMetric.WORDS, AchievementMetric.XP -> AchievementRewardType.XP
+                else -> AchievementRewardType.GOLD
+            }
+            assertEquals("${it.name} pays in the wrong currency", want, it.rewardType)
+        }
+        // both currencies are really on offer, in every difficulty band
+        val first = Achievement.entries.filter { !it.retired }.take(20)
+        assertTrue(first.any { it.rewardType == AchievementRewardType.XP } && first.any { it.rewardType == AchievementRewardType.GOLD })
+    }
+
+    @Test
+    fun theWebGameAchievementsPayInTheSameCurrency() {
+        val file = File("../hosting/oyna/achievements.json").takeIf { it.exists() } ?: return
+        val web = Regex(""""id":"([A-Z0-9_]+)".*?"gold":(true|false)""").findAll(file.readText()).associate { it.groupValues[1] to (it.groupValues[2] == "true") }
+        assertTrue("only ${web.size} read", web.size >= Achievement.entries.size)
+        Achievement.entries.forEach {
+            assertEquals("${it.name} differs on the web", it.rewardType == AchievementRewardType.GOLD, web[it.name])
+        }
+    }
 }

@@ -18,7 +18,16 @@ enum class EarnSource(val key: String, val label: String) {
     REFERRAL("referral", "Davet"),
     FRIEND_STREAK("friendstreak", "Arkadaş serisi"),
     GUESS("guess", "Bil Bakalım"),
+    GIFT("gift", "Arkadaş hediyesi"),
     OTHER("other", "Diğer");
+
+    /**
+     * Whether XP from this source counts towards the monthly league. The league is a month of PLAYING: windfalls — an
+     * achievement's reward (up to thousands of XP at once), a coupon, a login day, a referral, a friend-streak prize, a chest, last
+     * month's league prize — raise the player's level but not their place in the table.
+     */
+    val countsForLeague: Boolean
+        get() = this != ACHIEVEMENT && this != GIFT && this != COUPON && this != LOGIN && this != REFERRAL && this != FRIEND_STREAK && this != CHEST && this != LEAGUE
 
     companion object {
         fun labelOf(key: String): String = entries.firstOrNull { it.key == key }?.label ?: key

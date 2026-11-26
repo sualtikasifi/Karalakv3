@@ -73,6 +73,9 @@ fun DuelListScreen(
     var resultDuel by remember { mutableStateOf<RecentDuel?>(null) }
     // the challenge the player is about to turn down (asked first: it is gone for the challenger too)
     var decliningDuel by remember { mutableStateOf<Duel?>(null) }
+    // a wager the player is about to take on (asked first: the stake leaves the wallet at once)
+    var acceptingDuel by remember { mutableStateOf<Duel?>(null) }
+    var wagerError by remember { mutableStateOf<com.sualtikasifi.cizimhafiza.domain.model.StakeBlock?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -110,7 +113,7 @@ fun DuelListScreen(
                 } else if (uiState.incoming.isEmpty() && uiState.friendRequests.isEmpty()) {
                     EmptyPanel(R.drawable.du_ic_mail, stringResource(R.string.duel_list_requests_empty))
                 } else {
-                    uiState.incoming.forEach { duel -> androidx.compose.runtime.key("duel_" + duel.id) { IncomingDuelRow(duel = duel, onClick = { onPlayDuel(duel) }, onDecline = { decliningDuel = duel }) } }
+                    uiState.incoming.forEach { duel -> androidx.compose.runtime.key("duel_" + duel.id) { IncomingDuelRow(duel = duel, onClick = { if (duel.isWager) acceptingDuel = duel else onPlayDuel(duel) }, onDecline = { decliningDuel = duel }) } }
                     uiState.friendRequests.forEach { request ->
                         androidx.compose.runtime.key("req_" + request.uid) {
                             FriendRequestRow(
@@ -171,13 +174,39 @@ fun DuelListScreen(
     resultDuel?.let { recent -> DuelResultDialog(recent = recent, myName = viewModel.myNickname, onDismiss = { resultDuel = null }) }
 
     // Turning a challenge down removes it (the challenger's list drops it too), so it is asked once more first.
+    acceptingDuel?.let { duel ->
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.stake_accept_title),
+            message = stringResource(R.string.stake_accept_message, duel.challengerName, duel.stake, com.sualtikasifi.cizimhafiza.domain.model.StakeRules.winnerPayout(duel.stake) - duel.stake, (com.sualtikasifi.cizimhafiza.domain.model.StakeRules.FINISH_MILLIS / 60_000).toInt()),
+            confirmText = stringResource(R.string.stake_accept_confirm),
+            dismissText = stringResource(R.string.duel_list_decline_cancel),
+            destructive = false,
+            onConfirm = {
+                acceptingDuel = null
+                viewModel.acceptWager(duel, onAccepted = { onPlayDuel(duel) }, onFailed = { wagerError = it })
+            },
+            onDismiss = { acceptingDuel = null }
+        )
+    }
+    wagerError?.let { block ->
+        com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
+            title = stringResource(R.string.stake_accept_title),
+            message = stringResource(stakeMessageRes(block)),
+            confirmText = stringResource(R.string.close),
+            dismissText = stringResource(R.string.close),
+            destructive = false,
+            onConfirm = { wagerError = null },
+            onDismiss = { wagerError = null }
+        )
+    }
+
     decliningDuel?.let { duel ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { decliningDuel = null },
             title = { Text(stringResource(R.string.duel_list_decline_title)) },
             text = { Text(stringResource(R.string.duel_list_decline_message, duel.challengerName)) },
             confirmButton = {
-                androidx.compose.material3.TextButton(onClick = { viewModel.deleteDuel(duel.id); decliningDuel = null }) {
+                androidx.compose.material3.TextButton(onClick = { if (duel.isWager) viewModel.declineWager(duel.id) else viewModel.deleteDuel(duel.id); decliningDuel = null }) {
                     Text(stringResource(R.string.duel_list_decline_confirm), color = androidx.compose.material3.MaterialTheme.colorScheme.error)
                 }
             },
@@ -263,6 +292,7 @@ private fun IncomingDuelRow(duel: Duel, onClick: () -> Unit, onDecline: () -> Un
         Column(modifier = Modifier.weight(1f)) {
             Text(duel.challengerName, style = PaintedStyle(color = Ink, fontSize = 18.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(stringResource(R.string.duel_list_word_count, duel.totalWords), style = PaintedStyle(color = SoftInk, fontSize = 14.sp, fontWeight = FontWeight.SemiBold))
+            if (duel.isWager) Text(stringResource(R.string.stake_chip, duel.stake), style = PaintedStyle(color = Color(0xFFB3401A), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold))
         }
         PillButton(R.drawable.du_pill_orange, stringResource(R.string.duel_list_incoming_play), Modifier.width(88.dp), onClick)
         // turning the challenge down: the same painted cross the other rows use to clear a duel
