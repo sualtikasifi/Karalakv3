@@ -625,7 +625,6 @@ private fun AvatarFrameSwatch(item: AvatarFrameUiItem, onClick: () -> Unit) {
             modifier = Modifier.fillMaxWidth().height(96.dp).padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
-            if (item.selected) PickerCheckBadge(Modifier.align(Alignment.TopEnd))
             Image(
                 painter = painterResource(item.frame.drawableRes),
                 contentDescription = null,
@@ -653,6 +652,8 @@ private fun AvatarFrameSwatch(item: AvatarFrameUiItem, onClick: () -> Unit) {
                     )
                 }
             }
+            // drawn last so the ring's artwork cannot cover it; bottom right, as on the chosen picture
+            if (item.selected) PickerCheckBadge(Modifier.align(Alignment.BottomEnd).offset(x = 4.dp, y = 4.dp))
         }
     }
 }
