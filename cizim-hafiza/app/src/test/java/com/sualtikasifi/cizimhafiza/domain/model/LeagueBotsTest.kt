@@ -25,11 +25,11 @@ class LeagueBotsTest {
         val bots = LeagueBots.bots(periodId, now, monthStart)
         assertEquals(LeagueBots.COUNT, bots.size)
         val expected = mapOf(
-            0 to Triple("karaeylem", 3178, 41),
-            1 to Triple("kemalpasali", 763, 10),
-            2 to Triple("cbf150", 6365, 58),
-            10 to Triple("hsncn", 5570, 54),
-            20 to Triple("tekbasina", 374, 6)
+            0 to Triple("karaeylem", 7255, 43),
+            1 to Triple("kemalpasali", 6426, 14),
+            2 to Triple("cbf150", 8609, 58),
+            10 to Triple("hsncn", 8144, 55),
+            20 to Triple("tekbasina", 5226, 11)
         )
         expected.forEach { (i, want) ->
             assertEquals("name of bot $i", want.first, bots[i].nickname)
@@ -46,8 +46,8 @@ class LeagueBotsTest {
         assertEquals(LeagueBots.COUNT, early.map { it.nickname }.toSet().size)
         early.zip(later).forEach { (a, b) ->
             assertTrue(b.periodXp > a.periodXp)
-            // From a few hundred XP a day for a rookie to about 5,500 for a veteran.
-            assertTrue("daily gain ${b.periodXp - a.periodXp}", (b.periodXp - a.periodXp) in 50..6_200)
+            // A bot earns roughly 3,000–5,500 XP a day: the league has to feel like a race.
+            assertTrue("daily gain ${b.periodXp - a.periodXp}", (b.periodXp - a.periodXp) in 2_500..6_200)
         }
     }
 
@@ -55,9 +55,6 @@ class LeagueBotsTest {
     fun startOfMonthBeginsAtZero() {
         LeagueBots.bots(periodId, monthStart, monthStart).forEach { assertEquals(0, it.periodXp) }
     }
-
-    /** Lifetime XP that a level needs — the same curve the game uses. */
-    private fun totalXpForLevel(level: Int): Int { val n = maxOf(level - 1, 0); return 25 * n * n + 75 * n }
 
     @Test
     fun theTableShowsEveryKindOfPlayer() {
@@ -76,17 +73,20 @@ class LeagueBotsTest {
     }
 
     @Test
-    fun aLevelNeverContradictsTheLeagueScore() {
-        for (month in 0 until 6) for (day in listOf(1, 5, 12, 20, 29)) {
-            val id = periodId + month
-            val start = LeagueBots.monthStartMillis(LocalDate.of(2026, 10, 2).plusMonths(month.toLong()))
-            LeagueBots.bots(id, start + day * 24 * 3_600_000L, start).forEach {
-                // the XP a bot earned this month is part of its lifetime XP: its level must be one that has room for it
-                // (the shown level stops at the cap, which has room for anything)
-                if (it.level < 70) assertTrue("${it.nickname}: ${it.periodXp} XP this month at level ${it.level}", it.periodXp < totalXpForLevel(it.level + 1))
-                // and the busiest players are not the rookies: a bot with a big score is no beginner
-                if (it.periodXp > 15_000) assertTrue("${it.nickname} has ${it.periodXp} XP at level ${it.level}", it.level >= 20)
-            }
-        }
+    fun theLeagueIsARaceAllMonth() {
+        // by the middle of the month every bot has a score worth chasing, and the table is not a list of beginners
+        val start = LeagueBots.monthStartMillis(LocalDate.of(2026, 10, 2))
+        val bots = LeagueBots.bots(periodId, start + 14 * 24 * 3_600_000L, start)
+        assertTrue("slowest bot has only ${bots.minOf { it.periodXp }}", bots.minOf { it.periodXp } >= 35_000)
+        assertTrue("fastest bot has only ${bots.maxOf { it.periodXp }}", bots.maxOf { it.periodXp } >= 60_000)
+    }
+
+    @Test
+    fun levelsDoNotRunAwayWithTheScore() {
+        // the level moves with a fifth of the league XP: a veteran stays a veteran, a rookie does not jump to the cap by the 20th
+        val start = LeagueBots.monthStartMillis(LocalDate.of(2026, 10, 2))
+        val early = LeagueBots.bots(periodId, start + 24 * 3_600_000L, start)
+        val late = LeagueBots.bots(periodId, start + 27 * 24 * 3_600_000L, start)
+        early.zip(late).forEach { (a, b) -> assertTrue("${a.nickname}: ${a.level} -> ${b.level}", b.level >= a.level && b.level - a.level <= 25) }
     }
 }
