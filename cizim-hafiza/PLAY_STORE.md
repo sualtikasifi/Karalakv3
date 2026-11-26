@@ -338,7 +338,7 @@ incelemesi) bir avukatla birlikte değerlendirilmeli.
   rakip arama ekranında her maçta yazıyor (`quick_match_opponent_note`: anlık eşleşen oyuncu,
   kayıtlı tur ya da yapay zekâ); rakipler tek tek işaretlenmiyor.
 - Global ligdeki dolgu oyuncular lig ekranındaki notla belirtiliyor (`league_global_refresh_note`);
-  adlarına göre seçilen profil fotoğrafları var (`BotPhotos.kt`, web: `bot_photos.json`), ödül
+  adlarına göre seçilen galeri avatarları var (`BotPhotos.kt`, web: `bot_photos.json`), ödül
   kazanamazlar (`functions/src/index.ts`, ödüller `users/`'tan seçilir). Fotoğraflar gerçek bir kişiye
   ait olmamalı (yapay zekâyla üretilmiş ya da kullanım hakkı alınmış) ve başkasına ait çizgi film
   karakteri içermemeli.

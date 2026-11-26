@@ -289,7 +289,7 @@
 
     <!-- Avatar frame picker -->
     <string name="avatar_frame_change_cd">Çerçeveyi değiştir</string>
-    <string name="avatar_frame_picker_title">Çerçeveni Seç</string>
+    <string name="avatar_frame_picker_title">Profili Düzenle</string>
     <string name="avatar_frame_locked_level">Seviye %1$d</string>
     <string name="cosmetic_locked_league">Lig ödülü</string>
 

@@ -26,13 +26,15 @@ const nicknames = (periodId, count = 21) => {
   for (let i = pool.length - 1; i >= 1; i--) { const j = Math.floor(r() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
   return pool.slice(0, count);
 };
+// Levels and pace are spread out (the app's LeagueBots.kt does the same): a bot starts anywhere from level 4 to 58 and its pace follows its level
+const startDraws = (pid, idx) => { const r = seeded(BigInt(pid) * 7919n + BigInt(idx) * 104729n + 17n); return [r(), r()]; };
 function startXp(pid, idx) {
-  const r = seeded(BigInt(pid) * 7919n + BigInt(idx) * 104729n + 17n);
-  const level = 25 + Math.floor(r() * 31), span = totalXpForLevel(level + 1) - totalXpForLevel(level);
-  return totalXpForLevel(level) + Math.floor(r() * span);
+  const [u1, u2] = startDraws(pid, idx), level = 4 + Math.floor(u1 * 55), span = totalXpForLevel(level + 1) - totalXpForLevel(level);
+  return totalXpForLevel(level) + Math.floor(u2 * span);
 }
+const botPace = (pid, idx) => 0.05 + 0.95 * Math.pow(0.3 * seeded(BigInt(pid) * 131n + BigInt(idx) * 977n + 5n)() + 0.7 * startDraws(pid, idx)[0], 2.2);
 function botPeriodXp(pid, idx, now, monthStart) {
-  const pace = 0.65 + seeded(BigInt(pid) * 131n + BigInt(idx) * 977n + 5n)() * 0.55;
+  const pace = botPace(pid, idx);
   const IV = 50 * 60 * 1000;
   let xp = 0, tick = Math.floor(monthStart / IV) + 1; const last = Math.floor(now / IV);
   for (; tick <= last; tick++) xp += Math.floor((60 + seeded(BigInt(tick) * 104729n + BigInt(pid) * 97n + BigInt(idx))() * 201) * pace);
@@ -182,7 +184,7 @@ const GRAD = [["#FFE0B2", "#FFB74D"], ["#C8E6C9", "#81C784"], ["#BBDEFB", "#64B5
 const EMOJI = ["🦊", "🐼", "🎨", "⚽", "🎸", "🌸", "🚀", "🐱", "🎮", "🌵", "🍕", "🐶", "🦁", "📚", "🏀", "🐧"];
 function personaFace(seed) {
   const d = document.createElement("div");
-  if (BOTPHOTO[seed]) { const i = document.createElement("img"); i.src = `img/bots/${BOTPHOTO[seed]}.jpg`; i.alt = ""; i.style.cssText = "width:100%;height:100%;object-fit:cover"; d.append(i); return d; }
+  if (BOTPHOTO[seed]) { const i = document.createElement("img"); i.src = `img/avatars/${BOTPHOTO[seed]}.webp`; i.alt = ""; i.style.cssText = "width:100%;height:100%;object-fit:cover"; d.append(i); return d; }
   let h = 11; for (const ch of seed) h = (Math.imul(h, 31) + ch.codePointAt(0)) | 0; h &= 0x7fffffff;
   const b = h % 20; d.style.cssText = "display:flex;align-items:center;justify-content:center;color:#fff;font-weight:500;line-height:1";
   if (b <= 2) { const i = document.createElement("img"); i.src = "img/avatar_dino.webp"; i.alt = ""; i.style.cssText = "width:100%;height:100%"; d.append(i); }

@@ -100,6 +100,26 @@ for (const name of DEVICES) {
       if (await page.$(".pc-ov.pf") || !(await page.evaluate(() => window.__karalak.P.runesIntroSeen))) problems.push(`[${name}] the Runes' window did not close and stay read`);
     }
   } catch (e) { problems.push(`[${name}] rune intro: ${e.message.split("\n")[0]}`); }
+  // the global league table: filler players with gallery pictures and levels spread from rookies to veterans
+  current = "league_global";
+  try {
+    // the league's names and pictures are loaded when the game opens the league (loadLeague): do the same here, or the table has no bots
+    await page.evaluate(async () => { const m = await import("./league.js"); await m.loadLeague(); });
+    await page.evaluate(() => window.__karalak.show("league")); await page.waitForTimeout(500);
+    const pills = await page.$$("#lg-tabs .lg-pill");
+    if (pills.length < 2) problems.push(`[${name}] the league has ${pills.length} tabs`);
+    else {
+      await pills[1].tap(); await page.waitForTimeout(2500);
+      await page.screenshot({ path: path.join(shots, `${name.replace(/\W+/g, "_")}_league_global.jpg`), type: "jpeg", quality: 72 });
+      const imgs = await page.$$eval("#lg-list img[src*='img/avatars/']", (a) => a.map((i) => ({ ok: i.complete && i.naturalWidth > 0 })));
+      console.log(`  ${name} league global: ${imgs.length} bot pictures (${imgs.filter((i) => i.ok).length} loaded)`);
+      if (!imgs.length) problems.push(`[${name}] the global league shows no bot pictures`);
+      if (imgs.some((i) => !i.ok)) problems.push(`[${name}] a league bot's gallery picture did not load`);
+      // the levels on show are spread out, not bunched together
+      const lv = await page.$$eval("#lg-list .lg-row .rl", (a) => a.map((e) => parseInt((e.textContent.match(/\d+/) || [0])[0], 10)).filter((n) => n > 0));
+      console.log(`  ${name} league global levels: ${lv.join(" ")}`);
+    }
+  } catch (e) { problems.push(`[${name}] league global: ${e.message.split("\n")[0]}`); }
   // the "how do you want to play?" window over a friend (opened straight from its module: the test has no friends)
   current = "play_choice";
   try {

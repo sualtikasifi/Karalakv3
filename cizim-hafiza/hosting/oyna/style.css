@@ -847,12 +847,18 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .mc-av{overflow:visible}.mc-lv{position:absolute;right:-4%;bottom:-6%;width:34%;aspect-ratio:1;border-radius:50%;background:#3b2314;border:calc(var(--u)*5) solid #fff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:calc(var(--u)*40);font-weight:800;box-sizing:border-box}
 
 /* avatar frame picker (AvatarFramePickerSheet) */
-.fp-h{font-size:calc(var(--u)*40);font-weight:800;color:#3b2314;margin:calc(var(--u)*24) 0 calc(var(--u)*16)}
+.fp-h{display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*24);font-size:calc(var(--u)*42);font-weight:800;letter-spacing:.01em;color:#3b2314;margin:calc(var(--u)*24) 0 calc(var(--u)*20)}
+.fp-h::before,.fp-h::after{content:"";flex:1;height:calc(var(--u)*5);border-radius:99px}.fp-h::before{background:linear-gradient(90deg,#c99a5b00,#c99a5b)}.fp-h::after{background:linear-gradient(270deg,#c99a5b00,#c99a5b)}
+.fp-src{justify-content:center}
+.fp-src .av{box-sizing:border-box;border:calc(var(--u)*3) solid #d9b57a;padding:calc(var(--u)*8);background-clip:content-box;position:relative}
+.fp-src button.on .av{border:calc(var(--u)*8) solid #ff7a21;padding:calc(var(--u)*10)}
+.fp-src button.on::after,.fp-card.on::after{content:"✓";position:absolute;display:flex;align-items:center;justify-content:center;width:calc(var(--u)*56);height:calc(var(--u)*56);border-radius:50%;background:#ff7a21;border:calc(var(--u)*5) solid #fff;color:#fff;font:800 calc(var(--u)*32)/1 sans-serif}
+.fp-src button{position:relative}.fp-src button.on::after{top:calc(var(--u)*100);right:calc(var(--u)*30)}.fp-card.on::after{top:calc(var(--u)*-6);right:calc(var(--u)*-6)}
 .fp-src{display:flex;gap:calc(var(--u)*30)}.fp-src button{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*10);width:calc(var(--u)*260);color:#3b2314;font-size:calc(var(--u)*30)}
 .fp-src .av{width:calc(var(--u)*160);height:calc(var(--u)*160);border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#e9801d}.fp-src .av img{width:100%;height:100%;object-fit:cover}.fp-src .av.g{background:#2f6b18;color:#fff;font-size:calc(var(--u)*80);font-weight:700}.fp-src .dim b{font-weight:500}
 .fp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--u)*30)}
 .fp-card{position:relative;aspect-ratio:1/0.89;background:#fff;border-radius:calc(var(--u)*50);border:calc(var(--u)*6) solid transparent;display:flex;align-items:center;justify-content:center;padding:0}
-.fp-card.on{border-color:#f26a1b}.fp-ring{position:relative;width:60%;aspect-ratio:1}.fp-card.lock .fp-ring{opacity:.45}
+.fp-card{border:calc(var(--u)*4) solid #e6c58f}.fp-card.on{border:calc(var(--u)*8) solid #f26a1b;background:#fff1dc}.fp-ring{position:relative;width:60%;aspect-ratio:1}.fp-card.lock .fp-ring{opacity:.45}
 .fp-lk{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*4);color:#2b2b2b;font-weight:800;font-size:calc(var(--u)*30)}.fp-lk svg{width:calc(var(--u)*50);height:calc(var(--u)*50)}.fp-lk span{-webkit-text-stroke:calc(var(--u)*6) #fffc;paint-order:stroke fill}
 /* home: the small pencil badges that say "tap to change" (MainMenuScreen) */
 #h-avatar::after{content:"";position:absolute;left:-2%;top:-6%;width:30%;height:30%;border-radius:50%;background:#f4811f url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") center/58% no-repeat;border:calc(var(--u)*5) solid #fff;box-sizing:border-box;box-shadow:0 2px 4px #0005}
@@ -1234,3 +1240,8 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .fs-body{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*14);text-align:center}.fs-emoji{font-size:calc(var(--u)*92)}.fs-text{margin:0;font-weight:600;line-height:1.35;white-space:pre-line}
 .fs-extra{font-weight:800;font-size:calc(var(--u)*38)}.fs-foot{display:flex;flex-direction:column;gap:calc(var(--u)*12);width:100%;padding-top:calc(var(--u)*12)}
 .fs-foot .prim.cream{background:#fff3d6;color:#b94b06;box-shadow:0 calc(var(--u)*8) 0 #d9b27a}.fs-foot .prim.cream:active{box-shadow:0 calc(var(--u)*2) 0 #d9b27a}
+
+/* the player-report window: the sub-line, then the reasons as cream pills */
+.rp-win{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*24);text-align:center;color:#3b2314}
+.rp-sub{margin:0;font-size:calc(var(--u)*32);font-weight:700;color:#5a3a20}
+.rp-reasons{display:flex;flex-direction:column;gap:calc(var(--u)*18);width:100%}.rp-reasons .pill{width:100%;height:calc(var(--u)*100)}

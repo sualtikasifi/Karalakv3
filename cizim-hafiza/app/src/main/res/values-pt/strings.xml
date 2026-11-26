@@ -284,7 +284,7 @@
 
     <!-- Avatar frame picker -->
     <string name="avatar_frame_change_cd">Trocar moldura</string>
-    <string name="avatar_frame_picker_title">Escolha sua Moldura</string>
+    <string name="avatar_frame_picker_title">Editar perfil</string>
     <string name="avatar_frame_locked_level">Nível %1$d</string>
     <string name="cosmetic_locked_league">Prêmio da liga</string>
 

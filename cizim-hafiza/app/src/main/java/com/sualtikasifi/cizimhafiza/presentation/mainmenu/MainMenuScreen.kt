@@ -482,7 +482,7 @@ fun MainMenuScreen(
                 items = avatarFrameItems,
                 photoSource = avatarSource,
                 onPhotoSource = viewModel::selectAvatarSource,
-                onSelect = { viewModel.selectAvatarFrame(it); framePickerOpen = false },
+                onSelect = { viewModel.selectAvatarFrame(it) }, // the window now holds the picture as well: it stays open, the X closes it
                 onDismiss = { framePickerOpen = false }
             )
         }
@@ -564,14 +564,7 @@ private fun AvatarFramePickerSheet(
 ) {
     com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(title = stringResource(R.string.avatar_frame_picker_title), onDismiss = onDismiss) {
         val chosen = com.sualtikasifi.cizimhafiza.domain.model.AvatarGallery.entryOfSource(photoSource)
-        val title = @Composable { text: String ->
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                color = Color(0xFF3A2416)
-            )
-        }
+        val title = @Composable { text: String -> PickerSectionHeader(text) }
         LazyVerticalGrid(
             columns = GridCells.Fixed(12),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -622,8 +615,8 @@ private fun AvatarFramePickerSheet(
 private fun AvatarFrameSwatch(item: AvatarFrameUiItem, onClick: () -> Unit) {
     Card(
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = if (item.selected) BorderStroke(3.dp, MaterialTheme.colorScheme.primary) else null,
+        colors = CardDefaults.cardColors(containerColor = if (item.selected) PickerSelectedFill else MaterialTheme.colorScheme.surface),
+        border = if (item.selected) BorderStroke(3.dp, PickerAccent) else BorderStroke(1.dp, PickerHairline),
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = item.unlocked, onClick = onClick)
@@ -632,6 +625,7 @@ private fun AvatarFrameSwatch(item: AvatarFrameUiItem, onClick: () -> Unit) {
             modifier = Modifier.fillMaxWidth().height(96.dp).padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
+            if (item.selected) PickerCheckBadge(Modifier.align(Alignment.TopEnd))
             Image(
                 painter = painterResource(item.frame.drawableRes),
                 contentDescription = null,
@@ -1091,6 +1085,42 @@ private fun FitToHeight(modifier: Modifier = Modifier, content: @Composable Colu
     }
 }
 
+private val PickerAccent = Color(0xFFFF7A21)
+private val PickerHairline = Color(0xFFD9B57A)
+private val PickerSelectedFill = Color(0xFFFFF1DC)
+
+/** The tick that marks the chosen picture or frame: an orange disc with a white rim, so it reads on any artwork. */
+@Composable
+private fun PickerCheckBadge(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(22.dp)
+            .background(PickerAccent, CircleShape)
+            .border(2.dp, Color.White, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(imageVector = Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
+    }
+}
+
+/** A section title of the profile window: centred, between two thin rules that fade out towards the edges. */
+@Composable
+private fun PickerSectionHeader(text: String) {
+    Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f).height(2.dp).background(Brush.horizontalGradient(listOf(Color(0x00C99A5B), Color(0xFFC99A5B))), RoundedCornerShape(1.dp)))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+            color = Color(0xFF3A2416),
+            letterSpacing = 0.4.sp,
+            maxLines = 1,
+            modifier = Modifier.padding(horizontal = 14.dp)
+        )
+        Box(Modifier.weight(1f).height(2.dp).background(Brush.horizontalGradient(listOf(Color(0xFFC99A5B), Color(0x00C99A5B))), RoundedCornerShape(1.dp)))
+    }
+}
+
 /** One picture choice for the avatar: a round preview with its name (if it has one), ringed when selected. */
 @Composable
 private fun AvatarSourceOption(
@@ -1109,15 +1139,19 @@ private fun AvatarSourceOption(
             .semantics { this.contentDescription = contentDescription ?: label.orEmpty(); this.selected = selected }
             .padding(2.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(CircleShape)
-                .border(if (selected) 3.dp else 1.dp, if (selected) Color(0xFFFF7A21) else Color(0xFFD9B57A), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhotoFace(photo = photo, modifier = Modifier.fillMaxSize())
+        // The chosen picture wears an orange ring with a gap and a tick; the others a thin tan line.
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .border(if (selected) 3.dp else 1.dp, if (selected) PickerAccent else PickerHairline, CircleShape)
+                    .padding(if (selected) 4.dp else 3.dp)
+                    .clip(CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                com.sualtikasifi.cizimhafiza.presentation.common.AvatarPhotoFace(photo = photo, modifier = Modifier.fillMaxSize())
+            }
+            if (selected) PickerCheckBadge(Modifier.align(Alignment.BottomEnd))
         }
         if (!label.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(4.dp))
