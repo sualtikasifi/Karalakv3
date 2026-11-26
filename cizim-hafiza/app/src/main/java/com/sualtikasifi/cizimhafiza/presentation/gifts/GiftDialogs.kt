@@ -108,7 +108,7 @@ private fun Section(text: String) {
 private fun Note(text: String, error: Boolean = false) {
     androidx.compose.material3.Text(
         text, color = if (error) Color(0xFFB3401A) else Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
-        textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+        textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp)
     )
 }
 
