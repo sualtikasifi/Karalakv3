@@ -550,7 +550,7 @@ fun AvatarPhotoFace(photo: AvatarPhoto, modifier: Modifier = Modifier) {
         }
         when (photo) {
             AvatarPhoto.Dino -> dino()
-            is AvatarPhoto.Persona -> PersonaFace(photo.seed, dino)
+            is AvatarPhoto.Persona -> PersonaFace(photo.seed)
             is AvatarPhoto.Res -> Image(
                 painter = painterResource(id = photo.res),
                 contentDescription = null,
@@ -569,64 +569,17 @@ fun avatarPhotoOf(published: String?): AvatarPhoto =
 fun avatarPhotoOfSource(source: String?): AvatarPhoto =
     com.sualtikasifi.cizimhafiza.domain.model.AvatarGallery.entryOfSource(source)?.let { AvatarPhoto.Res(it.res) } ?: AvatarPhoto.Dino
 
-private val PersonaEmoji = listOf("🦊", "🐼", "🎨", "⚽", "🎸", "🌸", "🚀", "🐱", "🎮", "🌵", "🍕", "🐶", "🦁", "📚", "🏀", "🐧")
-private val PersonaGradients = listOf(
-    Color(0xFFFFE0B2) to Color(0xFFFFB74D),
-    Color(0xFFC8E6C9) to Color(0xFF81C784),
-    Color(0xFFBBDEFB) to Color(0xFF64B5F6),
-    Color(0xFFF8BBD0) to Color(0xFFF06292),
-    Color(0xFFD1C4E9) to Color(0xFF9575CD),
-    Color(0xFFB2EBF2) to Color(0xFF4DD0E1),
-    Color(0xFFFFF59D) to Color(0xFFFFD54F)
-)
-private val PersonaLetterColors = listOf(
-    Color(0xFF1A73E8), Color(0xFFD93025), Color(0xFF188038), Color(0xFFE37400),
-    Color(0xFF9334E6), Color(0xFF12B5CB), Color(0xFFE52592), Color(0xFF5F6368)
-)
-
 /**
- * A picture for a player without a photo of their own — AI players and recorded rounds. A league filler player wears
- * the profile photo its name picks (BotPhotos); anyone else gets a generated face: a few keep the Karalak mascot,
- * some have a coloured initial, and the rest an emoji "artwork" on a soft gradient.
+ * A picture for a player without a photo of their own — AI players and recorded rounds (the league's filler players, the
+ * Hızlı Eşleş opponents, Sude's rivals). Every one of them wears an avatar from the gallery that goes with its name
+ * (BotPhotos): there is no generated face (initial, emoji on a gradient) any more.
  */
 @Composable
-private fun PersonaFace(seed: String, mascot: @Composable () -> Unit) {
-    BotPhotos.drawableFor(seed)?.let { res ->
-        Image(
-            painter = androidx.compose.ui.res.painterResource(res),
-            contentDescription = null,
-            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-        return
-    }
-    val hash = (seed.fold(11) { acc, c -> acc * 31 + c.code }) and Int.MAX_VALUE
-    val bucket = hash % 20
-    when {
-        bucket <= 2 -> mascot()
-        bucket <= 9 -> Box(
-            modifier = Modifier.fillMaxSize().background(PersonaLetterColors[hash / 20 % PersonaLetterColors.size]),
-            contentAlignment = Alignment.Center
-        ) {
-            androidx.compose.foundation.layout.BoxWithConstraints(contentAlignment = Alignment.Center) {
-                Text(
-                    text = seed.firstOrNull { it.isLetter() }?.uppercaseChar()?.toString() ?: "K",
-                    color = Color.White,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = (maxWidth.value * 0.5f).sp
-                )
-            }
-        }
-        else -> {
-            val (top, bottom) = PersonaGradients[hash / 20 % PersonaGradients.size]
-            Box(
-                modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(top, bottom))),
-                contentAlignment = Alignment.Center
-            ) {
-                androidx.compose.foundation.layout.BoxWithConstraints(contentAlignment = Alignment.Center) {
-                    Text(text = PersonaEmoji[hash / 140 % PersonaEmoji.size], fontSize = (maxWidth.value * 0.52f).sp)
-                }
-            }
-        }
-    }
+private fun PersonaFace(seed: String) {
+    Image(
+        painter = androidx.compose.ui.res.painterResource(BotPhotos.drawableFor(seed)),
+        contentDescription = null,
+        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+        modifier = Modifier.fillMaxSize()
+    )
 }

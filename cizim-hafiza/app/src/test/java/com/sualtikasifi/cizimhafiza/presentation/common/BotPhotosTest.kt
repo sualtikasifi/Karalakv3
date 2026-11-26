@@ -4,7 +4,6 @@ import com.sualtikasifi.cizimhafiza.domain.model.AvatarGallery
 import com.sualtikasifi.cizimhafiza.domain.model.LeagueBots
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -28,8 +27,33 @@ class BotPhotosTest {
     }
 
     @Test
-    fun aNameThatIsNotALeagueBotGetsNothing() {
-        assertNull(BotPhotos.drawableFor("some_real_player"))
+    fun anyNameGetsAGalleryPictureAndAlwaysTheSameOne() {
+        val gallery = AvatarGallery.entries.map { it.res }.toSet()
+        listOf("some_real_player", "", "Ünal_99", "x").forEach {
+            val res = BotPhotos.drawableFor(it)
+            assertTrue("$it", res in gallery)
+            assertEquals(res, BotPhotos.drawableFor(it))
+        }
+        // case does not matter: the opponents' names are the league's names with a capital letter
+        assertEquals(BotPhotos.drawableFor("memetcan"), BotPhotos.drawableFor("Memetcan"))
+    }
+
+    @Test
+    fun everyQuickMatchOpponentNameHasItsOwnPickedPicture() {
+        // the opponents (GhostPersonas, shared with the web as ghost_names.json) are not left to the hash fallback
+        val file = java.io.File("../hosting/oyna/ghost_names.json").takeIf { it.exists() } ?: return
+        val names = Regex(""""([^"]+)"""").findAll(file.readText()).map { it.groupValues[1] }.filter { it !in setOf("tr", "en", "pt", "es") }.toList()
+        assertTrue("only ${names.size} names read", names.size > 500)
+        val known = names.filter { BotPhotos.isPicked(it) }
+        assertEquals("names without a picked picture: ${names.filter { !BotPhotos.isPicked(it) }.take(10)}", names.size, known.size)
+    }
+
+    @Test
+    fun aNameThatSaysSomethingGetsTheMatchingPictureInEveryLanguage() {
+        assertEquals(AvatarGallery.find("wolf")?.res, BotPhotos.drawableFor("Lobo_solitario"))
+        assertEquals(AvatarGallery.find("owl")?.res, BotPhotos.drawableFor("Professor_Rui"))
+        assertEquals(AvatarGallery.find("koala")?.res, BotPhotos.drawableFor("uykucu"))
+        assertEquals(AvatarGallery.find("lion")?.res, BotPhotos.drawableFor("Ronaldo7"))
     }
 
     @Test
