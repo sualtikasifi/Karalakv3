@@ -583,6 +583,79 @@ await check("a player cannot mark a report seen", assertFails(updateDoc(doc(db("
   await check("the kill switch stops every gift", assertFails(send(linked(S), id(19), "k")));
 }
 
+// ---- staked duels
+{
+  const C = "sc", O = "so";
+  const day = (() => { const x = new Date(Date.now() + 3 * 3600e3); return String(x.getUTCFullYear() * 10000 + (x.getUTCMonth() + 1) * 100 + x.getUTCDate()); })();
+  const old = Date.now() - 10 * 86400e3;
+  const ago = (ms) => new Date(Date.now() - ms);
+  await seed(["users", C], { nickname: "C", level: 12, joinedAt: old, giftsOk: true });
+  await seed(["users", O], { nickname: "O", level: 11, giftsOk: true });
+  await seed(["users", "low2"], { nickname: "L", level: 4, giftsOk: true });
+  await seed(["users", "banned"], { nickname: "B", level: 20, giftsOk: true, stakeBan: true });
+  for (const f of [O, "low2", "banned"]) await seed(["users", f, "friends", C], { nickname: "C", addedAt: Date.now() - 3 * 86400e3 });
+  const base = (o = {}) => ({ challengerUid: C, challengerName: "C", opponentUid: O, opponentName: "O", itemsJson: "[]", wordIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    challengerScore: 40, challengerCorrectCount: 8, opponentScore: null, opponentCorrectCount: null, status: "AWAITING_OPPONENT", createdAt: 1, completedAt: null,
+    seenByChallenger: true, stake: 500, stakeAt: serverTimestamp(), cOpen: true, oOpen: false, ...o });
+  const create = async (id, o = {}, opp = O, c = {}) => {
+    const d = linked(C); const b = writeBatch(d); const g = base({ opponentUid: opp, ...o });
+    b.set(doc(d, "duels", id), g);
+    b.set(doc(d, "users", C, "stakeStats", day), { gold: c.gold ?? g.stake, count: c.count ?? 1, lastDuel: id });
+    b.set(doc(d, "users", C, "stakeStats", day + "_" + opp), { gold: c.pair ?? g.stake, lastDuel: id });
+    return b.commit();
+  };
+  await check("a staked duel to a friend of level 10 goes through", assertSucceeds(create("d1")));
+  await check("a stake outside the four amounts is refused", assertFails(create("d2", { stake: 300 })));
+  await check("a stake against a player under level 10 is refused", assertFails(create("d3", {}, "low2")));
+  await check("a stake against a banned player is refused", assertFails(create("d4", {}, "banned")));
+  await check("a staked duel of more than 20 words is refused", assertFails(create("d5", { wordIds: Array.from({ length: 30 }, (_, i) => i) })));
+  await check("a score above the round's maximum is refused", assertFails(create("d6", { challengerScore: 99 })));
+  await check("a stake with a counter that skips the increment is refused", assertFails(create("d7", {}, O, { gold: 100 })));
+  await check("a guest cannot stake", assertFails((async () => { const d = guest(C); const b = writeBatch(d); b.set(doc(d, "duels", "d8"), base()); b.set(doc(d, "users", C, "stakeStats", day), { gold: 500, count: 1, lastDuel: "d8" }); b.set(doc(d, "users", C, "stakeStats", day + "_" + O), { gold: 500, lastDuel: "d8" }); return b.commit(); })()));
+  await check("the opponent cannot skip the acceptance", assertFails(updateDoc(doc(linked(O), "duels", "d1"), { status: "COMPLETE", opponentScore: 50, opponentCorrectCount: 9, completedAt: 5, seenByChallenger: false })));
+  await check("a wager cannot be deleted while it is open", assertFails(deleteDoc(doc(linked(C), "duels", "d1"))));
+  const accept = (id, opp = O, challenger = C) => { const d = linked(opp); const b = writeBatch(d);
+    b.update(doc(d, "duels", id), { status: "ACCEPTED", acceptedAt: serverTimestamp(), oOpen: true });
+    b.set(doc(d, "users", opp, "stakeStats", day), { gold: 500, count: 1, lastDuel: id });
+    b.set(doc(d, "users", opp, "stakeStats", day + "_" + challenger), { gold: 500, lastDuel: id });
+    return b.commit(); };
+  await check("the opponent accepts, counting the stake against their own day", assertSucceeds(accept("d1")));
+  await check("the challenger cannot accept their own duel", assertFails(updateDoc(doc(linked(C), "duels", "d1"), { status: "COMPLETE", opponentScore: 1 })));
+  await check("a score above the round's maximum is refused on completion", assertFails(updateDoc(doc(linked(O), "duels", "d1"), { status: "COMPLETE", opponentScore: 71, opponentCorrectCount: 10, completedAt: 5, seenByChallenger: false })));
+  await check("the opponent finishes within the time", assertSucceeds(updateDoc(doc(linked(O), "duels", "d1"), { status: "COMPLETE", opponentScore: 55, opponentCorrectCount: 9, completedAt: 5, seenByChallenger: false })));
+  await check("the opponent cannot change a finished result", assertFails(updateDoc(doc(linked(O), "duels", "d1"), { opponentScore: 70 })));
+  await check("each side takes its share once and not before the end", assertSucceeds(updateDoc(doc(linked(C), "duels", "d1"), { cOpen: false, seenByChallenger: true })));
+  await check("the opponent takes theirs", assertSucceeds(updateDoc(doc(linked(O), "duels", "d1"), { oOpen: false })));
+  await check("a settled wager can be deleted", assertSucceeds(deleteDoc(doc(linked(C), "duels", "d1"))));
+  // time-based transitions, with documents seeded in the past
+  const seedStaked = (id, extra) => seed(["duels", id], { ...base(), stakeAt: ago(0), ...extra });
+  await seedStaked("t1", { stakeAt: ago(25 * 3600e3) });
+  await check("an old offer cannot be accepted", assertFails(accept("t1")));
+  await check("an unanswered offer cannot expire before 24 hours", assertFails(updateDoc(doc(linked(C), "duels", "d1"), { status: "EXPIRED" })));
+  await check("an offer expires after 24 hours", assertSucceeds(updateDoc(doc(linked(C), "duels", "t1"), { status: "EXPIRED" })));
+  await check("the challenger takes the refund", assertSucceeds(updateDoc(doc(linked(C), "duels", "t1"), { cOpen: false })));
+  await seedStaked("t2", { status: "ACCEPTED", acceptedAt: ago(20 * 60e3), oOpen: true });
+  await check("a result after the ten minutes is refused", assertFails(updateDoc(doc(linked(O), "duels", "t2"), { status: "COMPLETE", opponentScore: 30, opponentCorrectCount: 6, completedAt: 5, seenByChallenger: false })));
+  await check("the challenger wins by forfeit after the ten minutes", assertSucceeds(updateDoc(doc(linked(C), "duels", "t2"), { status: "FORFEIT" })));
+  await seedStaked("t3", { status: "ACCEPTED", acceptedAt: ago(2 * 60e3), oOpen: true });
+  await check("no forfeit while the ten minutes run", assertFails(updateDoc(doc(linked(C), "duels", "t3"), { status: "FORFEIT" })));
+  await seedStaked("t4");
+  await check("the opponent declines", assertSucceeds(updateDoc(doc(linked(O), "duels", "t4"), { status: "DECLINED" })));
+  // daily ceilings
+  await seed(["users", C, "stakeStats", day], { gold: 9800, count: 4, lastDuel: "x" });
+  await check("the daily total over 10000 is refused", assertFails(create("c1", {}, O, { gold: 10300, count: 5 })));
+  await seed(["users", C, "stakeStats", day], { gold: 1000, count: 10, lastDuel: "x" });
+  await check("an eleventh wager in a day is refused", assertFails(create("c2", {}, O, { gold: 1500, count: 11 })));
+  // the ban belongs to the developer
+  await check("a player cannot lift their own wager ban", assertFails(updateDoc(doc(linked("banned"), "users", "banned"), { stakeBan: false })));
+  await check("the developer bans a player from wagers", assertSucceeds(updateDoc(doc(reviewer(), "users", C), { stakeBan: true })));
+  await check("the developer reads the wagers", assertSucceeds(getDoc(doc(reviewer(), "duels", "t4"))));
+  await check("a stranger cannot read a wager", assertFails(getDoc(doc(linked("zz"), "duels", "t4"))));
+  await seed(["config", "stakes"], { enabled: false });
+  await seed(["users", C], { nickname: "C", level: 12, joinedAt: old, giftsOk: true });
+  await check("the kill switch stops new wagers", assertFails(create("k1")));
+}
+
 await env.cleanup();
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);

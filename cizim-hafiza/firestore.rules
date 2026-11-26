@@ -259,7 +259,100 @@ service cloud.firestore {
                || request.auth.uid == resource.data.opponentUid;
       }
 
-      allow read: if signedIn() && isParticipant();
+      // ---- duels played for gold -----------------------------------------------------------------------------------
+      //
+      // A duel that carries `stake` (100, 250, 500 or 1000 gold) is a wager. The wallet lives on each device, so the gold
+      // is settled by both devices from the document, and these rules make the document the only thing they can settle
+      // from: who may start one, who may answer, in what order and within what time, and how much may be staked a day.
+      //   AWAITING_OPPONENT --accept (opponent, within 24 h)--> ACCEPTED --finish (opponent, within 10 min)--> COMPLETE
+      //   AWAITING_OPPONENT --decline--> DECLINED          ... --24 h pass (challenger)--> EXPIRED
+      //   ACCEPTED --10 min pass without a result (challenger)--> FORFEIT (the challenger wins)
+      // cOpen / oOpen are "this side has not yet taken what the document says it is owed": each side clears its own
+      // flag once, and a wager cannot be deleted while either is set. The stake leaves the challenger when the duel is
+      // created and the opponent when it is accepted — before the opponent plays, so quitting a lost round pays nothing back.
+      // Daily ceilings live in users/{uid}/stakeStats (below); config/stakes {enabled:false} stops new wagers.
+      function stakeOn() {
+        return !exists(/databases/$(database)/documents/config/stakes)
+               || get(/databases/$(database)/documents/config/stakes).data.get('enabled', true) != false;
+      }
+
+      // The account conditions every wager shares with a gift: level 10, not banned from wagers (users/{uid}.stakeBan,
+      // set from the developer panel), and signed in with Google and not in child mode (users/{uid}.giftsOk).
+      function stakePlayerOk(u) {
+        return u.get('level', 1) >= 10 && u.get('stakeBan', false) != true && u.get('giftsOk', false) == true;
+      }
+
+      function stakedCreateOk() {
+        let d = request.resource.data;
+        let me = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+        let opp = get(/databases/$(database)/documents/users/$(d.opponentUid)).data;
+        return d.stake in [100, 250, 500, 1000]
+               && d.keys().hasAll(['stakeAt', 'cOpen', 'oOpen'])
+               && d.stakeAt == request.time && d.cOpen == true && d.oOpen == false
+               && d.get('wordIds', []).size() >= 1 && d.get('wordIds', []).size() <= 20
+               && d.challengerScore is int && d.challengerScore >= 0 && d.challengerScore <= 7 * d.get('wordIds', []).size()
+               && request.auth.token.firebase.sign_in_provider != 'anonymous'
+               && stakeOn()
+               && stakePlayerOk(me) && stakePlayerOk(opp)
+               && me.get('joinedAt', request.time.toMillis()) <= request.time.toMillis() - 604800000
+               && get(/databases/$(database)/documents/users/$(d.opponentUid)/friends/$(request.auth.uid)).data.get('addedAt', request.time.toMillis()) <= request.time.toMillis() - 172800000
+               && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/stakeStats/$(giftDay())).data.lastDuel == duelId
+               && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/stakeStats/$(giftDay() + '_' + d.opponentUid)).data.lastDuel == duelId;
+      }
+
+      function isTerminal() {
+        return resource.data.status in ['COMPLETE', 'DECLINED', 'EXPIRED', 'FORFEIT'];
+      }
+
+      function stakedAccept() {
+        let me = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+        return request.auth.uid == resource.data.opponentUid
+               && resource.data.status == 'AWAITING_OPPONENT'
+               && request.resource.data.status == 'ACCEPTED'
+               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedAt', 'oOpen'])
+               && request.resource.data.acceptedAt == request.time && request.resource.data.oOpen == true
+               && request.time < resource.data.stakeAt + duration.value(24, 'h')
+               && request.auth.token.firebase.sign_in_provider != 'anonymous'
+               && stakeOn() && stakePlayerOk(me)
+               && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/stakeStats/$(giftDay())).data.lastDuel == duelId
+               && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/stakeStats/$(giftDay() + '_' + resource.data.challengerUid)).data.lastDuel == duelId;
+      }
+
+      function stakedUpdate() {
+        let diff = request.resource.data.diff(resource.data).affectedKeys();
+        let words = resource.data.get('wordIds', []).size();
+        return stakedAccept()
+               // declined
+               || (request.auth.uid == resource.data.opponentUid && resource.data.status == 'AWAITING_OPPONENT'
+                   && request.resource.data.status == 'DECLINED' && diff.hasOnly(['status']))
+               // played: ten minutes after accepting (a minute of slack for the network)
+               || (request.auth.uid == resource.data.opponentUid && resource.data.status == 'ACCEPTED'
+                   && request.resource.data.status == 'COMPLETE'
+                   && diff.hasOnly(['status', 'opponentScore', 'opponentCorrectCount', 'completedAt', 'seenByChallenger'])
+                   && request.time <= resource.data.acceptedAt + duration.value(11, 'm')
+                   && request.resource.data.opponentScore is int && request.resource.data.opponentScore >= 0
+                   && request.resource.data.opponentScore <= 7 * words)
+               // nobody answered in 24 hours
+               || (request.auth.uid == resource.data.challengerUid && resource.data.status == 'AWAITING_OPPONENT'
+                   && request.resource.data.status == 'EXPIRED' && diff.hasOnly(['status'])
+                   && request.time > resource.data.stakeAt + duration.value(24, 'h'))
+               // accepted but not finished in time
+               || (request.auth.uid == resource.data.challengerUid && resource.data.status == 'ACCEPTED'
+                   && request.resource.data.status == 'FORFEIT' && diff.hasOnly(['status'])
+                   && request.time > resource.data.acceptedAt + duration.value(11, 'm'))
+               // each side takes what it is owed, once
+               || (request.auth.uid == resource.data.challengerUid && isTerminal() && resource.data.cOpen == true
+                   && (diff.hasOnly(['cOpen']) || diff.hasOnly(['cOpen', 'seenByChallenger']))
+                   && request.resource.data.cOpen == false)
+               || (request.auth.uid == resource.data.opponentUid && isTerminal() && resource.data.oOpen == true
+                   && diff.hasOnly(['oOpen']) && request.resource.data.oOpen == false)
+               // the challenger opening a finished result
+               || (request.auth.uid == resource.data.challengerUid && resource.data.status == 'COMPLETE'
+                   && diff.hasOnly(['seenByChallenger']) && request.resource.data.seenByChallenger == true);
+      }
+
+      // The developer panel reads the wagers (anomaly report); a player reads only their own duels.
+      allow read: if signedIn() && (isParticipant() || reviewer());
 
       // A player who blocked the challenger cannot be challenged by them, and every free-text field is bounded.
       allow create: if signedIn()
@@ -276,11 +369,14 @@ service cloud.firestore {
                     && request.resource.data.get('challengerName', '') is string && request.resource.data.get('challengerName', '').size() <= 40
                     && request.resource.data.get('opponentName', '') is string && request.resource.data.get('opponentName', '').size() <= 40
                     && request.resource.data.get('itemsJson', '') is string && request.resource.data.get('itemsJson', '').size() < 400000
-                    && request.resource.data.get('wordIds', []) is list && request.resource.data.get('wordIds', []).size() <= 50;
+                    && request.resource.data.get('wordIds', []) is list && request.resource.data.get('wordIds', []).size() <= 50
+                    && (!('stake' in request.resource.data) || stakedCreateOk());
 
-      // Two, and only two, transitions are ever allowed:
+      // Two, and only two, transitions are ever allowed on a plain duel (a wager has its own, above):
       allow update: if signedIn()
                     && (
+                      ('stake' in resource.data && stakedUpdate())
+                      || (!('stake' in resource.data) && (
                       // The opponent playing the duel. Everything the
                       // challenger committed to (words, drawings, their own
                       // score) is frozen.
@@ -300,11 +396,16 @@ service cloud.firestore {
                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seenByChallenger'])
                         && request.resource.data.seenByChallenger == true
                       )
+                      ))
                     );
 
       // Either participant may clear a finished duel from their own view;
       // deleting outright is how a duel leaves the list once both have seen it.
-      allow delete: if signedIn() && isParticipant();
+      // A wager stays until both sides have taken what it owes them (or a week has passed since it ended).
+      allow delete: if signedIn() && isParticipant()
+                    && (!('stake' in resource.data)
+                        || (resource.data.cOpen == false && resource.data.oOpen == false)
+                        || (isTerminal() && request.time > resource.data.stakeAt + duration.value(7, 'd')));
     }
 
     // ---- "Bil Bakalım" links (see data/repository/GuessRepositoryImpl.kt and hosting/bil) ----------------------------
@@ -678,6 +779,18 @@ service cloud.firestore {
       allow write: if reviewer();
     }
 
+    // Kill switches for the two gold features between players: {enabled: false} stops new gifts / staked duels
+    // (the rules of giftInbox and duels read them). Signed-in read, reviewer write.
+    match /config/gifts {
+      allow read: if signedIn();
+      allow write: if reviewer();
+    }
+
+    match /config/stakes {
+      allow read: if signedIn();
+      allow write: if reviewer();
+    }
+
     // ---- the public profile and the league ---------------------------------
     //
     // The league month a score belongs to, as both apps stamp it (LeaguePeriod.periodIdFor): year * 12 + month - 1, on
@@ -783,6 +896,8 @@ service cloud.firestore {
              // When the account was made, stamped once by the device (the sender of a gift must be a week old) and never moved.
              && (!changed.hasAny(['joinedAt']) || !('joinedAt' in after)
                 || (!('joinedAt' in before) && after.joinedAt is int && after.joinedAt <= request.time.toMillis() + 600000))
+             // Whether this account is barred from gold wagers is the developer's call, never the player's.
+             && !changed.hasAny(['stakeBan'])
              // Whether this account may receive gifts (signed in with Google, not in child mode).
              && (!changed.hasAny(['giftsOk']) || !('giftsOk' in after) || after.giftsOk is bool)
              // The friend code is the account's one code (see friendCodes) and never changes once given.
@@ -854,6 +969,10 @@ service cloud.firestore {
       allow update: if reviewer()
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname', 'username', 'nameResetAt'])
                     && shortName(request.resource.data.nickname);
+      // ... and may switch a player's gold wagers (staked duels) off or on.
+      allow update: if reviewer()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stakeBan'])
+                    && request.resource.data.stakeBan is bool;
       // Deleting the account takes the public profile with it.
       allow delete: if signedIn() && request.auth.uid == uid;
 
@@ -1127,6 +1246,48 @@ service cloud.firestore {
                               && getAfter(/databases/$(database)/documents/users/$(uid)/giftInbox/$(request.resource.data.lastGift)).data.fromUid == request.auth.uid
                               && request.resource.data.gold == before('gold') + getAfter(/databases/$(database)/documents/users/$(uid)/giftInbox/$(request.resource.data.lastGift)).data.cost
                               && request.resource.data.gold <= 5000;
+      }
+
+      // Daily counters of gold staked in duels (see duels/{duelId}): never lowered, never deleted, moved only together
+      // with the duel that is staking, by exactly its stake. Both the challenger (at creation) and the opponent (at
+      // acceptance) count the stake against their own day.
+      //   <day>           everything the owner staked today {gold, count, lastDuel}  — at most 10000 gold, 10 duels
+      //   <day>_<friend>  what the owner staked against one friend today {gold, lastDuel}  — at most 10000 gold
+      match /stakeStats/{key} {
+        function duelAfter(id) {
+          return getAfter(/databases/$(database)/documents/duels/$(id)).data;
+        }
+
+        function mine(d) {
+          return (d.challengerUid == uid && d.stakeAt == request.time && d.status == 'AWAITING_OPPONENT')
+                 || (d.opponentUid == uid && d.get('acceptedAt', null) == request.time && d.status == 'ACCEPTED');
+        }
+
+        function stakedBefore(field) {
+          return resource == null ? 0 : resource.data[field];
+        }
+
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow delete: if false;
+
+        allow create, update: if signedIn() && request.auth.uid == uid && key == giftDay()
+                              && request.resource.data.keys().hasOnly(['gold', 'count', 'lastDuel'])
+                              && request.resource.data.keys().hasAll(['gold', 'count', 'lastDuel'])
+                              && request.resource.data.lastDuel is string
+                              && mine(duelAfter(request.resource.data.lastDuel))
+                              && request.resource.data.gold == stakedBefore('gold') + duelAfter(request.resource.data.lastDuel).stake
+                              && request.resource.data.count == stakedBefore('count') + 1
+                              && request.resource.data.gold <= 10000 && request.resource.data.count <= 10;
+
+        allow create, update: if signedIn() && request.auth.uid == uid && key.matches(giftDay() + '_[A-Za-z0-9]{1,128}')
+                              && request.resource.data.keys().hasOnly(['gold', 'lastDuel'])
+                              && request.resource.data.keys().hasAll(['gold', 'lastDuel'])
+                              && request.resource.data.lastDuel is string
+                              && mine(duelAfter(request.resource.data.lastDuel))
+                              && (duelAfter(request.resource.data.lastDuel).challengerUid == key.split('_')[1]
+                                  || duelAfter(request.resource.data.lastDuel).opponentUid == key.split('_')[1])
+                              && request.resource.data.gold == stakedBefore('gold') + duelAfter(request.resource.data.lastDuel).stake
+                              && request.resource.data.gold <= 10000;
       }
 
       match /blockedUsers/{blockedUid} {
