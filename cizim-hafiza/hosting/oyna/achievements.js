@@ -5,7 +5,8 @@ const T = {
   pt: { sClaim: "Prontas para resgatar", sProg: "Em andamento", sDone: "Conquistadas", all: "Resgatar tudo", waiting: (n) => `${n} recompensas esperando`, title: "Conquistas", count: "conquistas desbloqueadas", claim: "Resgatar recompensa", claimed: "🎁 Recompensa resgatada", locked: "🔒 Ainda não desbloqueada", unlocked: "Desbloqueada!", hint: "Como desbloquear", cond: "Condição", close: "Fechar", xp: (n) => `+${n} XP`, gold: (n) => `+${n} de ouro` },
   es: { sClaim: "Listas para reclamar", sProg: "En progreso", sDone: "Conseguidos", all: "Reclamar todo", waiting: (n) => `${n} recompensas esperando`, title: "Logros", count: "logros desbloqueados", claim: "Reclamar recompensa", claimed: "🎁 Recompensa reclamada", locked: "🔒 Aún no desbloqueado", unlocked: "¡Desbloqueado!", hint: "Cómo desbloquearlo", cond: "Condición", close: "Cerrar", xp: (n) => `+${n} XP`, gold: (n) => `+${n} de oro` },
 };
-export async function loadAchievements() { if (!list.length) list = await (await fetch("achievements.json")).json(); }
+// an achievement nobody can reach (a year without a missed day, 100,000 words…) is not offered any more: "retired" in Achievement.kt
+export async function loadAchievements() { if (!list.length) list = (await (await fetch("achievements.json")).json()).filter((a) => !a.retired); }
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
 function value(P, m) {
