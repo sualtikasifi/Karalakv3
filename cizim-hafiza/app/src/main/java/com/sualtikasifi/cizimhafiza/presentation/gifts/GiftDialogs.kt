@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
@@ -41,7 +43,9 @@ import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
 import com.sualtikasifi.cizimhafiza.domain.repository.GiftRepository
 import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedCloseButton
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton
+import com.sualtikasifi.cizimhafiza.presentation.common.softShadow
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.labelRes
 import com.sualtikasifi.cizimhafiza.presentation.common.nameRes
@@ -75,12 +79,19 @@ private fun giftName(kind: GiftKind, itemId: String, qty: Int): String = when (k
 /** Pick what to send to [friendName]: gold on top, items below, today's allowance as the caption. */
 @Composable
 fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit, onClose: () -> Unit) {
-    AppWindowDialog(title = stringResource(R.string.gift_send_title, state.friendName), onDismiss = onClose) {
+    val sent = state.sent
+    AppWindowDialog(
+        // once it has gone the title says so, without a name; before that it says who the gift is for
+        title = if (sent != null) stringResource(R.string.gift_sent_title) else stringResource(R.string.gift_send_title, state.friendName),
+        onDismiss = onClose,
+        centerTitle = sent != null,
+        footer = if (sent != null) ({ PaintedCloseButton(text = stringResource(R.string.close), onClick = onClose) }) else null
+    ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
             when {
                 state.loading -> Note(stringResource(R.string.gift_loading))
                 state.blocked != null -> ErrorCard(stringResource(state.blocked.messageRes()))
-                state.sent != null -> Note(stringResource(R.string.gift_sent))
+                sent != null -> SentCard(sent)
                 else -> {
                     val usage = state.usage ?: GiftUsage(0, 0, 0)
                     AllowancePill(usage)
@@ -165,6 +176,51 @@ private fun Offer(offer: GiftOffer, gold: Int, usage: GiftUsage, sending: Boolea
         Image(painterResource(R.drawable.icon_gold_coin), null, Modifier.size(20.dp))
         Spacer(Modifier.width(4.dp))
         androidx.compose.material3.Text("${offer.cost}", color = if (ok) Ink else Color(0xFFB0A090), fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
+    }
+}
+
+/** After a gift has gone: a gift badge, one line that says so, what was sent and what it cost, and a quiet note on how it arrives. */
+@Composable
+private fun SentCard(offer: GiftOffer) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+        androidx.compose.foundation.layout.Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(72.dp)
+                .softShadow()
+                .background(Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16))), androidx.compose.foundation.shape.CircleShape)
+                .border(3.dp, Color.White, androidx.compose.foundation.shape.CircleShape)
+        ) {
+            androidx.compose.material3.Icon(
+                Icons.Filled.CardGiftcard, contentDescription = null,
+                tint = Color.White, modifier = Modifier.size(38.dp)
+            )
+        }
+        androidx.compose.material3.Text(
+            stringResource(R.string.gift_sent_headline), color = Ink, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold,
+            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
+        )
+        val shape = RoundedCornerShape(50)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.softShadow()
+                .background(Brush.verticalGradient(listOf(Color(0xFFFFFAEC), Color(0xFFFBE9C4))), shape)
+                .border(1.5.dp, Color(0xFFE2C28A), shape)
+                .padding(start = 14.dp, end = 12.dp, top = 6.dp, bottom = 6.dp)
+        ) {
+            androidx.compose.material3.Text(
+                if (offer.kind == GiftKind.GOLD) stringResource(R.string.gift_gold_amount, offer.receives) else giftName(offer.kind, offer.itemId, offer.qty),
+                color = Ink, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1
+            )
+            Spacer(Modifier.width(10.dp))
+            Image(painterResource(R.drawable.icon_gold_coin), null, Modifier.size(18.dp))
+            Spacer(Modifier.width(3.dp))
+            androidx.compose.material3.Text("−${offer.cost}", color = Color(0xFFB3261E), fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
+        }
+        androidx.compose.material3.Text(
+            stringResource(R.string.gift_sent_note), color = InkSoft, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center, lineHeight = 19.sp, modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp)
+        )
     }
 }
 

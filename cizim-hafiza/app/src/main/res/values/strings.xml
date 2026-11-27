@@ -1932,4 +1932,7 @@
     <string name="stake_left_pill">Left today: %1$d duels · %2$d gold</string>
     <string name="stake_chip_win">Win +%1$d</string>
     <string name="stake_chip_lose">Lose −%1$d</string>
+    <string name="gift_sent_title">Gift sent</string>
+    <string name="gift_sent_headline">Your gift is on its way!</string>
+    <string name="gift_sent_note">Your friend will see it in their gift box when they open the app.</string>
 </resources>

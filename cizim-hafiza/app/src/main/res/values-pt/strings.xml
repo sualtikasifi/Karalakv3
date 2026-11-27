@@ -1933,4 +1933,7 @@
     <string name="stake_left_pill">Hoje restam: %1$d duelos · %2$d de ouro</string>
     <string name="stake_chip_win">Ganha +%1$d</string>
     <string name="stake_chip_lose">Perde −%1$d</string>
+    <string name="gift_sent_title">Presente enviado</string>
+    <string name="gift_sent_headline">Seu presente está a caminho!</string>
+    <string name="gift_sent_note">Seu amigo vai ver na caixa de presentes ao abrir o app.</string>
 </resources>

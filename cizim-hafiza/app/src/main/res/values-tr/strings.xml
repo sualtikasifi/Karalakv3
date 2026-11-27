@@ -1945,4 +1945,7 @@
     <string name="stake_left_pill">Bugün kalan: %1$d düello · %2$d altın</string>
     <string name="stake_chip_win">Kazanırsan +%1$d</string>
     <string name="stake_chip_lose">Kaybedersen −%1$d</string>
+    <string name="gift_sent_title">Hediye gönderildi</string>
+    <string name="gift_sent_headline">Hediyen yola çıktı!</string>
+    <string name="gift_sent_note">Arkadaşın uygulamayı açtığında hediye kutusunda görecek.</string>
 </resources>
