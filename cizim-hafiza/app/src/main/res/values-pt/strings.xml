@@ -1929,4 +1929,6 @@
     <string name="stake_block_refused">Não foi possível enviar o duelo. Seu ouro voltou.</string>
     <string name="gift_fee_inline">20% de taxa</string>
     <string name="gift_today_pill">Hoje restam %1$d presentes · %2$d de ouro</string>
+    <string name="report_player_ask">Por que você quer denunciar este jogador?</string>
+    <string name="report_player_note">Sua denúncia vai para o desenvolvedor e é analisada.</string>
 </resources>

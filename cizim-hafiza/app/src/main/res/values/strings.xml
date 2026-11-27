@@ -1928,4 +1928,6 @@
     <string name="stake_block_refused">The duel could not be sent. Your gold is back.</string>
     <string name="gift_fee_inline">20% fee</string>
     <string name="gift_today_pill">%1$d gifts left today · %2$d gold</string>
+    <string name="report_player_ask">Why do you want to report this player?</string>
+    <string name="report_player_note">Your report goes to the developer and is reviewed.</string>
 </resources>
