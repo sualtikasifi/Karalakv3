@@ -1885,10 +1885,14 @@
     <string name="gift_gold_amount">%1$d de oro</string>
     <string name="gift_fee_note">El 20% de lo que pagas es la comisión</string>
     <string name="gift_gold_name">Oro</string>
-    <string name="gift_inbox_title">Buzón de regalos</string>
+    <string name="gift_inbox_title">Regalos recibidos</string>
     <string name="gift_from">De %1$s</string>
     <string name="gift_accept">Recoger</string>
-    <string name="gift_result_title">Regalos recibidos</string>
+    <string name="gift_take_one">Recoger regalo</string>
+    <string name="gift_take_all">Recoger todo</string>
+    <string name="gift_great">¡Genial!</string>
+    <string name="gift_inbox_several">Tienes %1$d regalos nuevos</string>
+    <string name="gift_result_title">Regalo recibido</string>
     <string name="gift_got_gold">+%1$d de oro</string>
     <string name="gift_got_converted">Ya lo tenías: %1$d de oro en su lugar</string>
     <string name="gift_block_child">Los regalos están cerrados en modo infantil.</string>

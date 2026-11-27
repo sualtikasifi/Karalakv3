@@ -1897,10 +1897,14 @@
     <string name="gift_gold_amount">%1$d altın</string>
     <string name="gift_fee_note">Ödediğinin %20\'si hizmet payıdır</string>
     <string name="gift_gold_name">Altın</string>
-    <string name="gift_inbox_title">Hediye kutusu</string>
+    <string name="gift_inbox_title">Gelen hediyeler</string>
     <string name="gift_from">Gönderen: %1$s</string>
     <string name="gift_accept">Al</string>
-    <string name="gift_result_title">Gelen hediyeler</string>
+    <string name="gift_take_one">Hediyeyi al</string>
+    <string name="gift_take_all">Hepsini al</string>
+    <string name="gift_great">Harika!</string>
+    <string name="gift_inbox_several">%1$d yeni hediyen var</string>
+    <string name="gift_result_title">Hediye alındı</string>
     <string name="gift_got_gold">+%1$d altın</string>
     <string name="gift_got_converted">Zaten sahiptin — yerine %1$d altın</string>
     <string name="gift_block_child">Çocuk modunda hediye kapalı.</string>

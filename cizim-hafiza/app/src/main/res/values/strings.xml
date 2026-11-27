@@ -1884,10 +1884,14 @@
     <string name="gift_gold_amount">%1$d gold</string>
     <string name="gift_fee_note">20% of what you pay is the fee</string>
     <string name="gift_gold_name">Gold</string>
-    <string name="gift_inbox_title">Gift box</string>
+    <string name="gift_inbox_title">Incoming gifts</string>
     <string name="gift_from">From %1$s</string>
     <string name="gift_accept">Take</string>
-    <string name="gift_result_title">Gifts received</string>
+    <string name="gift_take_one">Take gift</string>
+    <string name="gift_take_all">Take all</string>
+    <string name="gift_great">Great!</string>
+    <string name="gift_inbox_several">You have %1$d new gifts</string>
+    <string name="gift_result_title">Gift received</string>
     <string name="gift_got_gold">+%1$d gold</string>
     <string name="gift_got_converted">You already had it — %1$d gold instead</string>
     <string name="gift_block_child">Gifts are closed in child mode.</string>

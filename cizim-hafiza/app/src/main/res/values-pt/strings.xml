@@ -1885,10 +1885,14 @@
     <string name="gift_gold_amount">%1$d de ouro</string>
     <string name="gift_fee_note">20% do que você paga é a taxa</string>
     <string name="gift_gold_name">Ouro</string>
-    <string name="gift_inbox_title">Caixa de presentes</string>
+    <string name="gift_inbox_title">Presentes recebidos</string>
     <string name="gift_from">De %1$s</string>
     <string name="gift_accept">Pegar</string>
-    <string name="gift_result_title">Presentes recebidos</string>
+    <string name="gift_take_one">Pegar presente</string>
+    <string name="gift_take_all">Pegar tudo</string>
+    <string name="gift_great">Ótimo!</string>
+    <string name="gift_inbox_several">Você tem %1$d presentes novos</string>
+    <string name="gift_result_title">Presente recebido</string>
     <string name="gift_got_gold">+%1$d de ouro</string>
     <string name="gift_got_converted">Você já tinha: %1$d de ouro no lugar</string>
     <string name="gift_block_child">Presentes ficam fechados no modo infantil.</string>

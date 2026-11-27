@@ -6,9 +6,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -43,7 +49,9 @@ import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
 import com.sualtikasifi.cizimhafiza.domain.repository.GiftRepository
 import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedCloseButton
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton
 import com.sualtikasifi.cizimhafiza.presentation.common.softShadow
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
@@ -224,49 +232,102 @@ private fun SentCard(offer: GiftOffer) {
     }
 }
 
-/** What arrived: one card per gift and one button to take them all. */
+/**
+ * The gift window: one painted picture (gift_window, 900 x 943 px: the dog and the cat handing over a present, an empty
+ * ribbon, an empty cream bar and an empty orange button). The title, the words and the button's label are lettered
+ * live on it in the picture's own proportions, and the orange button is the button.
+ */
 @Composable
-fun GiftInboxDialog(gifts: List<IncomingGift>, onClaim: () -> Unit) {
-    AppWindowDialog(
-        title = stringResource(R.string.gift_inbox_title), onDismiss = onClaim, centerTitle = true,
-        footer = {
-            PaintedPillButton(stringResource(R.string.gift_accept), onClaim, height = 50.dp, textSize = 21.sp, attention = true,
-                modifier = Modifier.fillMaxWidth(0.62f).padding(top = 14.dp, bottom = 8.dp).align(Alignment.CenterHorizontally))
-        }
+private fun GiftArtWindow(title: String, lines: List<String>, button: String, onClick: () -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
-            gifts.take(8).forEach { g ->
-                Column(Modifier.fillMaxWidth().background(Color(0xFFFBE9C4), RoundedCornerShape(16.dp)).padding(12.dp)) {
-                    androidx.compose.material3.Text(stringResource(R.string.gift_from, g.fromName), color = InkSoft, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                    androidx.compose.material3.Text(
-                        if (g.kind == GiftKind.GOLD) stringResource(R.string.gift_gold_amount, g.gold) else giftName(g.kind, g.itemId, g.qty),
-                        color = Ink, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .widthIn(max = 380.dp)
+                .aspectRatio(GiftW / GiftH)
+        ) {
+            val w = maxWidth
+            val h = maxHeight
+            Image(
+                painter = painterResource(R.drawable.gift_window),
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
+                modifier = Modifier.fillMaxSize()
+            )
+            // the pink ribbon
+            LetteredText(
+                text = title, size = 26.sp, fill = Color.White, outline = Color(0xFF8A0F4B), title = true, minScale = 0.5f,
+                modifier = Modifier.offset(w * 0.26f, h * 0.12f).size(w * 0.48f, h * 0.09f)
+            )
+            // the cream bar
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.offset(w * 0.12f, h * 0.64f).size(w * 0.76f, h * 0.105f)
+            ) {
+                lines.take(3).forEachIndexed { i, line ->
+                    FitText(
+                        text = line,
+                        style = PaintedStyle(
+                            color = if (i == 0) Ink else InkSoft, fontSize = if (i == 0) 18.sp else 16.sp,
+                            fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, lineHeight = 21.sp
+                        ),
+                        minScale = 0.6f,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
+            }
+            // the orange button
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.offset(w * 0.25f, h * 0.795f).size(w * 0.50f, h * 0.11f)
+                    .pressable(pressedScale = 0.94f, onClick = onClick)
+            ) {
+                LetteredText(
+                    text = button, size = 24.sp, fill = Color.White, outline = Color(0xFF9A3B00), minScale = 0.55f,
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp)
+                )
             }
         }
     }
 }
 
+private const val GiftW = 900f
+private const val GiftH = 943f
+
+/** What arrived: the sender (or the count) and one button to take everything. */
+@Composable
+fun GiftInboxDialog(gifts: List<IncomingGift>, onClaim: () -> Unit) {
+    val first = gifts.firstOrNull()
+    val lines = if (gifts.size <= 1 && first != null) listOf(
+        stringResource(R.string.gift_from, first.fromName),
+        if (first.kind == GiftKind.GOLD) stringResource(R.string.gift_gold_amount, first.gold) else giftName(first.kind, first.itemId, first.qty)
+    ) else listOf(
+        stringResource(R.string.gift_inbox_several, gifts.size),
+        stringResource(R.string.gift_from, gifts.map { it.fromName }.distinct().take(2).joinToString(", "))
+    )
+    GiftArtWindow(
+        title = stringResource(R.string.gift_inbox_title), lines = lines,
+        button = stringResource(if (gifts.size > 1) R.string.gift_take_all else R.string.gift_take_one),
+        onClick = onClaim, onDismiss = onClaim
+    )
+}
+
 /** What each gift turned into, shown after taking them (an owned item pays out gold instead). */
 @Composable
 fun GiftResultDialog(results: List<Pair<IncomingGift, GiftRepository.ClaimResult>>, onClose: () -> Unit) {
-    AppWindowDialog(
-        title = stringResource(R.string.gift_result_title), onDismiss = onClose, centerTitle = true,
-        footer = {
-            PaintedPillButton(stringResource(R.string.close), onClose, height = 50.dp, textSize = 21.sp, attention = true,
-                modifier = Modifier.fillMaxWidth(0.62f).padding(top = 14.dp, bottom = 8.dp).align(Alignment.CenterHorizontally))
-        }
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
-            results.forEach { (g, r) ->
-                val line = when (r) {
-                    is GiftRepository.ClaimResult.Gold -> stringResource(R.string.gift_got_gold, r.amount)
-                    is GiftRepository.ClaimResult.Converted -> stringResource(R.string.gift_got_converted, r.amount)
-                    is GiftRepository.ClaimResult.Item -> giftName(g.kind, g.itemId, g.qty)
-                }
-                androidx.compose.material3.Text(line, color = Ink, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-            }
+    val lines = results.map { (g, r) ->
+        when (r) {
+            is GiftRepository.ClaimResult.Gold -> stringResource(R.string.gift_got_gold, r.amount)
+            is GiftRepository.ClaimResult.Converted -> stringResource(R.string.gift_got_converted, r.amount)
+            is GiftRepository.ClaimResult.Item -> giftName(g.kind, g.itemId, g.qty)
         }
     }
+    GiftArtWindow(
+        title = stringResource(R.string.gift_result_title), lines = lines,
+        button = stringResource(R.string.gift_great), onClick = onClose, onDismiss = onClose
+    )
 }
