@@ -966,16 +966,14 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
         val fontScale0 = androidx.compose.ui.platform.LocalDensity.current.fontScale
         fun fs(px: Float) = (px * u.value / fontScale0).sp
         Image(painterResource(R.drawable.st_daily_full), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
-        // The title on the plank, to the right of the crown.
-        com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+        // The title on the plank, to the right of the crown: white lettering on a dark brown edge so it reads on the wood.
+        com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
             text = stringResource(R.string.store_daily_joker_tag),
-            style = androidx.compose.ui.text.TextStyle(
-                fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = fs(54f),
-                color = Color(0xFFFFF4D6), textAlign = TextAlign.Center,
-                shadow = Shadow(Color(0xFF5A2410), Offset(0f, 3f), 4f)
-            ),
-            maxLines = 1, minScale = 0.5f,
-            modifier = Modifier.offset(u * 440f, u * 78f).size(u * 560f, u * 78f)
+            size = fs(66f),
+            fill = Color.White,
+            outline = Color(0xFF5A2410),
+            minScale = 0.5f,
+            modifier = Modifier.offset(u * 430f, u * 70f).size(u * 580f, u * 92f)
         )
         // The joker's tile on the paper's left, its name and description beside it.
         com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, u * 220f, Modifier.offset(u * 135f, u * 242f))
@@ -1048,12 +1046,12 @@ private fun JokerCard(
         val h = maxHeight
         Image(painterResource(R.drawable.st_card_joker), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.matchParentSize())
         com.sualtikasifi.cizimhafiza.presentation.common.JokerArt(type, h * 0.42f, Modifier.offset(w * 0.1f, h * 0.3f))
-        // Title and description stay left of the painted stars (they start at about 0.68 of the card's width).
+        // Title and description stay left of the painted stars (they start at about 0.69 of the card's width).
         com.sualtikasifi.cizimhafiza.presentation.common.FitText(
             text = stringResource(type.labelRes()),
-            style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Ink, textAlign = TextAlign.Start),
-            maxLines = 1, minScale = 0.6f, contentAlignment = Alignment.CenterStart,
-            modifier = Modifier.offset(w * 0.34f, h * 0.12f).size(w * 0.33f, h * 0.2f)
+            style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, lineHeight = 18.sp, color = Ink, textAlign = TextAlign.Start),
+            maxLines = 2, minScale = 0.75f, contentAlignment = Alignment.CenterStart,
+            modifier = Modifier.offset(w * 0.34f, h * 0.08f).size(w * 0.35f, h * 0.23f)
         )
         // "Sende: n" sits straight under the joker's tile, centred on it, with no plate behind it.
         Box(Modifier.offset(w * 0.1f, h * 0.74f).width(h * 0.42f), contentAlignment = Alignment.Center) {
@@ -1065,13 +1063,11 @@ private fun JokerCard(
                 maxLines = 1
             )
         }
-        Text(
+        com.sualtikasifi.cizimhafiza.presentation.common.FitText(
             text = stringResource(type.descRes()),
-            fontSize = 9.5.sp,
-            lineHeight = 11.sp,
-            color = Ink.copy(alpha = 0.78f),
-            maxLines = 3,
-            modifier = Modifier.offset(w * 0.34f, h * 0.32f).size(w * 0.33f, h * 0.27f)
+            style = androidx.compose.ui.text.TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.SemiBold, fontSize = 12.5.sp, lineHeight = 14.sp, color = Ink.copy(alpha = 0.9f), textAlign = TextAlign.Start),
+            maxLines = 3, minScale = 0.8f, contentAlignment = Alignment.TopStart,
+            modifier = Modifier.offset(w * 0.34f, h * 0.31f).size(w * 0.35f, h * 0.28f)
         )
         Row(
             Modifier.offset(w * 0.34f, h * 0.58f).size(w * 0.56f, h * 0.27f),
