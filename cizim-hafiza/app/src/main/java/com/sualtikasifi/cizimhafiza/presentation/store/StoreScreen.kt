@@ -2,6 +2,7 @@ package com.sualtikasifi.cizimhafiza.presentation.store
 
 import com.sualtikasifi.cizimhafiza.presentation.common.edgeFade
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -290,46 +291,49 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             }
             }
 
-            // The top row: the back button at the left, a small wooden sign (st_sign) with the title on it between, and what
-            // the player owns at the right, all on one line. The sign takes what room the other two leave (at most 206 dp).
-            // Floats over the picture, so only the cards below scroll.
-            Row(
+            // The header is three independent parts, so no one of them can push another: the back button at the left, the
+            // sign exactly in the middle of the SCREEN (its width fixed by the screen, never by the balance), and the balance at
+            // the right in a zone as wide as the one the back button has, which keeps the sign's two sides equal.
+            val zone = 96.dp
+            val signWidth = minOf(206.dp, maxWidth - (14.dp + zone) * 2)
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(start = 14.dp, end = 12.dp, top = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(top = 8.dp)
+                    .height(62.dp)
             ) {
-                com.sualtikasifi.cizimhafiza.presentation.common.WoodBackArrow(onClick = onBack)
-                Box(modifier = Modifier.weight(1f).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+                com.sualtikasifi.cizimhafiza.presentation.common.WoodBackArrow(
+                    onClick = onBack,
+                    modifier = Modifier.align(Alignment.CenterStart).padding(start = 14.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .width(signWidth)
+                        .aspectRatio(1000f / 311f)
+                ) {
+                    Image(painterResource(R.drawable.st_sign), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                    // the plank's face: x 9..91 %, y 31..90 % of the picture (the crown stands above it)
                     Box(
                         modifier = Modifier
-                            .widthIn(max = 206.dp)
-                            .fillMaxWidth()
-                            .aspectRatio(1000f / 311f)
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth(0.80f)
+                            .fillMaxHeight(0.52f)
+                            .padding(bottom = 3.dp)
                     ) {
-                        Image(painterResource(R.drawable.st_sign), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
-                        // the plank's face: x 9..91 %, y 31..90 % of the picture (the crown stands above it)
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .fillMaxWidth(0.80f)
-                                .fillMaxHeight(0.52f)
-                                .padding(bottom = 3.dp)
-                        ) {
-                            com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
-                                text = stringResource(R.string.app_name) + " " + stringResource(R.string.store_title),
-                                size = 22.sp,
-                                fill = Color.White,
-                                outline = Color(0xFF4E2406),
-                                modifier = Modifier.fillMaxSize(),
-                                minScale = 0.5f
-                            )
-                        }
+                        com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                            text = stringResource(R.string.app_name) + " " + stringResource(R.string.store_title),
+                            size = 22.sp,
+                            fill = Color.White,
+                            outline = Color(0xFF4E2406),
+                            modifier = Modifier.fillMaxSize(),
+                            minScale = 0.5f
+                        )
                     }
                 }
-                GoldPill(gold = gold)
+                GoldPill(gold = gold, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
             }
 
             // Anchored a third of the way up, not hugging the bottom edge —
@@ -629,24 +633,50 @@ private fun PurchaseConfirmDialog(
 }
 
 
+/**
+ * The balance. It is shown short ("1,5 Mn") so it always fits the zone the header keeps for it, and a tap opens the exact
+ * figure for a couple of seconds: the pill grows to the left over the sign's edge and closes again by itself.
+ */
 @Composable
-private fun GoldPill(gold: Int) {
+private fun GoldPill(gold: Int, modifier: Modifier = Modifier) {
+    var expanded by remember { mutableStateOf(false) }
+    LaunchedEffect(expanded) {
+        if (expanded) {
+            delay(2_500)
+            expanded = false
+        }
+    }
     Row(
-        modifier = Modifier
+        modifier = modifier
+            .animateContentSize()
             .clip(RoundedCornerShape(50))
             .background(Color(0xFF2B1A12))
+            .pressable(pressedScale = 0.94f) { expanded = !expanded }
             .padding(start = 4.dp, end = 11.dp, top = 3.dp, bottom = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(22.dp))
         Text(
-            text = NumberFormat.getIntegerInstance().format(gold),
+            text = if (expanded) NumberFormat.getIntegerInstance().format(gold) else compactGold(gold),
             fontFamily = DisplayFont,
             fontWeight = FontWeight.ExtraBold,
             fontSize = 15.sp,
+            maxLines = 1,
+            softWrap = false,
             color = Color.White
         )
+    }
+}
+
+/** 99.999 stays as it is; from 100 thousand it is "123 B" (Turkish) / "123K", from a million "1,5 Mn" / "1.5M". */
+private fun compactGold(gold: Int): String {
+    val tr = java.util.Locale.getDefault().language == "tr"
+    fun number(v: Double) = java.text.DecimalFormat(if (v >= 100) "0" else "0.#").format(v)
+    return when {
+        gold >= 1_000_000 -> number(gold / 1_000_000.0) + if (tr) " Mn" else "M"
+        gold >= 100_000 -> number(gold / 1_000.0) + if (tr) " B" else "K"
+        else -> NumberFormat.getIntegerInstance().format(gold)
     }
 }
 
