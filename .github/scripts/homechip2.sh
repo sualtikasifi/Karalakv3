@@ -79,6 +79,11 @@ capture() {
   done
   sleep 3
   clear_overlays
+  # the developer-panel announcement (and any other notice) opens over the home screen: close it before the shot
+  for i in 1 2 3; do
+    xy=$(find_xy "Close"); [ -n "$xy" ] && { adb shell input tap $xy; sleep 3; }
+  done
+  clear_overlays
   shot "$NAME"
 }
 capture rank_0 0
