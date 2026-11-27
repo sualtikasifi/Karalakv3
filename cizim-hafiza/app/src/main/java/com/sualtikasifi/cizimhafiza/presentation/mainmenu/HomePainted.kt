@@ -396,53 +396,53 @@ internal fun PaintedHome(
             box(222f, 400f, 488f, 447f).clickable(interactionSource = noRipple, indication = null, onClick = onRankClick),
             contentAlignment = Alignment.CenterStart
         ) {
-            // The rank chip: a glossy pill in the rank's own colour with a darker rim and a fine light line inside it, a round
-            // medal for the emblem, and the name beside it; the pair is centred with the same room on both sides (line boxes
-            // trimmed, so the letters themselves sit in the middle, not their padding).
+            // The rank chip: a glossy ribbon in the rank's own colour (darker rim, a fine light line inside, gloss along the top)
+            // with the rank's medal pinned over its left end, larger than the ribbon itself so it reads as a badge, and the name
+            // on the ribbon (line boxes trimmed, so the letters themselves sit in the middle, not their padding).
             val chip = RoundedCornerShape(50)
             val look = rankChipLook(shownProgress.tier.rank)
-            Box(
-                modifier = Modifier
-                    .height((38f * us).dp)
-                    .shadow(3.dp, chip, ambientColor = Color(0x33000000), spotColor = Color(0x59000000))
-                    .background(Brush.verticalGradient(listOf(look.top, look.mid, look.bottom)), chip)
-                    .border(1.5.dp, look.rim, chip)
-                    .padding(start = (2f * us).dp, end = (17f * us).dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // the fine light line just inside the rim
-                Box(Modifier.matchParentSize().padding(1.5.dp).border(1.dp, Color(0x40FFFFFF), chip))
-                // the gloss along the top
+            Box(contentAlignment = Alignment.CenterStart) {
                 Box(
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth(0.9f)
-                        .fillMaxHeight(0.42f)
-                        .padding(top = 1.5.dp)
-                        .background(Brush.verticalGradient(listOf(Color(0x66FFFFFF), Color(0x00FFFFFF))), chip)
-                )
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((7f * us).dp)) {
-                    // the rank's own medal (painted art, one per rank — see rankMedalRes)
-                    androidx.compose.foundation.Image(
-                        painter = androidx.compose.ui.res.painterResource(rankMedalRes(shownProgress.tier.rank)),
-                        contentDescription = null,
-                        modifier = Modifier.size((34f * us).dp)
+                    modifier = Modifier
+                        .padding(start = (22f * us).dp)
+                        .height((32f * us).dp)
+                        .shadow(3.dp, chip, ambientColor = Color(0x33000000), spotColor = Color(0x59000000))
+                        .background(Brush.verticalGradient(listOf(look.top, look.mid, look.bottom)), chip)
+                        .border(1.5.dp, look.rim, chip)
+                        .padding(start = (30f * us).dp, end = (18f * us).dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // the fine light line just inside the rim
+                    Box(Modifier.matchParentSize().padding(1.5.dp).border(1.dp, Color(0x40FFFFFF), chip))
+                    // the gloss along the top
+                    Box(
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth(0.9f)
+                            .fillMaxHeight(0.42f)
+                            .padding(top = 1.5.dp)
+                            .background(Brush.verticalGradient(listOf(Color(0x66FFFFFF), Color(0x00FFFFFF))), chip)
                     )
                     FitText(
                         text = stringResource(shownProgress.tier.rank.nameRes),
                         style = PaintedStyle(
-                            color = Color.White, fontSize = fs(30f), textAlign = TextAlign.Center, lineHeight = fs(30f),
-                            shadow = androidx.compose.ui.graphics.Shadow(Color(0x88241068), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
+                            color = Color.White, fontSize = fs(29f), textAlign = TextAlign.Center, lineHeight = fs(29f),
+                            shadow = androidx.compose.ui.graphics.Shadow(look.rim.copy(alpha = 0.85f), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)
                         ).copy(
                             platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
                             lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
                                 androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
                             )
                         ),
-                        minScale = 0.7f,
-                        modifier = Modifier.weight(1f, fill = false)
+                        minScale = 0.7f
                     )
                 }
+                // the rank's own medal (painted art, one per rank — see rankMedalRes), on top of the ribbon's left end
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(rankMedalRes(shownProgress.tier.rank)),
+                    contentDescription = null,
+                    modifier = Modifier.size((46f * us).dp)
+                )
             }
         }
         FitText(

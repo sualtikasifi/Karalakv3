@@ -639,22 +639,23 @@ private fun FriendRow(
                         tint = InkBrown
                     )
                 }
-                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.gift_action)) },
-                        leadingIcon = { Icon(Icons.Filled.CardGiftcard, contentDescription = null) },
-                        onClick = { menuExpanded = false; onGift() }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.friends_remove_action)) },
-                        leadingIcon = { Icon(Icons.Filled.PersonRemove, contentDescription = null) },
-                        onClick = { menuExpanded = false; onRemove() }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.friends_block_action)) },
-                        leadingIcon = { Icon(Icons.Filled.Block, contentDescription = null) },
-                        onClick = { menuExpanded = false; onBlock() }
-                    )
+                // The row's menu, painted like the rest of the page: a parchment card with a warm border, one round coloured badge
+                // per action, thin rules between them, and the two that cannot be undone in red.
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                    shape = RoundedCornerShape(18.dp),
+                    containerColor = Color(0xFFFFF6E1),
+                    tonalElevation = 0.dp,
+                    shadowElevation = 10.dp,
+                    border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFE2C28A)),
+                    modifier = Modifier.width(210.dp)
+                ) {
+                    FriendMenuItem(Icons.Filled.CardGiftcard, stringResource(R.string.gift_action), Color(0xFFFFA726), Color(0xFFE65100), InkBrown) { menuExpanded = false; onGift() }
+                    FriendMenuRule()
+                    FriendMenuItem(Icons.Filled.PersonRemove, stringResource(R.string.friends_remove_action), Color(0xFFE57373), Color(0xFFC62828), Color(0xFFB3261E)) { menuExpanded = false; onRemove() }
+                    FriendMenuRule()
+                    FriendMenuItem(Icons.Filled.Block, stringResource(R.string.friends_block_action), Color(0xFFE57373), Color(0xFFC62828), Color(0xFFB3261E)) { menuExpanded = false; onBlock() }
                 }
             }
         }
@@ -689,4 +690,40 @@ private fun BlockedUserRow(blocked: BlockedUser, unblocking: Boolean, onUnblock:
             OrangePill(stringResource(R.string.friends_unblock_action), onUnblock)
         }
     }
+}
+
+/** One action of a friend row's menu: a round badge with the icon in white, and the label beside it. */
+@Composable
+private fun FriendMenuItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    badgeTop: Color,
+    badgeBottom: Color,
+    labelColor: Color,
+    onClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .pressable(pressedScale = 0.97f, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 9.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(34.dp)
+                .background(Brush.verticalGradient(listOf(badgeTop, badgeBottom)), CircleShape)
+                .border(1.5.dp, Color.White.copy(alpha = 0.85f), CircleShape)
+        ) {
+            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(19.dp))
+        }
+        androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
+        Text(label, color = labelColor, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+    }
+}
+
+@Composable
+private fun FriendMenuRule() {
+    Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(Color(0x33A5702B)))
 }
