@@ -1902,15 +1902,13 @@
     <string name="gift_block_gold">Ouro insuficiente.</string>
     <string name="gift_block_limit">O limite de presentes de hoje foi atingido.</string>
     <string name="gift_block_refused">Não foi possível enviar o presente. Seu ouro voltou.</string>
-    <string name="stake_picker_title">Apostar ouro?</string>
-    <string name="stake_picker_sub">Você e %1$s colocam o mesmo ouro. O vencedor leva o pote (5%% é queimado).</string>
-    <string name="stake_none">Jogar sem aposta</string>
-    <string name="stake_left">Hoje você ainda pode apostar em %1$d duelos, até %2$d de ouro.</string>
-    <string name="stake_win_hint">Ganha: +%1$d · perde: −%2$d</string>
-    <string name="stake_sent">Duelo enviado com aposta de %1$d de ouro. Ela foi descontada agora.</string>
-    <string name="stake_chip">Aposta de %1$d de ouro</string>
+    <string name="stake_picker_title">Duelo com ouro</string>
+    <string name="stake_picker_sub">Você e %1$s colocam o mesmo ouro no pote. O vencedor leva o pote.</string>
+    <string name="stake_none">Jogar sem ouro</string>
+    <string name="stake_sent">Duelo enviado com %1$d de ouro. Ele foi descontado da sua carteira agora.</string>
+    <string name="stake_chip">Duelo de %1$d de ouro</string>
     <string name="stake_accept_title">Duelo por ouro</string>
-    <string name="stake_accept_message">%1$s apostou %2$d de ouro. Se aceitar, %2$d de ouro saem agora e você deve terminar em %4$d minutos. Ganha: +%3$d de ouro. Perde: perde a aposta.</string>
+    <string name="stake_accept_message">%1$s ofereceu um duelo de %2$d de ouro. Se aceitar, %2$d de ouro saem agora e você deve terminar em %4$d minutos. Ganha: +%3$d de ouro. Perde: perde o ouro colocado.</string>
     <string name="stake_accept_confirm">Aceitar e jogar</string>
     <string name="stake_result_title">Resultados dos duelos</string>
     <string name="stake_settle_won">%1$s: você ganhou +%2$d de ouro</string>
@@ -1931,4 +1929,8 @@
     <string name="gift_today_pill">Hoje restam %1$d presentes · %2$d de ouro</string>
     <string name="report_player_ask">Por que você quer denunciar este jogador?</string>
     <string name="report_player_note">Sua denúncia vai para o desenvolvedor e é analisada.</string>
+    <string name="stake_burn_note">5% do pote sai do jogo.</string>
+    <string name="stake_left_pill">Hoje restam: %1$d duelos · %2$d de ouro</string>
+    <string name="stake_chip_win">Ganha +%1$d</string>
+    <string name="stake_chip_lose">Perde −%1$d</string>
 </resources>

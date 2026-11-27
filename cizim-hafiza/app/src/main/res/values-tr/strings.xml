@@ -1914,15 +1914,13 @@
     <string name="gift_block_gold">Altının yetmiyor.</string>
     <string name="gift_block_limit">Bugünkü hediye sınırına ulaşıldı.</string>
     <string name="gift_block_refused">Hediye gönderilemedi. Altının geri verildi.</string>
-    <string name="stake_picker_title">Altın bahsi ekle?</string>
-    <string name="stake_picker_sub">Sen ve %1$s aynı miktarda altın koyarsınız. Kazanan havuzu alır (%%5\'i yakılır).</string>
-    <string name="stake_none">Bahissiz oyna</string>
-    <string name="stake_left">Bugün en fazla %1$d düelloda daha, toplam %2$d altın bahis koyabilirsin.</string>
-    <string name="stake_win_hint">Kazanırsan +%1$d · kaybedersen −%2$d</string>
-    <string name="stake_sent">%1$d altın bahisli düello gönderildi. Bahis şimdi cüzdanından düştü.</string>
-    <string name="stake_chip">%1$d altın bahis</string>
+    <string name="stake_picker_title">Altınlı düello</string>
+    <string name="stake_picker_sub">Sen ve %1$s havuza aynı miktarda altın koyarsınız. Kazanan havuzu alır.</string>
+    <string name="stake_none">Altınsız oyna</string>
+    <string name="stake_sent">%1$d altınlık düello gönderildi. Altın şimdi cüzdanından düştü.</string>
+    <string name="stake_chip">%1$d altınlık düello</string>
     <string name="stake_accept_title">Altınlı düello</string>
-    <string name="stake_accept_message">%1$s %2$d altın bahis koydu. Kabul edersen %2$d altın hemen cüzdanından düşer ve %4$d dakika içinde bitirmen gerekir. Kazanırsan +%3$d altın, kaybedersen bahsi kaybedersin.</string>
+    <string name="stake_accept_message">%1$s %2$d altınlık düello teklif etti. Kabul edersen %2$d altın hemen cüzdanından düşer ve %4$d dakika içinde bitirmen gerekir. Kazanırsan +%3$d altın alırsın, kaybedersen koyduğun altını kaybedersin.</string>
     <string name="stake_accept_confirm">Kabul et ve oyna</string>
     <string name="stake_result_title">Düello sonuçları</string>
     <string name="stake_settle_won">%1$s: kazandın, +%2$d altın</string>
@@ -1943,4 +1941,8 @@
     <string name="gift_today_pill">Bugün kalan: %1$d hediye · %2$d altın</string>
     <string name="report_player_ask">Bu oyuncuyu neden bildirmek istiyorsun?</string>
     <string name="report_player_note">Bildirimin geliştiriciye iletilir ve incelenir.</string>
+    <string name="stake_burn_note">Havuzun %5\'i oyundan çıkar.</string>
+    <string name="stake_left_pill">Bugün kalan: %1$d düello · %2$d altın</string>
+    <string name="stake_chip_win">Kazanırsan +%1$d</string>
+    <string name="stake_chip_lose">Kaybedersen −%1$d</string>
 </resources>

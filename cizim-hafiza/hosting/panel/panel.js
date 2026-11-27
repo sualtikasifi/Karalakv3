@@ -47,7 +47,7 @@ function show() {
 }
 
 const TABS = { reports: ["Oyuncu raporları", reportsView], feedback: ["Geri bildirim", feedbackView], players: ["Oyuncu ara", playersView], summary: ["Özet", summaryView], economy: ["Ekonomi", economyView],
-  wagers: ["Bahisler", wagersView], announce: ["Duyuru", announceView], push: ["Bildirim", pushView], jobs: ["İşler", jobsView], audit: ["Denetim", auditView] };
+  wagers: ["Altın düelloları", wagersView], announce: ["Duyuru", announceView], push: ["Bildirim", pushView], jobs: ["İşler", jobsView], audit: ["Denetim", auditView] };
 let current = "reports";
 function tabs() {
   $("#tabs").innerHTML = Object.entries(TABS).map(([k, [t]]) => `<button data-k="${k}" class="${k === current ? "on" : ""}">${t}</button>`).join("");
@@ -111,7 +111,7 @@ async function wagersView(v) {
   const top = [...people].map(([u, x]) => ({ u, ...x })).sort((a, b) => b.gold - a.gold).slice(0, 10);
   v.innerHTML = `
     ${await switchRow("stakes", "Altınlı düello")}${await switchRow("gifts", "Arkadaşa hediye")}
-    <div class="card"><h3>Son ${duels.length} bahisli düello</h3><div class="mute">Açık (henüz alınmamış) bakiye: ${open} · bitenlerin toplam havuzu: ${pot} altın</div></div>
+    <div class="card"><h3>Son ${duels.length} altınlı düello</h3><div class="mute">Açık (henüz alınmamış) bakiye: ${open} · bitenlerin toplam havuzu: ${pot} altın</div></div>
     <div class="card"><h3>Tek yönlü altın akışı (şüpheli çiftler)</h3>${flows.length ? flows.map((x) =>
       `<div class="${x.gold >= 3000 ? "bad" : "mute"}">${nm(x.w)} ← ${nm(x.l)}: ${x.won} galibiyet (karşı yön ${x.back}), +${x.gold} altın</div>`).join("") : '<div class="mute">Şüpheli akış yok.</div>'}</div>
     <div class="card"><h3>En çok kazanan / kaybeden</h3>${top.map((x) => `<div class="mute">${nm(x.u)}: ${x.won} galibiyet, ${x.lost} yenilgi, ${x.gold >= 0 ? "+" : ""}${x.gold} altın</div>`).join("") || '<div class="mute">Henüz kayıt yok.</div>'}</div>`;
@@ -255,7 +255,7 @@ async function playersView(v) {
       <div class="mute">${esc(c.uid)}</div>
       <div class="row" style="margin-top:8px"><button class="ghost" data-a="name" data-i="${i}">Adı sıfırla</button>
       <button class="ghost" data-a="${c.locked ? "unlock" : "lock"}" data-i="${i}">${c.locked ? "Kilidi aç" : "Kilitle"}</button>
-      <button class="ghost" data-a="stakeban" data-i="${i}">${c.d.stakeBan ? "Bahis engelini kaldır" : "Bahisten engelle"}</button></div>
+      <button class="ghost" data-a="stakeban" data-i="${i}">${c.d.stakeBan ? "Altınlı düelloyu aç" : "Altınlı düelloyu kapat"}</button></div>
       <div class="row" style="margin-top:8px"><input type="number" id="g${i}" placeholder="Altın" style="width:110px"><input type="number" id="x${i}" placeholder="XP" style="width:110px">
       <input id="n${i}" placeholder="Not" style="flex:1"><button class="primary" data-a="grant" data-i="${i}">Telafi gönder</button></div>
       <div class="msg" id="m${i}"></div></div>`).join("") : '<p class="mute">Böyle bir oyuncu bulunamadı.</p>';
@@ -267,7 +267,7 @@ async function playersView(v) {
         else if (b.dataset.a === "stakeban") {
           const on = !c.d.stakeBan;
           await q().updateDoc(q().doc(db, "users", c.uid), { stakeBan: on }); c.d.stakeBan = on;
-          await audit(on ? "stake-ban" : "stake-unban", c.uid, ""); m.textContent = on ? "Altınlı düellodan engellendi." : "Bahis engeli kaldırıldı."; b.textContent = on ? "Bahis engelini kaldır" : "Bahisten engelle";
+          await audit(on ? "stake-ban" : "stake-unban", c.uid, ""); m.textContent = on ? "Altınlı düellodan engellendi." : "Altınlı düello yeniden açıldı."; b.textContent = on ? "Altınlı düelloyu aç" : "Altınlı düelloyu kapat";
         }
         else if (b.dataset.a === "unlock") m.textContent = (await unlockPlayer(c.uid)) + " kilit kaldırıldı.";
         else {
