@@ -116,17 +116,10 @@ private fun ReportReasonsWindow(
         title = title,
         onDismiss = onDismiss,
         buttons = {
-            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(bottom = 10.dp), contentAlignment = Alignment.Center) {
-                PaintedPillButton(
-                    text = stringResource(if (sendState == ReportSendState.Sent) R.string.close else R.string.report_drawing_cancel),
-                    onClick = onDismiss,
-                    // orange, the game's colour for a window's own button: it stands apart from the cream reasons above it
-                    primary = true,
-                    height = 46.dp,
-                    textSize = 17.sp,
-                    modifier = Modifier.fillMaxWidth(0.58f).softShadow()
-                )
-            }
+            PaintedCloseButton(
+                text = stringResource(if (sendState == ReportSendState.Sent) R.string.close else R.string.report_drawing_cancel),
+                onClick = onDismiss
+            )
         }
     ) {
         if (chipName != null) {

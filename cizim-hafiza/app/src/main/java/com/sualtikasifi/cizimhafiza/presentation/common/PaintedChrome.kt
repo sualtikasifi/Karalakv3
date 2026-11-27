@@ -84,6 +84,27 @@ fun WoodBackArrow(onClick: () -> Unit, modifier: Modifier = Modifier, size: Dp =
     )
 }
 
+/**
+ * The orange button that ends a painted window: centred, narrower than the window and with room under it, so it never sits on
+ * the paint splashes in the window's lower corners, and with the same faint shadow as the other buttons.
+ */
+@Composable
+fun PaintedCloseButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    androidx.compose.foundation.layout.Box(
+        modifier = modifier.fillMaxWidth().padding(bottom = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        PaintedPillButton(
+            text = text,
+            onClick = onClick,
+            primary = true,
+            height = 46.dp,
+            textSize = 17.sp,
+            modifier = Modifier.fillMaxWidth(0.58f).softShadow()
+        )
+    }
+}
+
 /** A painted pill button: orange with white lettering ([primary]) or cream with brown lettering. */
 @Composable
 fun PaintedPillButton(
