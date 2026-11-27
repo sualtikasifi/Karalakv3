@@ -329,7 +329,8 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                             fill = Color.White,
                             outline = Color(0xFF4E2406),
                             modifier = Modifier.fillMaxSize(),
-                            minScale = 0.5f
+                            minScale = 0.5f,
+                            title = true
                         )
                     }
                 }
@@ -973,6 +974,7 @@ private fun DailyJokerCard(type: JokerType, onClaim: () -> Unit) {
             fill = Color.White,
             outline = Color(0xFF5A2410),
             minScale = 0.5f,
+            title = true,
             modifier = Modifier.offset(u * 430f, u * 70f).size(u * 580f, u * 92f)
         )
         // The joker's tile on the paper's left, its name and description beside it.
