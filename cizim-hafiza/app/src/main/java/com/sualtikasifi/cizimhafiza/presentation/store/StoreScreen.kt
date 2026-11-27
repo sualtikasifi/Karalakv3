@@ -176,8 +176,8 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                     .statusBarsPadding()
                     .padding(top = 84.dp)
             ) {
-                // the three tabs are big and close: nearly the screen's whole width, no gap between them (the chosen one grows over its neighbours' leaves)
-                Row(horizontalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                // the three tabs are close together with no gap between them, and keep a margin at both sides: the chosen one grows a little over its neighbours' leaves but never past the screen's edge
+                Row(horizontalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                     TabChip(stringResource(R.string.store_tab_jokers), R.drawable.st_tab_jokers, selected = tab == 0, modifier = Modifier.weight(1f)) { selectTab(0) }
                     TabChip(stringResource(R.string.store_tab_pens), R.drawable.st_tab_pens, selected = tab == 1, modifier = Modifier.weight(1f)) { selectTab(1) }
                     TabChip(stringResource(R.string.store_tab_frames), R.drawable.st_tab_frames, selected = tab == 2, modifier = Modifier.weight(1f)) { selectTab(2) }
@@ -668,7 +668,7 @@ private fun TabChip(label: String, art: Int, selected: Boolean, modifier: Modifi
             // the chosen tab is drawn over its neighbours, not under them
             .zIndex(if (selected) 1f else 0f)
             .graphicsLayer {
-                val size = 0.98f + 0.16f * lit
+                val size = 0.96f + 0.10f * lit
                 scaleX = size
                 scaleY = size
             }
