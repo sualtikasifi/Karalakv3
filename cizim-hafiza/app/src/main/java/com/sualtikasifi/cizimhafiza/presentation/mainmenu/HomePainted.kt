@@ -407,7 +407,7 @@ internal fun PaintedHome(
                     .shadow(3.dp, chip, ambientColor = Color(0x33000000), spotColor = Color(0x59000000))
                     .background(Brush.verticalGradient(listOf(look.top, look.mid, look.bottom)), chip)
                     .border(1.5.dp, look.rim, chip)
-                    .padding(start = (4f * us).dp, end = (17f * us).dp),
+                    .padding(start = (2f * us).dp, end = (17f * us).dp),
                 contentAlignment = Alignment.Center
             ) {
                 // the fine light line just inside the rim
@@ -422,27 +422,12 @@ internal fun PaintedHome(
                         .background(Brush.verticalGradient(listOf(Color(0x66FFFFFF), Color(0x00FFFFFF))), chip)
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((7f * us).dp)) {
-                    // the medal: a pale disc with a ring in the rank's colour, the emblem on it
-                    Box(
-                        modifier = Modifier
-                            .size((30f * us).dp)
-                            .shadow(1.5.dp, CircleShape)
-                            .background(Brush.verticalGradient(listOf(Color(0xFFFFFFFF), Color(0xFFE9E4F6))), CircleShape)
-                            .border(1.5.dp, look.rim, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = shownProgress.tier.rank.emoji,
-                            style = androidx.compose.ui.text.TextStyle(
-                                fontSize = fs(21f),
-                                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
-                                lineHeight = fs(24f),
-                                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
-                                    androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
-                                )
-                            )
-                        )
-                    }
+                    // the rank's own medal (painted art, one per rank — see rankMedalRes)
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(rankMedalRes(shownProgress.tier.rank)),
+                        contentDescription = null,
+                        modifier = Modifier.size((34f * us).dp)
+                    )
                     FitText(
                         text = stringResource(shownProgress.tier.rank.nameRes),
                         style = PaintedStyle(
@@ -1059,6 +1044,16 @@ private fun RunePromptBalloon(
 
 /** The colours of the home screen's rank chip, one set per rank (top, middle and bottom of the pill, and its rim). */
 private class RankChipLook(val top: Color, val mid: Color, val bottom: Color, val rim: Color)
+
+@androidx.annotation.DrawableRes
+private fun rankMedalRes(rank: com.sualtikasifi.cizimhafiza.domain.model.PlayerRank): Int = when (rank) {
+    com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.KARALAMACI -> R.drawable.rank_medal_1
+    com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.CIRAK -> R.drawable.rank_medal_2
+    com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.RESSAM -> R.drawable.rank_medal_3
+    com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.USTA_RESSAM -> R.drawable.rank_medal_4
+    com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.SANATCI -> R.drawable.rank_medal_5
+    com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.BUYUK_USTA -> R.drawable.rank_medal_6
+}
 
 private fun rankChipLook(rank: com.sualtikasifi.cizimhafiza.domain.model.PlayerRank): RankChipLook = when (rank) {
     com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.KARALAMACI -> RankChipLook(Color(0xFFA9B2C0), Color(0xFF707B8D), Color(0xFF4B5567), Color(0xFF343C4A))
