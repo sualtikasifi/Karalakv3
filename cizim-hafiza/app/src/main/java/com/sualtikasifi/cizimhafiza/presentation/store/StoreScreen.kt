@@ -294,8 +294,8 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             // The header is three independent parts, so no one of them can push another: the back button at the left, the
             // sign exactly in the middle of the SCREEN (its width fixed by the screen, never by the balance), and the balance at
             // the right in a zone as wide as the one the back button has, which keeps the sign's two sides equal.
-            val zone = 96.dp
-            val signWidth = minOf(206.dp, maxWidth - (14.dp + zone) * 2)
+            val zone = 88.dp
+            val signWidth = minOf(214.dp, maxWidth - (14.dp + zone) * 2)
             Box(
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -325,7 +325,7 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                     ) {
                         com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
                             text = stringResource(R.string.app_name) + " " + stringResource(R.string.store_title),
-                            size = 22.sp,
+                            size = 24.sp,
                             fill = Color.White,
                             outline = Color(0xFF4E2406),
                             modifier = Modifier.fillMaxSize(),
@@ -735,7 +735,7 @@ private fun TabChip(label: String, art: Int, selected: Boolean, modifier: Modifi
             modifier = Modifier.offset(x = w * 0.37f, y = h * 0.27f).size(w * 0.50f, h * 0.58f),
             contentAlignment = Alignment.Center
         ) {
-            LetteredText(label, (h.value * 0.34f).sp, outline = Color(0xFF2A1250), maxLines = 1, minScale = 0.5f)
+            LetteredText(label, (h.value * 0.31f).sp, outline = Color(0xFF2A1250), maxLines = 1, minScale = 0.5f)
         }
     }
 }
