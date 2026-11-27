@@ -29,6 +29,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.shadow
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -426,6 +427,18 @@ fun PanelRow(label: String, content: @Composable () -> Unit) {
     }
 }
 
+/**
+ * A very light drop shadow under a painted pill or button, so it lifts off the paper a little. Warm brown rather than black,
+ * and faint on purpose: it should be felt more than seen. Put it after any graphicsLayer so it scales with the control.
+ */
+fun Modifier.softShadow(): Modifier = this.shadow(
+    elevation = 3.dp,
+    shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+    clip = false,
+    ambientColor = Color(0x143B2314),
+    spotColor = Color(0x2E3B2314)
+)
+
 /** A single-line text field painted as a cream pill. */
 @Composable
 fun PillField(
@@ -448,7 +461,7 @@ fun PillField(
                 0f, 0f, 0f, 1f, 0f
             ))
         ) else null,
-        modifier = modifier.fillMaxWidth().height(40.dp * LocalPanelScale.current).graphicsLayer { alpha = if (enabled) 1f else 0.7f }
+        modifier = modifier.fillMaxWidth().height(40.dp * LocalPanelScale.current).graphicsLayer { alpha = if (enabled) 1f else 0.7f }.softShadow()
     ) {
         androidx.compose.foundation.text.BasicTextField(
             value = value,
@@ -535,6 +548,7 @@ fun ChoicePill(
         modifier = modifier
             .height(height)
             .graphicsLayer { scaleX = scale * sink; scaleY = scale * sink }
+            .softShadow()
             .clickable(interactionSource = source, indication = null, onClick = onClick)
     ) {
         // Shrinks to stay on its line rather than wrapping ("🐶 Hayvanlar" used to break into emoji-over-word).
@@ -566,6 +580,7 @@ fun StartButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
             .aspectRatio(1015f / 246f)
             .breathing(0.022f, 1400)
             .graphicsLayer { scaleX = scale; scaleY = scale }
+            .softShadow()
             .glint(3200, 0.38f, 30.dp)
             .clickable(interactionSource = interaction, indication = null, enabled = !loading, onClick = onClick)
     ) {
