@@ -396,7 +396,7 @@ internal fun PaintedHome(
             box(222f, 400f, 488f, 447f).clickable(interactionSource = noRipple, indication = null, onClick = onRankClick),
             contentAlignment = Alignment.CenterStart
         ) {
-            // The rank chip: a glossy ribbon in the rank's own colour (darker rim, a fine light line inside, gloss along the top)
+            // The rank chip: a ribbon in the rank's own colour (a darker rim and a light-to-dark gradient, no light frame inside)
             // with the rank's medal pinned over its left end, larger than the ribbon itself so it reads as a badge, and the name
             // on the ribbon (line boxes trimmed, so the letters themselves sit in the middle, not their padding).
             val chip = RoundedCornerShape(50)
@@ -412,17 +412,6 @@ internal fun PaintedHome(
                         .padding(start = (30f * us).dp, end = (18f * us).dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // the fine light line just inside the rim
-                    Box(Modifier.matchParentSize().padding(1.5.dp).border(1.dp, Color(0x40FFFFFF), chip))
-                    // the gloss along the top
-                    Box(
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .fillMaxWidth(0.9f)
-                            .fillMaxHeight(0.42f)
-                            .padding(top = 1.5.dp)
-                            .background(Brush.verticalGradient(listOf(Color(0x66FFFFFF), Color(0x00FFFFFF))), chip)
-                    )
                     FitText(
                         text = stringResource(shownProgress.tier.rank.nameRes),
                         style = PaintedStyle(

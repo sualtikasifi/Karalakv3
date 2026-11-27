@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Menu
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton
+import com.sualtikasifi.cizimhafiza.presentation.common.softShadow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -326,40 +327,11 @@ fun ReactionSendRow(
 
     // Every ready phrase, in the same most-used-first order as the dock.
     if (phrasesOpen) {
-        PaintedDialog(
-            title = stringResource(R.string.reaction_chat_sheet_title),
-            onDismiss = { phrasesOpen = false },
-            buttons = {
-                PaintedPillButton(text = stringResource(R.string.close), onClick = { phrasesOpen = false }, modifier = Modifier.fillMaxWidth())
-            }
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                orderedPhrases.forEach { phrase ->
-                    val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(shape)
-                            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFB14E), Color(0xFFF47A16))))
-                            .border(2.dp, Color(0xFFA9440A), shape)
-                            .clickable {
-                                phrasesOpen = false
-                                onSend("", phrase.key)
-                            }
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = stringResource(phrase.textRes),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            }
-        }
+        PhrasesWindow(
+            phrases = orderedPhrases,
+            onPick = { phrase -> phrasesOpen = false; onSend("", phrase.key) },
+            onDismiss = { phrasesOpen = false }
+        )
     }
 
     // Every emoji, again most used first.
@@ -368,7 +340,7 @@ fun ReactionSendRow(
             title = stringResource(R.string.reaction_emoji_sheet_title),
             onDismiss = { pickerOpen = false },
             buttons = {
-                PaintedPillButton(text = stringResource(R.string.close), onClick = { pickerOpen = false }, modifier = Modifier.fillMaxWidth())
+                com.sualtikasifi.cizimhafiza.presentation.common.PaintedCloseButton(text = stringResource(R.string.close), onClick = { pickerOpen = false })
             }
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -782,5 +754,50 @@ private fun ChatChip(text: String, u: androidx.compose.ui.unit.Dp, size: android
             color = Color.White,
             maxLines = 1
         )
+    }
+}
+
+/** Every ready phrase in the painted window: small cream pills in two columns, then the close button clear of the corner splashes. */
+@Composable
+internal fun PhrasesWindow(phrases: List<PresetPhrase>, onPick: (PresetPhrase) -> Unit, onDismiss: () -> Unit) {
+    PaintedDialog(
+        title = stringResource(R.string.reaction_chat_sheet_title),
+        onDismiss = onDismiss,
+        buttons = {
+            com.sualtikasifi.cizimhafiza.presentation.common.PaintedCloseButton(text = stringResource(R.string.close), onClick = onDismiss)
+        }
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
+            phrases.chunked(2).forEach { pair ->
+                Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
+                    pair.forEach { phrase ->
+                        val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .softShadow()
+                                .clip(shape)
+                                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFFFFFAEC), Color(0xFFFBE9C4))))
+                                .border(1.5.dp, Color(0xFFE2C28A), shape)
+                                .clickable { onPick(phrase) }
+                                .padding(horizontal = 8.dp)
+                        ) {
+                            com.sualtikasifi.cizimhafiza.presentation.common.FitText(
+                                text = stringResource(phrase.textRes),
+                                style = com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle(
+                                    color = Color(0xFF3B2314), fontSize = 15.sp,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold, textAlign = TextAlign.Center
+                                ),
+                                minScale = 0.7f,
+                                modifier = Modifier.fillMaxWidth().height(22.dp)
+                            )
+                        }
+                    }
+                    if (pair.size < 2) Spacer(Modifier.weight(1f))
+                }
+            }
+        }
     }
 }

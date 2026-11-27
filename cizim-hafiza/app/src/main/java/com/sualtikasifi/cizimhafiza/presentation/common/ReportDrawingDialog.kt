@@ -1,5 +1,7 @@
 package com.sualtikasifi.cizimhafiza.presentation.common
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -82,7 +84,9 @@ fun ReportPlayerDialog(
 ) {
     ReportReasonsWindow(
         title = stringResource(R.string.report_player_title),
-        subtitle = stringResource(R.string.report_player_subtitle, nickname),
+        subtitle = stringResource(R.string.report_player_ask),
+        chipName = nickname,
+        note = stringResource(R.string.report_player_note),
         sendState = sendState,
         reasons = listOf(
             stringResource(R.string.report_player_reason_name) to { onReport(com.sualtikasifi.cizimhafiza.domain.model.PlayerReportReason.NAME) },
@@ -103,6 +107,8 @@ private fun ReportReasonsWindow(
     title: String,
     subtitle: String,
     sendState: ReportSendState,
+    chipName: String? = null,
+    note: String? = null,
     reasons: List<Pair<String, () -> Unit>>,
     onDismiss: () -> Unit
 ) {
@@ -110,16 +116,24 @@ private fun ReportReasonsWindow(
         title = title,
         onDismiss = onDismiss,
         buttons = {
-            PaintedPillButton(
+            PaintedCloseButton(
                 text = stringResource(if (sendState == ReportSendState.Sent) R.string.close else R.string.report_drawing_cancel),
-                onClick = onDismiss,
-                // orange, the game's colour for a window's own button: it stands apart from the cream reasons above it
-                primary = true,
-                modifier = Modifier.fillMaxWidth()
+                onClick = onDismiss
             )
         }
     ) {
-        PaintedDialogText(subtitle)
+        if (chipName != null) {
+            ReportNameTag(chipName)
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+            color = Color(0xFF3A2416),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(14.dp))
         when (sendState) {
             ReportSendState.Sending -> CircularProgressIndicator(modifier = Modifier.size(32.dp), color = Color(0xFFE9801D))
@@ -132,9 +146,18 @@ private fun ReportReasonsWindow(
                     color = Color(0xFF3A2416)
                 )
             }
-            else -> Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            else -> Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 reasons.forEach { (label, onClick) ->
-                    PaintedPillButton(text = label, onClick = onClick, primary = false, height = 50.dp, textSize = 17.sp, modifier = Modifier.fillMaxWidth())
+                    PaintedPillButton(text = label, onClick = onClick, primary = false, height = 44.dp, textSize = 16.sp, modifier = Modifier.fillMaxWidth().softShadow())
+                }
+                if (note != null) {
+                    Text(
+                        text = note,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF7A5A40),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                    )
                 }
                 if (sendState == ReportSendState.Failed) {
                     Text(
@@ -147,5 +170,30 @@ private fun ReportReasonsWindow(
                 }
             }
         }
+    }
+}
+
+/** The reported player's name on a small tag with a flag, so the window says at once who it is about. */
+@Composable
+private fun ReportNameTag(name: String) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        modifier = Modifier
+            .softShadow()
+            .background(Color(0xFFFFE9C7), shape)
+            .border(1.5.dp, Color(0xFFF0B24E), shape)
+            .padding(start = 8.dp, end = 14.dp, top = 5.dp, bottom = 5.dp)
+    ) {
+        Icon(Icons.Filled.Flag, contentDescription = null, tint = Color(0xFFD9483B), modifier = Modifier.size(18.dp))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+            color = Color(0xFF3A2416),
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+        )
     }
 }

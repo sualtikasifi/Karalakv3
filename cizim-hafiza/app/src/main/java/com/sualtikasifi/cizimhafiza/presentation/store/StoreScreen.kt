@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -172,10 +173,11 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = padding.calculateBottomPadding())
-                    .padding(top = (484f * artScale).dp)
+                    .statusBarsPadding()
+                    .padding(top = 84.dp)
             ) {
-                // the three tabs are big and close: nearly the screen's whole width, no gap between them (the chosen one grows over its neighbours' leaves)
-                Row(horizontalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                // the three tabs are close together with no gap between them, and keep a margin at both sides: the chosen one grows a little over its neighbours' leaves but never past the screen's edge
+                Row(horizontalArrangement = Arrangement.spacedBy(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                     TabChip(stringResource(R.string.store_tab_jokers), R.drawable.st_tab_jokers, selected = tab == 0, modifier = Modifier.weight(1f)) { selectTab(0) }
                     TabChip(stringResource(R.string.store_tab_pens), R.drawable.st_tab_pens, selected = tab == 1, modifier = Modifier.weight(1f)) { selectTab(1) }
                     TabChip(stringResource(R.string.store_tab_frames), R.drawable.st_tab_frames, selected = tab == 2, modifier = Modifier.weight(1f)) { selectTab(2) }
@@ -288,46 +290,45 @@ fun StoreScreen(onBack: () -> Unit, onAccount: () -> Unit = {}, viewModel: Store
             }
             }
 
-            // The title, lettered on the wooden plank: both words in ONE size, one under the other 48 picture px apart,
-            // the pair centred on the plank's face (x 428, y 361 of the 841 x 1870 picture: the plank runs x 180..672 and, at its middle,
-            // y 288..436).
-            Box(
-                modifier = Modifier
-                    .offset((artOffX + (428f - 200f) * artScale).dp, ((365f - 80f) * artScale).dp)
-                    .size((400f * artScale).dp, (160f * artScale).dp)
-            ) {
-                com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
-                    text = stringResource(R.string.app_name),
-                    size = (78f * artScale / fontScale0).sp,
-                    fill = Color.White,
-                    outline = Color(0xFF4E2406),
-                    modifier = Modifier.align(Alignment.Center).offset(y = (-28f * artScale).dp).fillMaxWidth().height((80f * artScale).dp),
-                    title = true
-                )
-                com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
-                    text = stringResource(R.string.store_title),
-                    size = (78f * artScale / fontScale0).sp,
-                    fill = Color.White,
-                    outline = Color(0xFF4E2406),
-                    modifier = Modifier.align(Alignment.Center).offset(y = (28f * artScale).dp).fillMaxWidth().height((80f * artScale).dp),
-                    title = true
-                )
-            }
-
-            // Floats over the backdrop rather than scrolling with the grid,
-            // same placement contract as ScreenTopActions elsewhere — but
-            // this screen's own back button and balance pill replace it
-            // wholesale, since the backdrop already carries the title.
+            // The top row: the back button at the left, a small wooden sign (st_sign) with the title on it between, and what
+            // the player owns at the right, all on one line. The sign takes what room the other two leave (at most 206 dp).
+            // Floats over the picture, so only the cards below scroll.
             Row(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(start = 14.dp, end = 20.dp, top = 12.dp, bottom = 12.dp),
+                    .padding(start = 14.dp, end = 12.dp, top = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 com.sualtikasifi.cizimhafiza.presentation.common.WoodBackArrow(onClick = onBack)
-                Spacer(modifier = Modifier.weight(1f))
+                Box(modifier = Modifier.weight(1f).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .widthIn(max = 206.dp)
+                            .fillMaxWidth()
+                            .aspectRatio(1000f / 311f)
+                    ) {
+                        Image(painterResource(R.drawable.st_sign), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                        // the plank's face: x 9..91 %, y 31..90 % of the picture (the crown stands above it)
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth(0.80f)
+                                .fillMaxHeight(0.52f)
+                                .padding(bottom = 3.dp)
+                        ) {
+                            com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                                text = stringResource(R.string.app_name) + " " + stringResource(R.string.store_title),
+                                size = 22.sp,
+                                fill = Color.White,
+                                outline = Color(0xFF4E2406),
+                                modifier = Modifier.fillMaxSize(),
+                                minScale = 0.5f
+                            )
+                        }
+                    }
+                }
                 GoldPill(gold = gold)
             }
 
@@ -634,16 +635,16 @@ private fun GoldPill(gold: Int) {
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(Color(0xFF2B1A12))
-            .padding(start = 6.dp, end = 20.dp, top = 6.dp, bottom = 6.dp),
+            .padding(start = 4.dp, end = 11.dp, top = 3.dp, bottom = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(34.dp))
+        Image(painterResource(R.drawable.icon_gold_coin), contentDescription = null, modifier = Modifier.size(22.dp))
         Text(
             text = NumberFormat.getIntegerInstance().format(gold),
             fontFamily = DisplayFont,
             fontWeight = FontWeight.ExtraBold,
-            fontSize = 22.sp,
+            fontSize = 15.sp,
             color = Color.White
         )
     }
@@ -667,7 +668,7 @@ private fun TabChip(label: String, art: Int, selected: Boolean, modifier: Modifi
             // the chosen tab is drawn over its neighbours, not under them
             .zIndex(if (selected) 1f else 0f)
             .graphicsLayer {
-                val size = 0.98f + 0.16f * lit
+                val size = 0.96f + 0.10f * lit
                 scaleX = size
                 scaleY = size
             }
