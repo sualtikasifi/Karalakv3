@@ -396,18 +396,22 @@ internal fun PaintedHome(
             box(222f, 400f, 488f, 447f).clickable(interactionSource = noRipple, indication = null, onClick = onRankClick),
             contentAlignment = Alignment.CenterStart
         ) {
-            // The rank chip: a glossy purple pill with a thin darker rim, the emblem and the name as one block centred in it with the
-            // same room on both sides (line boxes trimmed, so the letters themselves sit in the middle, not their padding).
+            // The rank chip: a glossy pill in the rank's own colour with a darker rim and a fine light line inside it, a round
+            // medal for the emblem, and the name beside it; the pair is centred with the same room on both sides (line boxes
+            // trimmed, so the letters themselves sit in the middle, not their padding).
             val chip = RoundedCornerShape(50)
+            val look = rankChipLook(shownProgress.tier.rank)
             Box(
                 modifier = Modifier
                     .height((38f * us).dp)
-                    .shadow(2.dp, chip)
-                    .background(Brush.verticalGradient(listOf(Color(0xFF9D7EFF), Color(0xFF6B4CDA), Color(0xFF4A30AE))), chip)
-                    .border(1.5.dp, Color(0xFF3A2590), chip)
-                    .padding(horizontal = (17f * us).dp),
+                    .shadow(3.dp, chip, ambientColor = Color(0x33000000), spotColor = Color(0x59000000))
+                    .background(Brush.verticalGradient(listOf(look.top, look.mid, look.bottom)), chip)
+                    .border(1.5.dp, look.rim, chip)
+                    .padding(start = (4f * us).dp, end = (17f * us).dp),
                 contentAlignment = Alignment.Center
             ) {
+                // the fine light line just inside the rim
+                Box(Modifier.matchParentSize().padding(1.5.dp).border(1.dp, Color(0x40FFFFFF), chip))
                 // the gloss along the top
                 Box(
                     Modifier
@@ -415,20 +419,30 @@ internal fun PaintedHome(
                         .fillMaxWidth(0.9f)
                         .fillMaxHeight(0.42f)
                         .padding(top = 1.5.dp)
-                        .background(Brush.verticalGradient(listOf(Color(0x59FFFFFF), Color(0x00FFFFFF))), chip)
+                        .background(Brush.verticalGradient(listOf(Color(0x66FFFFFF), Color(0x00FFFFFF))), chip)
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((7f * us).dp)) {
-                    Text(
-                        text = shownProgress.tier.rank.emoji,
-                        style = androidx.compose.ui.text.TextStyle(
-                            fontSize = fs(27f),
-                            platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
-                            lineHeight = fs(30f),
-                            lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
-                                androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+                    // the medal: a pale disc with a ring in the rank's colour, the emblem on it
+                    Box(
+                        modifier = Modifier
+                            .size((30f * us).dp)
+                            .shadow(1.5.dp, CircleShape)
+                            .background(Brush.verticalGradient(listOf(Color(0xFFFFFFFF), Color(0xFFE9E4F6))), CircleShape)
+                            .border(1.5.dp, look.rim, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = shownProgress.tier.rank.emoji,
+                            style = androidx.compose.ui.text.TextStyle(
+                                fontSize = fs(21f),
+                                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                                lineHeight = fs(24f),
+                                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                                    androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+                                )
                             )
                         )
-                    )
+                    }
                     FitText(
                         text = stringResource(shownProgress.tier.rank.nameRes),
                         style = PaintedStyle(
@@ -1041,4 +1055,16 @@ private fun RunePromptBalloon(
             Icon(Icons.Filled.Close, contentDescription = null, tint = paper, modifier = Modifier.size((24f * us).dp))
         }
     }
+}
+
+/** The colours of the home screen's rank chip, one set per rank (top, middle and bottom of the pill, and its rim). */
+private class RankChipLook(val top: Color, val mid: Color, val bottom: Color, val rim: Color)
+
+private fun rankChipLook(rank: com.sualtikasifi.cizimhafiza.domain.model.PlayerRank): RankChipLook = when (rank) {
+    com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.KARALAMACI -> RankChipLook(Color(0xFFA9B2C0), Color(0xFF707B8D), Color(0xFF4B5567), Color(0xFF343C4A))
+    com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.CIRAK -> RankChipLook(Color(0xFF72C4FF), Color(0xFF2F8CE0), Color(0xFF1C5FB0), Color(0xFF14437F))
+    com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.RESSAM -> RankChipLook(Color(0xFF72E2A2), Color(0xFF2BAE6A), Color(0xFF1A7D4A), Color(0xFF115A34))
+    com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.USTA_RESSAM -> RankChipLook(Color(0xFFFFB46A), Color(0xFFF07A20), Color(0xFFC25410), Color(0xFF8F3A08))
+    com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.SANATCI -> RankChipLook(Color(0xFF9D7EFF), Color(0xFF6B4CDA), Color(0xFF4A30AE), Color(0xFF3A2590))
+    com.sualtikasifi.cizimhafiza.domain.model.PlayerRank.BUYUK_USTA -> RankChipLook(Color(0xFFFFE27A), Color(0xFFF2B518), Color(0xFFC98A0A), Color(0xFF946106))
 }
