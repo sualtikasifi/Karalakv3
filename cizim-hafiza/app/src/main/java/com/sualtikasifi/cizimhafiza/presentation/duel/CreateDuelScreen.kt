@@ -186,14 +186,14 @@ fun CreateDuelScreen(
         // The classic duel is open to everyone: it goes straight to the round.
         ArtButton(
             u = u, offX = offX, fs = ::fs, art = R.drawable.duel_btn_classic,
-            x = 19f, y = 1465f, w = 404f, h = 163f, labelX = 190f, labelW = 215f,
+            x = 19f, y = 1465f, w = 404f, h = 163f, labelX = 186f, labelW = 192f,
             label = stringResource(R.string.duel_classic), outline = Color(0xFF1B5E10),
             onClick = { onChallengeStarted(selectedCount, 0) }
         )
         // The gold duel opens its window: the amounts, or the reason it cannot be played with this friend.
         ArtButton(
             u = u, offX = offX, fs = ::fs, art = R.drawable.duel_btn_gold,
-            x = 416f, y = 1467f, w = 408f, h = 162f, labelX = 584f, labelW = 222f,
+            x = 416f, y = 1467f, w = 408f, h = 162f, labelX = 580f, labelW = 204f,
             label = stringResource(R.string.stake_picker_title), outline = ButtonOutline,
             onClick = { stakeViewModel.start(opponentUid, selectedCount) }
         )
@@ -241,10 +241,11 @@ private fun ArtButton(
         // The label is set on two lines (one word on each), so it fits the button in every language at a size that reads well.
         LetteredText(
             text = label.replace(" ", "\n"),
-            size = fs(56f),
+            size = fs(48f),
             outline = outline,
             maxLines = 2,
-            modifier = Modifier.offset(u * (labelX - x), u * 0f).size(u * labelW, u * h),
+            // between the picture on the left and the button's rounded right end, a little above the middle (the button's face)
+            modifier = Modifier.offset(u * (labelX - x), u * -4f).size(u * labelW, u * h),
             minScale = 0.5f
         )
     }

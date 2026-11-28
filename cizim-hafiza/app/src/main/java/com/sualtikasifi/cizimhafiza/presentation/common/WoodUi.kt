@@ -128,7 +128,9 @@ fun LetteredText(
     /** How far the lettering may shrink to fit the space it is given before it is ellipsised instead. */
     minScale: Float = 0.55f,
     /** A page title: always gets the wide soft shadow, however small the screen makes it. */
-    title: Boolean = false
+    title: Boolean = false,
+    /** What the title is tuned under (see TitleNudge) when its words carry a name that changes: the same for every name. */
+    tuneKey: String? = null
 ) {
     val density = LocalDensity.current
     // The outline is drawn outside the glyphs, so the space it takes is kept out of what the letters may fill.
@@ -146,10 +148,10 @@ fun LetteredText(
         val nudgeContext = LocalContext.current
         if (title) {
             TitleNudge.load(nudgeContext)
-            if (TitleNudge.enabled) DisposableEffect(text) { val k = TitleNudge.keyOf(text); TitleNudge.show(k); onDispose { TitleNudge.hide(k) } }
+            if (TitleNudge.enabled) DisposableEffect(text) { val k = tuneKey ?: TitleNudge.keyOf(text); TitleNudge.show(k); onDispose { TitleNudge.hide(k) } }
         }
-        val (nudgeX, nudgeY) = if (title) TitleNudge.offsetOf(TitleNudge.keyOf(text)) else (0 to 0)
-        val bend = if (title) TitleNudge.bendOf(TitleNudge.keyOf(text)) else 0
+        val (nudgeX, nudgeY) = if (title) TitleNudge.offsetOf(tuneKey ?: TitleNudge.keyOf(text)) else (0 to 0)
+        val bend = if (title) TitleNudge.bendOf(tuneKey ?: TitleNudge.keyOf(text)) else 0
         val nx = (size.value * scale * nudgeX / 100f).dp
         val ny = (size.value * scale * nudgeY / 100f).dp
         // Page titles (and any title-sized lettering) also get a wide, soft shadow underneath, so a title laid on a

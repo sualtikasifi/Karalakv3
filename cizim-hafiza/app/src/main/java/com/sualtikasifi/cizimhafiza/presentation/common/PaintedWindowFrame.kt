@@ -90,7 +90,7 @@ fun PaintedWindowFrame(
                 content = content
             )
             Box(Modifier.offset(u * RibbonX, u * RibbonY).size(u * RibbonW, u * RibbonH), contentAlignment = Alignment.Center) {
-                LetteredText(text = title, size = 26.sp, outline = Color(0xFF5B1247), maxLines = 2, minScale = 0.5f, modifier = Modifier.fillMaxWidth().offset(y = 2.9.dp))
+                LetteredText(text = title, size = 26.sp, outline = Color(0xFF5B1247), maxLines = 2, minScale = 0.5f, title = true, modifier = Modifier.fillMaxWidth().offset(y = 2.9.dp))
             }
             if (onClose != null) {
                 // on the gold frame's top-right corner, half over its edge

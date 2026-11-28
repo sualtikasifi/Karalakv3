@@ -22,6 +22,7 @@ shoot() {
   fi
   adb exec-out screencap -p > "$OUT/$name.png"
 }
+adb shell cmd locale set-app-locales "$PKG" --locales tr >/dev/null 2>&1 || true
 adb shell am force-stop "$PKG"
 adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.ChestPreviewActivity" --es tier silver --es state duel_create
 sleep 6
