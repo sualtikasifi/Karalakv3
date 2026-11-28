@@ -41,6 +41,7 @@ import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.wrapContentSize
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPress
 import com.sualtikasifi.cizimhafiza.presentation.common.PressArt
 import androidx.compose.foundation.layout.Arrangement
@@ -214,7 +215,7 @@ fun DrawingScreen(
 
         Box(modifier = Modifier.fillMaxSize().offset(y = topShift)) {
         // --- Header: back (painted into the picture), clock + progress, music, countdown ring ---
-        Box(Modifier.requiredSize(a(ArtWidth), a(ArtHeight))) {
+        Box(Modifier.wrapContentSize(Alignment.TopStart, unbounded = true).requiredSize(a(ArtWidth), a(ArtHeight))) {
             PaintedPress(
                 R.drawable.bg_draw, 44f / ArtWidth, 90f / ArtHeight, 80f / ArtWidth, 82f / ArtHeight, a(ArtWidth), a(ArtHeight), corner = 20.dp,
                 art = drawPressArt(5), onClick = onBackClick
@@ -235,7 +236,7 @@ fun DrawingScreen(
             }
             Text(progress, style = PaintedStyle(color = ink, fontSize = 17.sp * f), maxLines = 1)
         }
-        Box(Modifier.requiredSize(a(ArtWidth), a(ArtHeight))) {
+        Box(Modifier.wrapContentSize(Alignment.TopStart, unbounded = true).requiredSize(a(ArtWidth), a(ArtHeight))) {
             PaintedPress(
                 R.drawable.bg_draw, 589f / ArtWidth, 91f / ArtHeight, 91f / ArtWidth, 86f / ArtHeight, a(ArtWidth), a(ArtHeight), corner = 18.dp,
                 art = drawPressArt(4), onClick = onToggleMusic
@@ -370,7 +371,7 @@ fun DrawingScreen(
         val toolAct = listOf<() -> Unit>({ tool = DrawTool.PEN }, { tool = DrawTool.ERASER }, onUndoLastStroke, onClearCanvas)
         val toolDesc = listOf(R.string.tool_pen, R.string.tool_eraser, R.string.tool_undo, R.string.clear_canvas)
         val descriptions = toolDesc.map { stringResource(it) }
-        Box(Modifier.offset(0.dp, screenHeight - a(ArtHeight)).requiredSize(a(ArtWidth), a(ArtHeight))) {
+        Box(Modifier.offset(0.dp, screenHeight - a(ArtHeight)).wrapContentSize(Alignment.TopStart, unbounded = true).requiredSize(a(ArtWidth), a(ArtHeight))) {
             toolRects.forEachIndexed { i, r ->
                 Box(Modifier.graphicsLayer { alpha = if (toolOn[i]) 1f else 0.4f }) {
                     PaintedPress(
