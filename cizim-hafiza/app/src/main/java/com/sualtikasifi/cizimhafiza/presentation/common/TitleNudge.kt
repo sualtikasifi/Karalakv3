@@ -87,6 +87,14 @@ object TitleNudge {
         "Desafío" to (3 to -18),
         "Desafio" to (3 to -18),
         "Karalak" to (-6 to -15),
+        "GÜNÜN ÜCRETSİZ JOKERİ" to (-14 to -4),
+        "FREE JOKER OF THE DAY" to (-14 to -4),
+        "COMODÍN GRATIS DEL DÍA" to (-14 to -4),
+        "CORINGA GRÁTIS DO DIA" to (-14 to -4),
+        "Karalak Mağaza" to (0 to -40),
+        "Karalak Store" to (0 to -40),
+        "Karalak Tienda" to (0 to -40),
+        "Karalak Loja" to (0 to -40),
         "Karalak Rünleri" to (21 to 0),
         "Karalak Runes" to (21 to 0),
         "Runas de Karalak" to (21 to 0),
@@ -157,6 +165,9 @@ object TitleNudge {
         "Chat" to (0 to -23)
     )
 
+    /** Hand-tuned curves, written back from the developer panel the same way as [DEFAULTS]. */
+    private val BEND_DEFAULTS: Map<String, Int> = mapOf()
+
     private const val PREFS = "title_nudge"
     private const val ON = "__on"
 
@@ -164,6 +175,9 @@ object TitleNudge {
         private set
 
     private val saved: SnapshotStateMap<String, Pair<Int, Int>> = mutableStateMapOf()
+    /** How far a title is curved: hundredths of its size, positive arches it up (an oval top), negative drops the middle. */
+    private val savedBend: SnapshotStateMap<String, Int> = mutableStateMapOf()
+    private const val BEND = "#oval"
     private val active: SnapshotStateList<String> = mutableStateListOf()
     private var loaded = false
 
@@ -175,6 +189,7 @@ object TitleNudge {
             enabled = prefs.getBoolean(ON, false)
             prefs.all.forEach { (k, v) ->
                 if (k == ON || v !is String) return@forEach
+                if (k.endsWith(BEND)) { savedBend[k.removeSuffix(BEND)] = v.toIntOrNull() ?: 0; return@forEach }
                 val p = v.split(",")
                 if (p.size == 2) saved[k] = (p[0].toIntOrNull() ?: 0) to (p[1].toIntOrNull() ?: 0)
             }
@@ -189,6 +204,14 @@ object TitleNudge {
 
     fun offsetOf(key: String): Pair<Int, Int> = saved[key] ?: DEFAULTS[key] ?: (0 to 0)
 
+    /** The curve of this title (see [savedBend]); 0 is a straight line. */
+    fun bendOf(key: String): Int = savedBend[key] ?: BEND_DEFAULTS[key] ?: 0
+
+    fun setBend(context: Context, key: String, bend: Int) {
+        savedBend[key] = bend
+        runCatching { context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(key + BEND, "$bend").apply() }
+    }
+
     fun set(context: Context, key: String, dx: Int, dy: Int) {
         saved[key] = dx to dy
         runCatching { context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(key, "$dx,$dy").apply() }
@@ -196,7 +219,8 @@ object TitleNudge {
 
     fun reset(context: Context, key: String) {
         saved.remove(key)
-        runCatching { context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(key).apply() }
+        savedBend.remove(key)
+        runCatching { context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(key).remove(key + BEND).apply() }
     }
 
     internal fun show(key: String) { active.add(key) }
@@ -204,7 +228,11 @@ object TitleNudge {
 
     /** Every changed title, one per line, ready to be pasted back. */
     fun report(): String =
-        saved.entries.filter { it.value != (0 to 0) }.sortedBy { it.key }.joinToString("\n") { "\"${it.key}\" -> x ${it.value.first}, y ${it.value.second}" }
+        (saved.keys + savedBend.keys).distinct().sorted().mapNotNull { k ->
+            val (x, y) = saved[k] ?: (0 to 0)
+            val b = savedBend[k] ?: 0
+            if (x == 0 && y == 0 && b == 0) null else "\"$k\" -> x $x, y $y, oval $b"
+        }.joinToString("\n")
 
     internal fun visibleKeys(): List<String> = active.distinct()
 }
@@ -231,7 +259,8 @@ fun TitleNudgeOverlay() {
                 Text("Bu ekranda başlık yok", color = Color.White, fontSize = 13.sp)
             } else {
                 val (dx, dy) = TitleNudge.offsetOf(key)
-                Text("“$key”   x $dx · y $dy", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                val bend = TitleNudge.bendOf(key)
+                Text("“$key”   x $dx · y $dy · oval $bend", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 if (keys.size > 1) {
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         keys.take(4).forEach { k ->
@@ -246,6 +275,12 @@ fun TitleNudgeOverlay() {
                         Arrow(Icons.Filled.KeyboardArrowDown) { TitleNudge.set(context, key, dx, dy + step) }
                     }
                     Arrow(Icons.Filled.KeyboardArrowRight) { TitleNudge.set(context, key, dx + step, dy) }
+                }
+                // the curve: the middle of the title up (an arch, like a ribbon's top) or down
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Chip("Ovalleştir ∩ +", false) { TitleNudge.setBend(context, key, bend + step) }
+                    Chip("∪ −", false) { TitleNudge.setBend(context, key, bend - step) }
+                    Chip("Düzelt", bend == 0) { TitleNudge.setBend(context, key, 0) }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Chip("Adım 1", step == 1) { step = 1 }

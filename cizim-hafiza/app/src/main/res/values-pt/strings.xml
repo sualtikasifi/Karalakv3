@@ -1883,7 +1883,7 @@
     <string name="gift_section_gold">Ouro</string>
     <string name="gift_section_items">Itens</string>
     <string name="gift_gold_amount">%1$d de ouro</string>
-    <string name="gift_fee_note">20% do que você paga é a taxa</string>
+    <string name="gift_fee_note">10% do que você paga é a taxa</string>
     <string name="gift_gold_name">Ouro</string>
     <string name="gift_inbox_title">Presentes recebidos</string>
     <string name="gift_from">De %1$s</string>
@@ -1895,9 +1895,10 @@
     <string name="gift_result_title">Presente recebido</string>
     <string name="gift_got_gold">+%1$d de ouro</string>
     <string name="gift_got_converted">Você já tinha: %1$d de ouro no lugar</string>
+    <string name="gift_locked_title">Presente bloqueado</string>
     <string name="gift_block_child">Presentes ficam fechados no modo infantil.</string>
     <string name="gift_block_link">Entre com o Google para enviar presentes.</string>
-    <string name="gift_block_level">Você pode enviar presentes a partir do nível 10.</string>
+    <string name="gift_block_level">Chegue ao nível 10 para enviar presentes aos seus amigos.</string>
     <string name="gift_block_age">Sua conta precisa ter pelo menos 7 dias para enviar presentes.</string>
     <string name="gift_block_friendship">Vocês precisam ser amigos há pelo menos 2 dias.</string>
     <string name="gift_block_friend">Este amigo ainda não pode receber presentes. Ele precisa da versão mais recente do app, aberta uma vez, e do login com o Google.</string>
@@ -1929,12 +1930,14 @@
     <string name="stake_block_limit">O limite de duelos por ouro de hoje foi atingido.</string>
     <string name="stake_block_late">Esta oferta não está mais aberta.</string>
     <string name="stake_block_refused">Não foi possível enviar o duelo. Seu ouro voltou.</string>
-    <string name="gift_fee_inline">20% de taxa</string>
+    <string name="gift_fee_inline">10% de taxa</string>
     <string name="gift_today_pill">Hoje restam %1$d presentes · %2$d de ouro</string>
     <string name="report_player_ask">Por que você quer denunciar este jogador?</string>
     <string name="report_player_note">Sua denúncia vai para o desenvolvedor e é analisada.</string>
     <string name="stake_burn_note">5% do pote sai do jogo.</string>
     <string name="stake_left_pill">Hoje restam: %1$d duelos · %2$d de ouro</string>
+    <string name="stake_win_label">Se ganhar</string>
+    <string name="stake_lose_label">Se perder</string>
     <string name="stake_chip_win">Ganha +%1$d</string>
     <string name="stake_chip_lose">Perde −%1$d</string>
     <string name="gift_sent_title">Presente enviado</string>

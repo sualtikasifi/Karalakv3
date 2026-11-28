@@ -44,6 +44,9 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -146,11 +149,20 @@ fun LetteredText(
             if (TitleNudge.enabled) DisposableEffect(text) { TitleNudge.show(text); onDispose { TitleNudge.hide(text) } }
         }
         val (nudgeX, nudgeY) = if (title) TitleNudge.offsetOf(text) else (0 to 0)
+        val bend = if (title) TitleNudge.bendOf(text) else 0
         val nx = (size.value * scale * nudgeX / 100f).dp
         val ny = (size.value * scale * nudgeY / 100f).dp
         // Page titles (and any title-sized lettering) also get a wide, soft shadow underneath, so a title laid on a
         // painted sign reads as part of the picture instead of as text put on afterwards. Titles are sized from the
         // screen width, so on a narrow phone they can come out small; their shadow keeps a floor so it still shows.
+        if (bend != 0) {
+            // A curved title is drawn by hand along an arc (the layers below can only lay text on a straight line).
+            CurvedLettering(
+                text = text, sizeSp = size.value * scale, bend = bend, fill = fill, outline = outline,
+                strokeDp = strokeDp, offsetX = nx, offsetY = lift + ny, modifier = Modifier.fillMaxSize()
+            )
+            return@BoxWithConstraints
+        }
         if (title || size.value >= 26f) {
             val d = (size.value * scale).coerceAtLeast(22f)
             Text(
@@ -591,3 +603,69 @@ fun StartButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
     }
 }
 
+
+
+/**
+ * The lettering of [LetteredText] set along an arc: the same Baloo 2 ExtraBold, shadow, outline and fill, drawn with the
+ * platform canvas because Compose text cannot follow a path. [bend] is in hundredths of the text size; positive lifts the
+ * middle (an arch), negative drops it.
+ */
+@Composable
+private fun CurvedLettering(
+    text: String,
+    sizeSp: Float,
+    bend: Int,
+    fill: Color,
+    outline: Color?,
+    strokeDp: Float,
+    offsetX: Dp,
+    offsetY: Dp,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val typeface = remember { androidx.core.content.res.ResourcesCompat.getFont(context, R.font.baloo2_extrabold) }
+    androidx.compose.foundation.Canvas(modifier) {
+        val textPx = sizeSp.sp.toPx()
+        val strokePx = strokeDp * density.density
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            this.typeface = typeface
+            textSize = textPx
+            strokeJoin = android.graphics.Paint.Join.ROUND
+            strokeCap = android.graphics.Paint.Cap.ROUND
+        }
+        val width = paint.measureText(text)
+        val fm = paint.fontMetrics
+        val cx = size.width / 2f + offsetX.toPx()
+        // the baseline of a straight line of this text, centred in the box
+        val base = size.height / 2f - (fm.ascent + fm.descent) / 2f + offsetY.toPx()
+        val sag = bend / 100f * textPx
+        val path = android.graphics.Path().apply {
+            moveTo(cx - width / 2f, base + sag / 2f)
+            quadTo(cx, base - sag * 1.5f, cx + width / 2f, base + sag / 2f)
+        }
+        val length = android.graphics.PathMeasure(path, false).length
+        val hOffset = ((length - width) / 2f).coerceAtLeast(0f)
+        drawIntoCanvas { c ->
+            val nc = c.nativeCanvas
+            // the wide soft shadow of a title
+            paint.style = android.graphics.Paint.Style.STROKE
+            paint.strokeWidth = strokePx + 1.5f * density.density
+            paint.color = 0x40000000
+            paint.setShadowLayer(textPx * 0.16f, 0f, textPx * 0.09f, 0x66200C00)
+            nc.save(); nc.translate(0f, textPx * 0.07f); nc.drawTextOnPath(text, path, hOffset, 0f, paint); nc.restore()
+            paint.clearShadowLayer()
+            if (outline != null) {
+                paint.strokeWidth = strokePx
+                paint.color = outline.toArgb()
+                paint.setShadowLayer(3f * density.density, 0f, 2f * density.density, 0x66000000)
+                nc.drawTextOnPath(text, path, hOffset, 0f, paint)
+                paint.clearShadowLayer()
+            }
+            paint.style = android.graphics.Paint.Style.FILL
+            paint.color = fill.toArgb()
+            if (outline == null) paint.setShadowLayer(2f * density.density, 0f, 1.5f * density.density, 0x66A04000)
+            nc.drawTextOnPath(text, path, hOffset, 0f, paint)
+        }
+    }
+}

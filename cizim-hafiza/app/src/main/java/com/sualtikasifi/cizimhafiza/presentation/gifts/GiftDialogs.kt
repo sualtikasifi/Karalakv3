@@ -6,8 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.offset
@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -84,47 +85,158 @@ private fun giftName(kind: GiftKind, itemId: String, qty: Int): String = when (k
     GiftKind.JOKER -> (JokerType.entries.firstOrNull { it.name == itemId }?.let { stringResource(it.labelRes()) } ?: itemId) + " ×$qty"
 }
 
-/** Pick what to send to [friendName]: gold on top, items below, today's allowance as the caption. */
+/**
+ * "Hediye gönder": one painted window (gift_send_window, 924 x 1467 px: the dog and the cat behind a purple banner, a bar
+ * for today's allowance, four gold rows and three joker rows, each with an empty yellow price pill). Everything written
+ * on it is lettered live in the picture's own proportions; the rows are the buttons. A message (checking, not allowed,
+ * sent) takes the place of the rows on a cream panel inside the same frame.
+ */
 @Composable
 fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit, onClose: () -> Unit) {
+    if (state.blocked == GiftBlock.LEVEL) {
+        GiftLockedWindow(stringResource(state.blocked.messageRes()), onClose)
+        return
+    }
     val sent = state.sent
-    AppWindowDialog(
-        // once it has gone the title says so, without a name; before that it says who the gift is for
-        title = if (sent != null) stringResource(R.string.gift_sent_title) else stringResource(R.string.gift_send_title, state.friendName),
-        onDismiss = onClose,
-        centerTitle = sent != null,
-        footer = if (sent != null) ({ PaintedCloseButton(text = stringResource(R.string.close), onClick = onClose) }) else null
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onClose,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+        BoxWithConstraints(Modifier.fillMaxWidth(0.94f).widthIn(max = 400.dp).aspectRatio(SendW / SendH)) {
+            val w = maxWidth
+            val h = maxHeight
+            Image(
+                painter = painterResource(R.drawable.gift_send_window), contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds, modifier = Modifier.fillMaxSize()
+            )
+            // the purple banner: who the gift is for, or that it has gone
+            LetteredText(
+                text = if (sent != null) stringResource(R.string.gift_sent_title) else stringResource(R.string.gift_send_title, state.friendName),
+                size = 24.sp, fill = Color.White, outline = Color(0xFF3E0B66), title = true, minScale = 0.5f,
+                modifier = Modifier.offset(w * 0.29f, h * 0.152f).size(w * 0.52f, h * 0.062f)
+            )
+            // the red cross, drawn into the picture
+            Box(Modifier.offset(w * 0.86f, h * 0.105f).size(w * 0.14f, w * 0.14f).pressable(pressedScale = 0.9f, onClick = onClose))
+
             when {
-                state.loading -> Note(stringResource(R.string.gift_loading))
-                state.blocked != null -> ErrorCard(stringResource(state.blocked.messageRes()))
-                sent != null -> SentCard(sent)
+                state.loading -> MessagePanel(w, h) { Note(stringResource(R.string.gift_loading)) }
+                state.blocked != null -> MessagePanel(w, h) { ErrorCard(stringResource(state.blocked.messageRes())) }
+                sent != null -> MessagePanel(w, h) {
+                    SentCard(sent)
+                    PaintedCloseButton(text = stringResource(R.string.close), onClick = onClose)
+                }
                 else -> {
                     val usage = state.usage ?: GiftUsage(0, 0, 0)
-                    AllowancePill(usage)
-                    state.error?.let { ErrorCard(stringResource(it.messageRes())) }
-                    Section(stringResource(R.string.gift_section_gold), stringResource(R.string.gift_fee_inline))
-                    GiftRules.goldOffers().forEach { Offer(it, gold, usage, state.sending, onSend) }
-                    val items = GiftRules.itemOffers()
-                    if (items.isNotEmpty()) {
-                        Section(stringResource(R.string.gift_section_items), null)
-                        items.forEach { Offer(it, gold, usage, state.sending, onSend) }
+                    // the bar under the banner: what is left today, or why the last try did not go
+                    FitText(
+                        text = state.error?.let { stringResource(it.messageRes()) }
+                            ?: stringResource(R.string.gift_today_pill, usage.countLeft, usage.goldLeft.coerceAtMost(usage.friendLeft)),
+                        style = PaintedStyle(
+                            color = if (state.error != null) Color(0xFF9A2F12) else Ink, fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start, lineHeight = 17.sp
+                        ),
+                        maxLines = 2, minScale = 0.7f, contentAlignment = Alignment.CenterStart,
+                        modifier = Modifier.offset(w * 0.27f, h * 0.2475f).size(w * 0.55f, h * 0.046f)
+                    )
+                    // the gold plank
+                    FitText(
+                        text = stringResource(R.string.gift_section_gold),
+                        style = PaintedStyle(color = Ink, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start),
+                        minScale = 0.6f, contentAlignment = Alignment.CenterStart,
+                        modifier = Modifier.offset(w * 0.505f, h * 0.317f).size(w * 0.2f, h * 0.041f)
+                    )
+                    GiftRules.goldOffers().forEachIndexed { i, o ->
+                        SendRow(o, gold, usage, state.sending, onSend, w, h, SendRowTop[i], feeTag = i == 0)
                     }
-                    // room under the last row, so it never sits on the paint splashes in the window's lower corners
-                    Spacer(Modifier.height(40.dp))
+                    FitText(
+                        text = stringResource(R.string.gift_section_items),
+                        style = PaintedStyle(color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center,
+                            shadow = androidx.compose.ui.graphics.Shadow(Color(0xFF3E0B66), androidx.compose.ui.geometry.Offset(0f, 2f), 3f)),
+                        minScale = 0.6f,
+                        modifier = Modifier.offset(w * 0.34f, h * 0.658f).size(w * 0.33f, h * 0.034f)
+                    )
+                    // the three rows have their joker's picture painted in, in this order
+                    val items = GiftRules.itemOffers()
+                    listOf(JokerType.FIRST_LETTER, JokerType.LETTER_COUNT, JokerType.EXTRA_TIME).forEachIndexed { i, type ->
+                        items.firstOrNull { it.kind == GiftKind.JOKER && it.itemId == type.name }?.let {
+                            SendRow(it, gold, usage, state.sending, onSend, w, h, SendRowTop[4 + i], feeTag = false)
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+private const val SendW = 924f
+private const val SendH = 1467f
+
+/** Top edge of the seven rows in the picture, as fractions of its height (four gold, then three jokers). */
+private val SendRowTop = floatArrayOf(0.375f, 0.440f, 0.504f, 0.571f, 0.698f, 0.763f, 0.829f)
+
+/** The cream panel that takes the rows' place when there is something to say instead. */
 @Composable
-private fun Section(text: String, hint: String?) {
-    Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth().padding(top = 6.dp, start = 4.dp, end = 4.dp)) {
-        androidx.compose.material3.Text(text, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
-        if (hint != null) androidx.compose.material3.Text(hint, color = InkSoft, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+private fun MessagePanel(w: androidx.compose.ui.unit.Dp, h: androidx.compose.ui.unit.Dp, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    val shape = RoundedCornerShape(22.dp)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.offset(w * 0.078f, h * 0.243f).size(w * 0.844f, h * 0.655f)
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFFAEC), Color(0xFFFBE9C4))), shape)
+            .border(2.dp, Color(0xFFE2C28A), shape)
+            .padding(12.dp),
+        content = content
+    )
+}
+
+/** One of the picture's rows: its words on the left, its price in the yellow pill, the whole row one button. */
+@Composable
+private fun SendRow(
+    offer: GiftOffer, gold: Int, usage: GiftUsage, sending: Boolean, onSend: (GiftOffer) -> Unit,
+    w: androidx.compose.ui.unit.Dp, h: androidx.compose.ui.unit.Dp, top: Float, feeTag: Boolean
+) {
+    val ok = gold >= offer.cost && usage.canAfford(offer) && !sending
+    val ink = if (ok) Ink else Color(0xFFA8957F)
+    val rowShape = RoundedCornerShape(percent = 50)
+    Box(
+        Modifier.offset(w * 0.115f, h * top).size(w * 0.785f, h * 0.058f)
+            .clip(rowShape)
+            .then(if (ok) Modifier.pressable(pressedScale = 0.97f, onClick = { onSend(offer) }) else Modifier.background(Color(0x66F2E3C8)))
+    )
+    val joker = offer.kind == GiftKind.JOKER
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.offset(w * 0.265f, h * top).size(w * 0.41f, h * 0.058f)
+    ) {
+        FitText(
+            text = if (offer.kind == GiftKind.GOLD) stringResource(R.string.gift_gold_amount, offer.receives) else giftName(offer.kind, offer.itemId, offer.qty),
+            style = PaintedStyle(
+                color = ink, fontSize = if (joker) 16.sp else 20.sp, lineHeight = if (joker) 17.sp else 22.sp,
+                fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start
+            ),
+            maxLines = if (joker) 2 else 1, minScale = 0.75f, contentAlignment = Alignment.CenterStart,
+            modifier = Modifier.weight(1f)
+        )
+        if (feeTag) {
+            // the fee, once, beside the first gold amount
+            Box(
+                Modifier.padding(start = 4.dp)
+                    .background(Brush.horizontalGradient(listOf(Color(0xFFE8329C), Color(0xFFB81F86))), RoundedCornerShape(50))
+                    .padding(horizontal = 7.dp, vertical = 2.dp)
+            ) {
+                androidx.compose.material3.Text(
+                    stringResource(R.string.gift_fee_inline), color = Color.White, fontSize = 10.sp,
+                    fontWeight = FontWeight.ExtraBold, maxLines = 1
+                )
+            }
+        }
     }
+    FitText(
+        text = "${offer.cost}",
+        style = PaintedStyle(color = if (ok) Color(0xFF3B2314) else Color(0xFF8E7B66), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+        minScale = 0.6f,
+        modifier = Modifier.offset(w * 0.765f, h * top).size(w * 0.125f, h * 0.058f)
+    )
 }
 
 @Composable
@@ -135,24 +247,6 @@ private fun Note(text: String) {
     )
 }
 
-/** What is left of today's allowance, as one small pill instead of a loose sentence. */
-@Composable
-private fun AllowancePill(usage: GiftUsage) {
-    val shape = RoundedCornerShape(50)
-    Row(
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 2.dp)
-            .background(Color(0x1F7A5A40), shape).padding(horizontal = 12.dp, vertical = 7.dp)
-    ) {
-        Image(painterResource(R.drawable.icon_gold_coin), null, Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
-        androidx.compose.material3.Text(
-            stringResource(R.string.gift_today_pill, usage.countLeft, usage.goldLeft.coerceAtMost(usage.friendLeft)),
-            color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1
-        )
-    }
-}
-
 @Composable
 private fun ErrorCard(text: String) {
     val shape = RoundedCornerShape(14.dp)
@@ -161,30 +255,6 @@ private fun ErrorCard(text: String) {
         modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp)
             .background(Color(0x26D9483B), shape).border(1.5.dp, Color(0x66D9483B), shape).padding(horizontal = 12.dp, vertical = 9.dp)
     )
-}
-
-@Composable
-private fun Offer(offer: GiftOffer, gold: Int, usage: GiftUsage, sending: Boolean, onSend: (GiftOffer) -> Unit) {
-    val ok = gold >= offer.cost && usage.canAfford(offer) && !sending
-    val shape = RoundedCornerShape(14.dp)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp)
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFFAEC), Color(0xFFFBE9C4))), shape)
-            .border(1.5.dp, Color(0xFFE2C28A), shape)
-            .clickable(enabled = ok) { onSend(offer) }
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
-        androidx.compose.material3.Text(
-            if (offer.kind == GiftKind.GOLD) stringResource(R.string.gift_gold_amount, offer.receives) else giftName(offer.kind, offer.itemId, offer.qty),
-            color = if (ok) Ink else Color(0xFFB0A090), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
-        )
-        Spacer(Modifier.width(8.dp))
-        Image(painterResource(R.drawable.icon_gold_coin), null, Modifier.size(20.dp))
-        Spacer(Modifier.width(4.dp))
-        androidx.compose.material3.Text("${offer.cost}", color = if (ok) Ink else Color(0xFFB0A090), fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
-    }
 }
 
 /** After a gift has gone: a gift badge, one line that says so, what was sent and what it cost, and a quiet note on how it arrives. */
@@ -331,3 +401,40 @@ fun GiftResultDialog(results: List<Pair<IncomingGift, GiftRepository.ClaimResult
         button = stringResource(R.string.gift_great), onClick = onClose, onDismiss = onClose
     )
 }
+
+/**
+ * The window a player under level 10 sees: one painted picture (gift_locked_window, 913 x 1471 px: the dog and the cat
+ * wondering over a locked present, a purple banner, a cream bar and the road from level 9 to level 10 to the gift).
+ * The banner and the bar are lettered live; the red cross closes it.
+ */
+@Composable
+private fun GiftLockedWindow(message: String, onClose: () -> Unit) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onClose,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        BoxWithConstraints(Modifier.fillMaxWidth(0.94f).widthIn(max = 400.dp).aspectRatio(LockedW / LockedH)) {
+            val w = maxWidth
+            val h = maxHeight
+            Image(
+                painter = painterResource(R.drawable.gift_locked_window), contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds, modifier = Modifier.fillMaxSize()
+            )
+            LetteredText(
+                text = stringResource(R.string.gift_locked_title), size = 26.sp, fill = Color.White, outline = Color(0xFF3E0B66),
+                title = true, minScale = 0.5f,
+                modifier = Modifier.offset(w * 0.268f, h * 0.146f).size(w * 0.52f, h * 0.056f)
+            )
+            Box(Modifier.offset(w * 0.875f, h * 0.112f).size(w * 0.125f, w * 0.125f).pressable(pressedScale = 0.9f, onClick = onClose))
+            FitText(
+                text = message,
+                style = PaintedStyle(color = Ink, fontSize = 15.sp, lineHeight = 17.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+                maxLines = 2, minScale = 0.75f,
+                modifier = Modifier.offset(w * 0.164f, h * 0.556f).size(w * 0.679f, h * 0.059f)
+            )
+        }
+    }
+}
+
+private const val LockedW = 913f
+private const val LockedH = 1471f

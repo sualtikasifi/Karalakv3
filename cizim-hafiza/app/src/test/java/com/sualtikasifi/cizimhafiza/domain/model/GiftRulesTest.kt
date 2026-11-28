@@ -7,8 +7,8 @@ import org.junit.Test
 
 class GiftRulesTest {
     @Test fun goldFeeIsBurnedTwentyPercent() {
-        assertEquals(80, GiftRules.goldReceived(100))
-        assertEquals(800, GiftRules.goldReceived(1000))
+        assertEquals(90, GiftRules.goldReceived(100))
+        assertEquals(900, GiftRules.goldReceived(1000))
     }
 
     @Test fun itemCostAddsTenPercentRoundedUp() {

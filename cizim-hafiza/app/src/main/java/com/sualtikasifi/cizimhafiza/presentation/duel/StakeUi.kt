@@ -9,12 +9,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import com.sualtikasifi.cizimhafiza.presentation.common.pressable
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
+import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.FitText
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -114,95 +123,140 @@ class StakeViewModel @Inject constructor(
     fun close() { _picker.value = null }
 }
 
+/**
+ * The gold-duel window: one painted picture (stake_window, 910 x 1463 px: the dog and the cat facing off under a purple
+ * ribbon, a cream bar for the rules, a purple bar for today's allowance, four rows with a green "win" pill and a pink
+ * "lose" pill each, and the orange way out). Every word on it is lettered live in the picture's own proportions; the
+ * rows and the orange button are the buttons. A message (checking, not allowed) takes the rows' place on a cream panel.
+ */
 @Composable
 fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
-    AppWindowDialog(title = stringResource(R.string.stake_picker_title), onDismiss = onDismiss) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            Text(
-                stringResource(R.string.stake_picker_sub, friendName), color = Ink, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold,
-                textAlign = TextAlign.Center, lineHeight = 20.sp, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp)
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            Modifier.fillMaxWidth(0.94f).widthIn(max = 400.dp).aspectRatio(StakeW / StakeH)
+        ) {
+            val w = maxWidth
+            val h = maxHeight
+            Image(
+                painter = painterResource(R.drawable.stake_window), contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds, modifier = Modifier.fillMaxSize()
             )
-            Text(
-                stringResource(R.string.stake_burn_note), color = InkSoft, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
+            LetteredText(
+                text = stringResource(R.string.stake_picker_title), size = 28.sp, fill = Color.White, outline = Color(0xFF3E0B66),
+                title = true, minScale = 0.5f,
+                modifier = Modifier.offset(w * 0.258f, h * 0.101f).size(w * 0.489f, h * 0.058f)
+            )
+            // the red cross, drawn into the picture
+            androidx.compose.foundation.layout.Box(
+                Modifier.offset(w * 0.875f, h * 0.113f).size(w * 0.125f, w * 0.125f).pressable(pressedScale = 0.9f, onClick = onDismiss)
+            )
+            // the rules, and the one thing the house keeps
+            FitText(
+                text = stringResource(R.string.stake_picker_sub, friendName),
+                style = PaintedStyle(color = Ink, fontSize = 12.sp, lineHeight = 13.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+                maxLines = 2, minScale = 0.7f,
+                modifier = Modifier.offset(w * 0.165f, h * 0.336f).size(w * 0.67f, h * 0.052f)
+            )
+            FitText(
+                text = stringResource(R.string.stake_burn_note),
+                style = PaintedStyle(color = InkSoft, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+                minScale = 0.7f,
+                modifier = Modifier.offset(w * 0.275f, h * 0.391f).size(w * 0.445f, h * 0.028f)
             )
             val usage = state.usage
-            if (state.block != null) {
-                Text(stringResource(stakeMessageRes(state.block)), color = Color(0xFF9A2F12), fontSize = 15.sp, fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp))
-            } else if (state.loading || usage == null) {
-                Text(stringResource(R.string.gift_loading), color = InkSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            if (state.block != null || state.loading || usage == null) {
+                StakePanel(w, h) {
+                    if (state.block != null) {
+                        Text(
+                            stringResource(stakeMessageRes(state.block)), color = Color(0xFF9A2F12), fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp)
+                        )
+                    } else {
+                        Text(stringResource(R.string.gift_loading), color = InkSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    }
+                }
             } else {
-                StakeAllowancePill(usage)
-                StakeRules.STAKES.forEach { stake -> StakeOption(stake, gold >= stake && usage.canStake(stake), onPick) }
+                // the purple bar: what is left today
+                FitText(
+                    text = stringResource(R.string.stake_left_pill, StakeRules.MAX_DUELS_PER_DAY - usage.count, StakeRules.MAX_STAKED_PER_DAY - usage.gold),
+                    style = PaintedStyle(color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start),
+                    minScale = 0.65f, contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier.offset(w * 0.321f, h * 0.434f).size(w * 0.553f, h * 0.034f)
+                )
+                StakeRules.STAKES.forEachIndexed { i, stake ->
+                    StakeRow(stake, gold >= stake && usage.canStake(stake), onPick, w, h, StakeRowTop[i.coerceAtMost(3)])
+                }
             }
-            // the way out is the loudest button: the window's own orange, centred and clear of the paint splashes below
-            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 26.dp), contentAlignment = Alignment.Center) {
-                PaintedPillButton(
-                    stringResource(R.string.stake_none), { onPick(0) }, primary = true, height = 48.dp, textSize = 18.sp,
-                    modifier = Modifier.fillMaxWidth(0.72f).softShadow()
+            // the way out is the loudest button: the picture's own orange
+            androidx.compose.foundation.layout.Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.offset(w * 0.225f, h * 0.80f).size(w * 0.55f, h * 0.075f).pressable(pressedScale = 0.95f, onClick = { onPick(0) })
+            ) {
+                LetteredText(
+                    text = stringResource(R.string.stake_none), size = 24.sp, fill = Color.White, outline = Color(0xFF9A3B00), minScale = 0.55f,
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
                 )
             }
         }
     }
 }
 
-/** What is left of today's allowance, as one small pill. */
-@Composable
-private fun StakeAllowancePill(usage: StakeUsage) {
-    val shape = RoundedCornerShape(50)
-    Row(
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp).background(Color(0x1F7A5A40), shape).padding(horizontal = 12.dp, vertical = 7.dp)
-    ) {
-        Image(painterResource(R.drawable.icon_gold_coin), null, Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(
-            stringResource(R.string.stake_left_pill, StakeRules.MAX_DUELS_PER_DAY - usage.count, StakeRules.MAX_STAKED_PER_DAY - usage.gold),
-            color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1
-        )
-    }
-}
+private const val StakeW = 910f
+private const val StakeH = 1463f
 
-/** One amount to put in: the coin and the amount, and what it comes to for a win and for a loss. */
+/** Top edge of the four rows in the picture, as fractions of its height. */
+private val StakeRowTop = floatArrayOf(0.482f, 0.558f, 0.636f, 0.713f)
+
+/** The cream panel that takes the purple bar's and the rows' place when there is something to say instead. */
 @Composable
-private fun StakeOption(stake: Int, enabled: Boolean, onPick: (Int) -> Unit) {
-    val shape = RoundedCornerShape(16.dp)
-    val ink = if (enabled) Ink else Color(0xFFB0A090)
+private fun StakePanel(w: androidx.compose.ui.unit.Dp, h: androidx.compose.ui.unit.Dp, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    val shape = RoundedCornerShape(22.dp)
     Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp)
-            .softShadow16()
+        verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.offset(w * 0.035f, h * 0.428f).size(w * 0.93f, h * 0.35f)
             .background(Brush.verticalGradient(listOf(Color(0xFFFFFAEC), Color(0xFFFBE9C4))), shape)
-            .border(1.5.dp, Color(0xFFE2C28A), shape)
-            .clickable(enabled = enabled) { onPick(stake) }
-            .padding(horizontal = 14.dp, vertical = 9.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(painterResource(R.drawable.icon_gold_coin), null, Modifier.size(26.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.gift_gold_amount, stake), color = ink, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold)
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StakeChip(stringResource(R.string.stake_chip_win, StakeRules.netWin(stake)), Color(0xFF1F7A30), Color(0x262EA043), enabled)
-            StakeChip(stringResource(R.string.stake_chip_lose, stake), Color(0xFFB3261E), Color(0x26D9483B), enabled)
-        }
-    }
-}
-
-@Composable
-private fun StakeChip(text: String, ink: Color, tint: Color, enabled: Boolean) {
-    val shape = RoundedCornerShape(50)
-    Text(
-        text, color = if (enabled) ink else Color(0xFFB0A090), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1,
-        modifier = Modifier.background(if (enabled) tint else Color(0x14000000), shape).padding(horizontal = 10.dp, vertical = 3.dp)
+            .border(2.dp, Color(0xFFE2C28A), shape)
+            .padding(12.dp),
+        content = content
     )
 }
 
-private fun Modifier.softShadow16(): Modifier = this.shadow(
-    elevation = 3.dp, shape = RoundedCornerShape(16.dp), clip = false,
-    ambientColor = Color(0x143B2314), spotColor = Color(0x2E3B2314)
-)
+/** One amount to put in: its coins painted at the left, the amount, and the two pills that say what it comes to. */
+@Composable
+private fun StakeRow(
+    stake: Int, enabled: Boolean, onPick: (Int) -> Unit,
+    w: androidx.compose.ui.unit.Dp, h: androidx.compose.ui.unit.Dp, top: Float
+) {
+    val ink = if (enabled) Ink else Color(0xFFA8957F)
+    androidx.compose.foundation.layout.Box(
+        Modifier.offset(w * 0.055f, h * top).size(w * 0.885f, h * 0.068f)
+            .clip(RoundedCornerShape(22.dp))
+            .then(if (enabled) Modifier.pressable(pressedScale = 0.97f, onClick = { onPick(stake) }) else Modifier.background(Color(0x66F2E3C8)))
+    )
+    FitText(
+        text = "$stake",
+        style = PaintedStyle(color = ink, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+        minScale = 0.6f, modifier = Modifier.offset(w * 0.236f, h * top).size(w * 0.194f, h * 0.068f)
+    )
+    StakePillText(stringResource(R.string.stake_win_label), "+${StakeRules.netWin(stake)}", if (enabled) Color(0xFF1B6B2A) else Color(0xFF8E8A7A), Modifier.offset(w * 0.436f, h * (top + 0.009f)).size(w * 0.221f, h * 0.051f))
+    StakePillText(stringResource(R.string.stake_lose_label), "−$stake", if (enabled) Color(0xFFA11D18) else Color(0xFF8E8A7A), Modifier.offset(w * 0.671f, h * (top + 0.009f)).size(w * 0.247f, h * 0.051f))
+}
+
+/** A small label over a bigger figure, lettered on one of the picture's pills. */
+@Composable
+private fun StakePillText(label: String, value: String, ink: Color, modifier: Modifier) {
+    Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
+        Text(label, color = ink, fontSize = 9.sp, lineHeight = 10.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+        FitText(
+            text = value,
+            style = PaintedStyle(color = ink, fontSize = 16.sp, lineHeight = 17.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+            minScale = 0.6f, modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
 
 /** What each settled wager did to the wallet. */
 @Composable
