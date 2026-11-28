@@ -373,7 +373,7 @@ fun DrawingScreen(
         val descriptions = toolDesc.map { stringResource(it) }
         Box(Modifier.offset(0.dp, screenHeight - a(ArtHeight)).wrapContentSize(Alignment.TopStart, unbounded = true).requiredSize(a(ArtWidth), a(ArtHeight))) {
             toolRects.forEachIndexed { i, r ->
-                Box(Modifier.graphicsLayer { alpha = if (toolOn[i]) 1f else 0.4f }) {
+                Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (toolOn[i]) 1f else 0.4f }) {
                     PaintedPress(
                         R.drawable.bg_draw, r[0] / ArtWidth, r[1] / ArtHeight, r[2] / ArtWidth, r[3] / ArtHeight, a(ArtWidth), a(ArtHeight), corner = 22.dp,
                         enabled = toolOn[i], art = drawPressArt(i), onClick = toolAct[i]
