@@ -13,6 +13,7 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.CizimHafizaTheme
  * Debug builds only: shows the chest window on its own so its layout can be looked at in the CI emulator.
  * Extras: tier = silver|gold|rare, state = start|unlocking|ready|busy|used|won|announce|announce_long|gift|gift_blocked|gift_inbox|report|phrases|invite (won = the "you won a chest" window; announce* = the developer-panel notice window).
  */
+@dagger.hilt.android.AndroidEntryPoint
 class ChestPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +31,8 @@ class ChestPreviewActivity : ComponentActivity() {
         }
         setContent {
             CizimHafizaTheme {
+                // the tuning arrows (when the mode is on in the title_nudge preference), as in MainActivity
+                com.sualtikasifi.cizimhafiza.presentation.common.TitleNudgeOverlay()
                 if (state.startsWith("announce")) {
                     val long = state == "announce_long"
                     com.sualtikasifi.cizimhafiza.presentation.common.AnnouncementDialog(
@@ -65,6 +68,28 @@ class ChestPreviewActivity : ComponentActivity() {
                     )
                     return@CizimHafizaTheme
                 }
+                if (state == "pen_picker") {
+                    com.sualtikasifi.cizimhafiza.presentation.mainmenu.PenPickerSheet(
+                        items = com.sualtikasifi.cizimhafiza.domain.model.PenSkin.entries.filter { it.isStoreItem || it.unlockLevel >= 0 }.take(18)
+                            .mapIndexed { i, skin -> com.sualtikasifi.cizimhafiza.presentation.mainmenu.PenSkinUiItem(skin, unlocked = i < 6, selected = i == 1) },
+                        onSelect = {}, onDismiss = { finish() }
+                    )
+                    return@CizimHafizaTheme
+                }
+                if (state == "avatar_picker") {
+                    com.sualtikasifi.cizimhafiza.presentation.mainmenu.AvatarFramePickerSheet(
+                        items = com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame.entries
+                            .mapIndexed { i, f -> com.sualtikasifi.cizimhafiza.presentation.mainmenu.AvatarFrameUiItem(f, unlocked = i < 8, selected = i == 2) },
+                        photoSource = "DINO", onPhotoSource = {}, onSelect = {}, onDismiss = { finish() }
+                    )
+                    return@CizimHafizaTheme
+                }
+                if (state == "duel_create") {
+                    com.sualtikasifi.cizimhafiza.presentation.duel.CreateDuelScreen(
+                        opponentName = "Elif", opponentUid = "u", onBack = { finish() }, onChallengeStarted = { _, _ -> }
+                    )
+                    return@CizimHafizaTheme
+                }
                 if (state.startsWith("stake")) {
                     if (state == "stake_result") {
                         val st = com.sualtikasifi.cizimhafiza.domain.model.DuelStatus.COMPLETE
@@ -75,6 +100,11 @@ class ChestPreviewActivity : ComponentActivity() {
                                 com.sualtikasifi.cizimhafiza.domain.repository.StakeSettlement("Deniz", 100, 100, com.sualtikasifi.cizimhafiza.domain.model.DuelStatus.EXPIRED)
                             )
                         ) { finish() }
+                    } else if (state == "stake_blocked") {
+                        com.sualtikasifi.cizimhafiza.presentation.duel.StakePickerDialog(
+                            com.sualtikasifi.cizimhafiza.presentation.duel.StakePickerState(10, loading = false, block = com.sualtikasifi.cizimhafiza.domain.model.StakeBlock.FRIEND_NOT_READY),
+                            "Elif", 800, {}, { finish() }
+                        )
                     } else {
                         com.sualtikasifi.cizimhafiza.presentation.duel.StakePickerDialog(
                             com.sualtikasifi.cizimhafiza.presentation.duel.StakePickerState(10, loading = false, usage = com.sualtikasifi.cizimhafiza.domain.model.StakeUsage(1500, 2, 500)),
@@ -86,6 +116,7 @@ class ChestPreviewActivity : ComponentActivity() {
                 if (state.startsWith("gift")) {
                     val g = com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendState("u", "Elif", loading = false, usage = com.sualtikasifi.cizimhafiza.domain.model.GiftUsage(300, 1, 300))
                     when (state) {
+                        "gift_blocked2" -> com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendDialog(g.copy(usage = null, blocked = com.sualtikasifi.cizimhafiza.domain.model.GiftBlock.FRIEND_NOT_READY), 900, {}, { finish() })
                         "gift_blocked" -> com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendDialog(g.copy(usage = null, blocked = com.sualtikasifi.cizimhafiza.domain.model.GiftBlock.LEVEL), 900, {}, { finish() })
                         "gift_inbox" -> com.sualtikasifi.cizimhafiza.presentation.gifts.GiftInboxDialog(
                             listOf(

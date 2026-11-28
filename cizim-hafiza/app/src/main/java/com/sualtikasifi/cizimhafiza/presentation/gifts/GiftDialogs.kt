@@ -52,7 +52,9 @@ import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
 import com.sualtikasifi.cizimhafiza.presentation.common.ButtonLettering
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.NoticeCard
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedCloseButton
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPress
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton
 import com.sualtikasifi.cizimhafiza.presentation.common.softShadow
@@ -117,11 +119,17 @@ fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit,
                 modifier = Modifier.offset(w * 0.29f, h * 0.152f).size(w * 0.52f, h * 0.062f)
             )
             // the red cross, drawn into the picture
-            Box(Modifier.offset(w * 0.86f, h * 0.105f).size(w * 0.14f, w * 0.14f).pressable(pressedScale = 0.9f, onClick = onClose))
+            PaintedPress(R.drawable.gift_send_window, 0.877f, 0.126f, 0.108f, 0.068f, w, h, corner = 40.dp, onClick = onClose)
 
             when {
-                state.loading -> MessagePanel(w, h) { Note(stringResource(R.string.gift_loading)) }
-                state.blocked != null -> MessagePanel(w, h) { ErrorCard(stringResource(state.blocked.messageRes())) }
+                state.loading -> NoticeCard(
+                    stringResource(R.string.gift_loading), "", Modifier.offset(w * 0.078f, h * 0.243f).size(w * 0.844f, h * 0.655f),
+                    icon = { androidx.compose.material3.CircularProgressIndicator(color = Color.White, strokeWidth = 3.5.dp, modifier = Modifier.size(34.dp)) }
+                )
+                state.blocked != null -> NoticeCard(
+                    stringResource(R.string.gift_block_title), stringResource(state.blocked.messageRes()),
+                    Modifier.offset(w * 0.078f, h * 0.243f).size(w * 0.844f, h * 0.655f)
+                )
                 sent != null -> MessagePanel(w, h) {
                     SentCard(sent)
                     PaintedCloseButton(text = stringResource(R.string.close), onClick = onClose)
@@ -198,45 +206,45 @@ private fun SendRow(
 ) {
     val ok = gold >= offer.cost && usage.canAfford(offer) && !sending
     val ink = if (ok) Ink else Color(0xFFA8957F)
-    val rowShape = RoundedCornerShape(percent = 50)
-    Box(
-        Modifier.offset(w * 0.115f, h * top).size(w * 0.785f, h * 0.058f)
-            .clip(rowShape)
-            .then(if (ok) Modifier.pressable(pressedScale = 0.97f, onClick = { onSend(offer) }) else Modifier.background(Color(0x66F2E3C8)))
-    )
     val joker = offer.kind == GiftKind.JOKER
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.offset(w * 0.265f, h * top).size(w * 0.41f, h * 0.058f)
+    // the whole row is one button that caves in with its words
+    PaintedPress(
+        R.drawable.gift_send_window, 0.115f, top, 0.785f, 0.058f, w, h, corner = 22.dp, enabled = ok, onClick = { onSend(offer) }
     ) {
-        FitText(
-            text = if (offer.kind == GiftKind.GOLD) stringResource(R.string.gift_gold_amount, offer.receives) else giftName(offer.kind, offer.itemId, offer.qty),
-            style = PaintedStyle(
-                color = ink, fontSize = if (joker) 16.sp else 20.sp, lineHeight = if (joker) 17.sp else 22.sp,
-                fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start
-            ),
-            maxLines = if (joker) 2 else 1, minScale = 0.75f, contentAlignment = Alignment.CenterStart,
-            modifier = Modifier.weight(1f)
-        )
-        if (feeTag) {
-            // the fee, once, beside the first gold amount
-            Box(
-                Modifier.padding(start = 4.dp)
-                    .background(Brush.horizontalGradient(listOf(Color(0xFFE8329C), Color(0xFFB81F86))), RoundedCornerShape(50))
-                    .padding(horizontal = 7.dp, vertical = 2.dp)
-            ) {
-                androidx.compose.material3.Text(
-                    stringResource(R.string.gift_fee_inline), color = Color.White, fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold, maxLines = 1
-                )
+        if (!ok) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(percent = 50)).background(Color(0x66F2E3C8)))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.offset(maxWidth * 0.191f, 0.dp).size(maxWidth * 0.522f, maxHeight)
+        ) {
+            FitText(
+                text = if (offer.kind == GiftKind.GOLD) stringResource(R.string.gift_gold_amount, offer.receives) else giftName(offer.kind, offer.itemId, offer.qty),
+                style = PaintedStyle(
+                    color = ink, fontSize = if (joker) 16.sp else 20.sp, lineHeight = if (joker) 17.sp else 22.sp,
+                    fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start
+                ),
+                maxLines = if (joker) 2 else 1, minScale = 0.75f, contentAlignment = Alignment.CenterStart,
+                modifier = Modifier.weight(1f)
+            )
+            if (feeTag) {
+                // the fee, once, beside the first gold amount
+                Box(
+                    Modifier.padding(start = 4.dp)
+                        .background(Brush.horizontalGradient(listOf(Color(0xFFE8329C), Color(0xFFB81F86))), RoundedCornerShape(50))
+                        .padding(horizontal = 7.dp, vertical = 2.dp)
+                ) {
+                    androidx.compose.material3.Text(
+                        stringResource(R.string.gift_fee_inline), color = Color.White, fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold, maxLines = 1
+                    )
+                }
             }
         }
+        ButtonLettering(
+            text = "${offer.cost}", sizeSp = 21f, fill = if (ok) Color.White else Color(0xFFEDE6D8),
+            outline = if (ok) Color(0xFF7A3B00) else Color(0xFF8E7B66),
+            modifier = Modifier.offset(maxWidth * 0.828f, 0.dp).size(maxWidth * 0.159f, maxHeight)
+        )
     }
-    ButtonLettering(
-        text = "${offer.cost}", sizeSp = 21f, fill = if (ok) Color.White else Color(0xFFEDE6D8),
-        outline = if (ok) Color(0xFF7A3B00) else Color(0xFF8E7B66),
-        modifier = Modifier.offset(w * 0.765f, h * top).size(w * 0.125f, h * 0.058f)
-    )
 }
 
 @Composable
@@ -350,12 +358,8 @@ private fun GiftArtWindow(title: String, lines: List<String>, button: String, on
                     )
                 }
             }
-            // the orange button
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.offset(w * 0.25f, h * 0.795f).size(w * 0.50f, h * 0.11f)
-                    .pressable(pressedScale = 0.94f, onClick = onClick)
-            ) {
+            // the orange button: it caves in with its label
+            PaintedPress(R.drawable.gift_window, 0.211f, 0.785f, 0.561f, 0.138f, w, h, corner = 28.dp, onClick = onClick) {
                 LetteredText(
                     text = button, size = 24.sp, fill = Color.White, outline = Color(0xFF9A3B00), minScale = 0.55f,
                     modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp)
@@ -425,7 +429,7 @@ private fun GiftLockedWindow(message: String, onClose: () -> Unit) {
                 title = true, minScale = 0.5f,
                 modifier = Modifier.offset(w * 0.268f, h * 0.146f).size(w * 0.52f, h * 0.056f)
             )
-            Box(Modifier.offset(w * 0.875f, h * 0.112f).size(w * 0.125f, w * 0.125f).pressable(pressedScale = 0.9f, onClick = onClose))
+            PaintedPress(R.drawable.gift_locked_window, 0.887f, 0.126f, 0.110f, 0.068f, w, h, corner = 40.dp, onClick = onClose)
             FitText(
                 text = message,
                 style = PaintedStyle(color = Ink, fontSize = 15.sp, lineHeight = 17.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),

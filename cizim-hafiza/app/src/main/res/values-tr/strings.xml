@@ -1921,6 +1921,10 @@
     <string name="gift_block_refused">Hediye gönderilemedi. Altının geri verildi.</string>
     <string name="stake_picker_title">Altın Düellosu</string>
     <string name="stake_picker_sub">Sen ve %1$s havuza aynı miktarda altın koyarsınız. Kazanan havuzu alır.</string>
+    <string name="stake_start">Başla</string>
+    <string name="stake_ok">Tamam</string>
+    <string name="duel_classic">Klasik Düello</string>
+    <string name="stake_block_child">Çocuk modunda Altın Düellosu kapalı.</string>
     <string name="stake_none">Altınsız oyna</string>
     <string name="stake_sent">%1$d altınlık düello gönderildi. Altın şimdi cüzdanından düştü.</string>
     <string name="stake_chip">%1$d altınlık düello</string>
@@ -1934,6 +1938,10 @@
     <string name="stake_settle_refund">%1$s oynamadı: %2$d altın geri geldi</string>
     <string name="stake_settle_forfeit_win">%1$s süresinde bitiremedi: +%2$d altın</string>
     <string name="stake_settle_forfeit_loss">%1$s: süre doldu, %2$d altın gitti</string>
+    <string name="stake_block_title">Şu an kullanılamıyor</string>
+    <string name="gift_block_title">Hediye gönderilemiyor</string>
+    <string name="stake_block_link">Altın Düellosu için Google ile giriş yapmalısın.</string>
+    <string name="stake_block_age">Altın Düellosu için hesabının en az 7 günlük olması gerekir.</string>
     <string name="stake_block_level">Altın Düellosu 10. seviyede açılır.</string>
     <string name="stake_block_friend">Bu arkadaş henüz Altın Düellosu oynayamıyor. Uygulamanın son sürümünü kurup bir kez açması ve Google ile giriş yapmış olması gerekir.</string>
     <string name="stake_block_friend_level">Bu arkadaş 10. seviyenin altında.</string>

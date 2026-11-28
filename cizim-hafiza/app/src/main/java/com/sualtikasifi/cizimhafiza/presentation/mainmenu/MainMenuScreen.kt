@@ -252,6 +252,12 @@ fun MainMenuScreen(
                 // in, was a visible hitch after the press animation.
                 R.drawable.bg_friends, R.drawable.bg_achievements, R.drawable.bg_league, R.drawable.bg_worlds
             )
+        )        // The profile-picture window: its pictures and frames, at the size it draws them, so scrolling it never decodes.
+        com.sualtikasifi.cizimhafiza.presentation.common.ArtCache.preload(
+            appContext,
+            listOf(R.drawable.avatar_dino) +
+                com.sualtikasifi.cizimhafiza.domain.model.AvatarGallery.entries.map { it.res } +
+                com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame.entries.map { it.drawableRes }
         )
     }
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
@@ -555,7 +561,7 @@ private fun PenaltyDialog(penalty: Penalty, onDismiss: () -> Unit) {
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun AvatarFramePickerSheet(
+internal fun AvatarFramePickerSheet(
     items: List<AvatarFrameUiItem>,
     photoSource: String,
     onPhotoSource: (String) -> Unit,
@@ -564,6 +570,16 @@ private fun AvatarFramePickerSheet(
 ) {
     com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog(title = stringResource(R.string.avatar_frame_picker_title), onDismiss = onDismiss) {
         val chosen = com.sualtikasifi.cizimhafiza.domain.model.AvatarGallery.entryOfSource(photoSource)
+        // whatever the idle preload on the home screen has not reached yet is decoded now, in the background
+        val sheetContext = androidx.compose.ui.platform.LocalContext.current
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            com.sualtikasifi.cizimhafiza.presentation.common.ArtCache.preload(
+                sheetContext,
+                listOf(R.drawable.avatar_dino) +
+                    com.sualtikasifi.cizimhafiza.domain.model.AvatarGallery.entries.map { it.res } +
+                    items.map { it.frame.drawableRes }
+            )
+        }
         val title = @Composable { text: String -> PickerSectionHeader(text) }
         LazyVerticalGrid(
             columns = GridCells.Fixed(12),
@@ -625,11 +641,16 @@ private fun AvatarFrameSwatch(item: AvatarFrameUiItem, onClick: () -> Unit) {
             modifier = Modifier.fillMaxWidth().height(96.dp).padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = painterResource(item.frame.drawableRes),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize().alpha(if (item.unlocked) 1f else 0.35f)
-            )
+            // from the picture cache, decoded once off the main thread: painterResource decoded a 512 px frame on the
+            // main thread for every swatch that scrolled into view, which was the stutter of this window
+            val frameArt = com.sualtikasifi.cizimhafiza.presentation.common.rememberArtBitmap(item.frame.drawableRes)
+            if (frameArt != null) {
+                Image(
+                    bitmap = frameArt,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize().alpha(if (item.unlocked) 1f else 0.35f)
+                )
+            }
             if (!item.unlocked) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(imageVector = Icons.Filled.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp))

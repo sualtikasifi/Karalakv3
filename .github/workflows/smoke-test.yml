@@ -35,6 +35,10 @@ on:
           - announcement.sh
           - gift.sh
           - bend.sh
+          - nudgeover.sh
+          - notice.sh
+          - duelpage.sh
+          - pickers.sh
           - reportplayer.sh
           - friendmenu.sh
           - homechip2.sh

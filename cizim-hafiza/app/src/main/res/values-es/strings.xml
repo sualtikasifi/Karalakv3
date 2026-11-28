@@ -1909,6 +1909,10 @@
     <string name="gift_block_refused">No se pudo enviar el regalo. Tu oro ha vuelto.</string>
     <string name="stake_picker_title">Duelo con oro</string>
     <string name="stake_picker_sub">Tú y %1$s ponéis el mismo oro en el bote. El ganador se lleva el bote.</string>
+    <string name="stake_start">Empezar</string>
+    <string name="stake_ok">Entendido</string>
+    <string name="duel_classic">Duelo Clásico</string>
+    <string name="stake_block_child">El Duelo de Oro está desactivado en el modo infantil.</string>
     <string name="stake_none">Jugar sin oro</string>
     <string name="stake_sent">Duelo enviado con %1$d de oro. Se descuenta de tu cartera ahora.</string>
     <string name="stake_chip">Duelo de %1$d de oro</string>
@@ -1922,6 +1926,10 @@
     <string name="stake_settle_refund">%1$s no jugó: %2$d de oro devueltos</string>
     <string name="stake_settle_forfeit_win">%1$s no terminó a tiempo: +%2$d de oro</string>
     <string name="stake_settle_forfeit_loss">%1$s: se acabó el tiempo, perdiste %2$d de oro</string>
+    <string name="stake_block_title">No disponible ahora</string>
+    <string name="gift_block_title">No se puede enviar el regalo</string>
+    <string name="stake_block_link">Inicia sesión con Google para jugar Duelos de Oro.</string>
+    <string name="stake_block_age">Tu cuenta debe tener al menos 7 días para jugar Duelos de Oro.</string>
     <string name="stake_block_level">Los duelos por oro se abren en el nivel 10.</string>
     <string name="stake_block_friend">Este amigo aún no puede jugar por oro. Necesita la última versión de la app, abierta una vez, y haber iniciado sesión con Google.</string>
     <string name="stake_block_friend_level">Este amigo está por debajo del nivel 10.</string>
