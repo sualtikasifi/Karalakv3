@@ -117,6 +117,8 @@ fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit,
             LetteredText(
                 text = if (sent != null) stringResource(R.string.gift_sent_title) else stringResource(R.string.gift_send_title, state.friendName),
                 size = 24.sp, fill = Color.White, outline = Color(0xFF3E0B66), title = true, minScale = 0.5f,
+                // the friend's name changes, the tuning does not: one key, with the name as "…"
+                tuneKey = if (sent != null) null else stringResource(R.string.gift_send_title, "…"),
                 modifier = Modifier.offset(w * 0.29f, h * 0.152f).size(w * 0.52f, h * 0.062f)
             )
             // the red cross, drawn into the picture
