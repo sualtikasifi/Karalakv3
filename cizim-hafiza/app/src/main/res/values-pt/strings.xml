@@ -1935,6 +1935,8 @@
     <string name="report_player_note">Sua denúncia vai para o desenvolvedor e é analisada.</string>
     <string name="stake_burn_note">5% do pote sai do jogo.</string>
     <string name="stake_left_pill">Hoje restam: %1$d duelos · %2$d de ouro</string>
+    <string name="stake_win_label">Se ganhar</string>
+    <string name="stake_lose_label">Se perder</string>
     <string name="stake_chip_win">Ganha +%1$d</string>
     <string name="stake_chip_lose">Perde −%1$d</string>
     <string name="gift_sent_title">Presente enviado</string>
