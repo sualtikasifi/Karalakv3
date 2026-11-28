@@ -51,6 +51,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
 import com.sualtikasifi.cizimhafiza.presentation.common.ButtonLettering
 import com.sualtikasifi.cizimhafiza.presentation.common.NoticeCard
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPress
+import com.sualtikasifi.cizimhafiza.presentation.common.PressArt
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton
 import com.sualtikasifi.cizimhafiza.presentation.common.softShadow
 import com.sualtikasifi.cizimhafiza.util.LegalConsentStore
@@ -162,7 +163,8 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
                 modifier = Modifier.offset(w * 0.258f, h * 0.101f).size(w * 0.489f, h * 0.058f)
             )
             // the red cross, drawn into the picture
-            PaintedPress(R.drawable.stake_window, 0.887f, 0.126f, 0.110f, 0.068f, w, h, corner = 40.dp, onClick = onDismiss)
+            PaintedPress(R.drawable.stake_window, 0.88681f, 0.12509f, 0.10989f, 0.06835f, w, h, corner = 40.dp,
+                art = PressArt(R.drawable.stake_window_keys, R.drawable.stake_window_plate, 0.88681f, 0.12509f, 0.10989f, 0.06835f), onClick = onDismiss)
             // the rules, and the one thing the house keeps
             FitText(
                 text = stringResource(R.string.stake_picker_sub, friendName),
@@ -195,12 +197,14 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
                     modifier = Modifier.offset(w * 0.321f, h * 0.434f).size(w * 0.553f, h * 0.034f)
                 )
                 StakeRules.STAKES.forEachIndexed { i, stake ->
-                    StakeRow(stake, gold >= stake && usage.canStake(stake), stake == chosen.intValue, { chosen.intValue = it }, w, h, StakeRowTop[i.coerceAtMost(3)])
+                    StakeRow(stake, gold >= stake && usage.canStake(stake), stake == chosen.intValue, { chosen.intValue = it }, w, h, i.coerceAtMost(3))
                 }
             }
             // the start button: the picture's own orange, caving in with its label; with nothing to start it just closes
             val canStart = chosen.intValue > 0
-            PaintedPress(R.drawable.stake_window, 0.225f, 0.80f, 0.55f, 0.075f, w, h, corner = 24.dp, onClick = { if (canStart) onPick(chosen.intValue) else onDismiss() }) {
+            PaintedPress(R.drawable.stake_window, 0.21648f, 0.79699f, 0.56044f, 0.08749f, w, h, corner = 24.dp,
+                art = PressArt(R.drawable.stake_window_keys, R.drawable.stake_window_plate, 0.21538f, 0.79631f, 0.56374f, 0.08954f),
+                onClick = { if (canStart) onPick(chosen.intValue) else onDismiss() }) {
                 ButtonLettering(
                     text = stringResource(if (canStart) R.string.stake_start else R.string.stake_ok), sizeSp = 25f, fill = Color.White, outline = Color(0xFF9A3B00),
                     modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
@@ -213,48 +217,57 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
 private const val StakeW = 910f
 private const val StakeH = 1463f
 
-/** Top edge of the four rows in the picture, as fractions of its height. */
-private val StakeRowTop = floatArrayOf(0.482f, 0.558f, 0.636f, 0.713f)
+/** The four rows: their painted outline (top, bottom) and their cut-out for the press (coins sticking out included), in picture pixels. */
+private val StakeRowOutline = arrayOf(intArrayOf(702, 808), intArrayOf(814, 921), intArrayOf(928, 1035), intArrayOf(1041, 1151))
+private val StakeRowCut = arrayOf(intArrayOf(701, 810), intArrayOf(794, 928), intArrayOf(907, 1041), intArrayOf(1017, 1153))
 
 /** One amount to put in: its coins painted at the left, the amount, and the two pills that say what it comes to. */
 @Composable
 private fun StakeRow(
     stake: Int, enabled: Boolean, selected: Boolean, onSelect: (Int) -> Unit,
-    w: androidx.compose.ui.unit.Dp, h: androidx.compose.ui.unit.Dp, top: Float
+    w: androidx.compose.ui.unit.Dp, h: androidx.compose.ui.unit.Dp, index: Int
 ) {
     val fill = if (enabled) Color.White else Color(0xFFEDE6D8)
-    // the whole row is one button that caves in with its numbers
-    PaintedPress(R.drawable.stake_window, 0.055f, top, 0.885f, 0.068f, w, h, corner = 22.dp, enabled = enabled, onClick = { onSelect(stake) }) {
+    val (t, b) = StakeRowOutline[index].let { it[0] to it[1] }
+    val (ct, cb) = StakeRowCut[index].let { it[0] to it[1] }
+    // the row's own outline (x 46..858 of the 910 px picture, corners about a third of its height), so the chosen
+    // frame lies exactly on the painted one
+    val rowShape = RoundedCornerShape(percent = 34)
+    PaintedPress(
+        R.drawable.stake_window, 46f / StakeW, t / StakeH, 812f / StakeW, (b - t) / StakeH, w, h, corner = 22.dp, enabled = enabled,
+        art = PressArt(R.drawable.stake_window_keys, R.drawable.stake_window_plate, 46f / StakeW, ct / StakeH, 812f / StakeW, (cb - ct) / StakeH),
+        onClick = { onSelect(stake) }
+    ) {
         if (selected) {
-            // the chosen row: a gold-orange frame and a tick, drawn over the picture
+            // the chosen row: a gold-orange frame on its outline and a tick
             androidx.compose.foundation.layout.Box(
                 Modifier.fillMaxSize()
-                    .border(3.dp, Brush.verticalGradient(listOf(Color(0xFFFFB347), Color(0xFFF47721))), RoundedCornerShape(22.dp))
+                    .border(3.5.dp, Brush.verticalGradient(listOf(Color(0xFFFFB347), Color(0xFFF47721))), rowShape)
             )
             androidx.compose.foundation.layout.Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.align(Alignment.TopStart).offset(maxWidth * 0.015f, (-6).dp).size(22.dp)
+                modifier = Modifier.align(Alignment.TopStart).offset(maxWidth * 0.012f, (-7).dp).size(22.dp)
                     .background(Color(0xFFF47721), androidx.compose.foundation.shape.CircleShape)
                     .border(2.dp, Color.White, androidx.compose.foundation.shape.CircleShape)
             ) {
                 androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
             }
         }
-        if (!enabled) androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().clip(RoundedCornerShape(22.dp)).background(Color(0x66F2E3C8)))
+        if (!enabled) androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().clip(rowShape).background(Color(0x66F2E3C8)))
+        // the amount between the coins and the pills, then the whole prize on the green pill and the whole loss on the pink one
         ButtonLettering(
             text = "$stake", sizeSp = 27f, fill = fill, outline = if (enabled) Color(0xFF5A2815) else Color(0xFF9C8B78),
-            modifier = Modifier.offset(maxWidth * 0.2045f, 0.dp).size(maxWidth * 0.2192f, maxHeight)
+            modifier = Modifier.offset(maxWidth * 0.1897f, 0.dp).size(maxWidth * 0.234f, maxHeight)
         )
-        // the whole prize on the green pill, the whole loss on the pink one
         ButtonLettering(
             text = "+${StakeRules.winnerPayout(stake)}", sizeSp = 23f, fill = fill,
             outline = if (enabled) Color(0xFF1B6B2A) else Color(0xFF8E8A7A),
-            modifier = Modifier.offset(maxWidth * 0.4418f, maxHeight * 0.1324f).size(maxWidth * 0.2271f, maxHeight * 0.75f)
+            modifier = Modifier.offset(maxWidth * 0.4298f, maxHeight * 0.17f).size(maxWidth * 0.2525f, maxHeight * 0.68f)
         )
         ButtonLettering(
             text = "−$stake", sizeSp = 23f, fill = fill,
             outline = if (enabled) Color(0xFFA11D18) else Color(0xFF8E8A7A),
-            modifier = Modifier.offset(maxWidth * 0.7073f, maxHeight * 0.1324f).size(maxWidth * 0.2565f, maxHeight * 0.75f)
+            modifier = Modifier.offset(maxWidth * 0.6946f, maxHeight * 0.17f).size(maxWidth * 0.2783f, maxHeight * 0.68f)
         )
     }
 }

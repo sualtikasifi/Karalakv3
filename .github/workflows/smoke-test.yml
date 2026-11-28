@@ -39,6 +39,7 @@ on:
           - notice.sh
           - duelpage.sh
           - pickers.sh
+          - press.sh
           - reportplayer.sh
           - friendmenu.sh
           - homechip2.sh

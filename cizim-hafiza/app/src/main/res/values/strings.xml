@@ -1880,7 +1880,7 @@
     <string name="gift_sent">Gift sent! It is waiting in their gift box.</string>
     <string name="gift_today_left">Today you can still send %1$d gifts, up to %2$d gold.</string>
     <string name="gift_section_gold">Gold</string>
-    <string name="gift_section_items">Items</string>
+    <string name="gift_section_items">Jokers</string>
     <string name="gift_gold_amount">%1$d gold</string>
     <string name="gift_fee_note">10% of what you pay is the fee</string>
     <string name="gift_gold_name">Gold</string>
@@ -1941,7 +1941,7 @@
     <string name="gift_today_pill">%1$d gifts left today · %2$d gold</string>
     <string name="report_player_ask">Why do you want to report this player?</string>
     <string name="report_player_note">Your report goes to the developer and is reviewed.</string>
-    <string name="stake_burn_note">5% of the pot leaves the game.</string>
+    <string name="stake_burn_note">A 5% fee is taken from the prize pool.</string>
     <string name="stake_left_pill">Left today: %1$d duels · %2$d gold</string>
     <string name="stake_win_label">Win</string>
     <string name="stake_lose_label">Lose</string>
