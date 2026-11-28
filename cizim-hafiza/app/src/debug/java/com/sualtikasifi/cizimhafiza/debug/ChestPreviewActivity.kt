@@ -13,6 +13,7 @@ import com.sualtikasifi.cizimhafiza.presentation.theme.CizimHafizaTheme
  * Debug builds only: shows the chest window on its own so its layout can be looked at in the CI emulator.
  * Extras: tier = silver|gold|rare, state = start|unlocking|ready|busy|used|won|announce|announce_long|gift|gift_blocked|gift_inbox|report|phrases|invite (won = the "you won a chest" window; announce* = the developer-panel notice window).
  */
+@dagger.hilt.android.AndroidEntryPoint
 class ChestPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
