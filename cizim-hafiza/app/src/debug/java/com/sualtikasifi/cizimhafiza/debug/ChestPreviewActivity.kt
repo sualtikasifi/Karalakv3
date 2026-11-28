@@ -89,6 +89,13 @@ class ChestPreviewActivity : ComponentActivity() {
                             "Arkadaşlarınla\nYarış", 40.sp, maxLines = 2, title = true,
                             modifier = androidx.compose.ui.Modifier.size(300.dp, 120.dp)
                         )
+                        // references: the same words not tuned (straight), and a single curved line in a sized box
+                        com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                            "Düz Başlık", 34.sp, title = true, modifier = androidx.compose.ui.Modifier.size(300.dp, 60.dp)
+                        )
+                        com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                            "Aylık Lig", 34.sp, title = true, modifier = androidx.compose.ui.Modifier.size(300.dp, 60.dp)
+                        )
                     }
                     com.sualtikasifi.cizimhafiza.presentation.common.TitleNudgeOverlay()
                     return@CizimHafizaTheme
