@@ -205,7 +205,24 @@ private fun ChestOpeningVideo(tier: ChestTier, onEnded: () -> Unit) {
         }
     }
     androidx.compose.runtime.DisposableEffect(player) {
-        onDispose { player.release() }
+        onDispose {
+            // The reward screen takes over a few frames before the clip ends; let the sound ring out
+            // instead of cutting it, and free the player once it finishes (or after a safety timeout).
+            val remaining = player.duration - player.currentPosition
+            if (player.isPlaying && player.duration != androidx.media3.common.C.TIME_UNSET && remaining in 1..6000) {
+                player.clearVideoSurface()
+                val handler = android.os.Handler(android.os.Looper.getMainLooper())
+                val free = Runnable { runCatching { player.release() } }
+                player.addListener(object : androidx.media3.common.Player.Listener {
+                    override fun onPlaybackStateChanged(state: Int) {
+                        if (state == androidx.media3.common.Player.STATE_ENDED) { handler.removeCallbacks(free); free.run() }
+                    }
+                })
+                handler.postDelayed(free, remaining + 1500)
+            } else {
+                player.release()
+            }
+        }
     }
     androidx.compose.ui.viewinterop.AndroidView(
         modifier = Modifier.fillMaxSize(),

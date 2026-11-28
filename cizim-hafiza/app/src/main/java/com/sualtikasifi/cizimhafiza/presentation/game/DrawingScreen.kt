@@ -40,6 +40,10 @@ import com.sualtikasifi.cizimhafiza.presentation.common.shortRes
 import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.wrapContentSize
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPress
+import com.sualtikasifi.cizimhafiza.presentation.common.PressArt
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -211,13 +215,12 @@ fun DrawingScreen(
 
         Box(modifier = Modifier.fillMaxSize().offset(y = topShift)) {
         // --- Header: back (painted into the picture), clock + progress, music, countdown ring ---
-        Box(
-            modifier = Modifier
-                .offset(a(28f), a(82f))
-                .size(a(99f), a(96f))
-                .clickable(interactionSource = noRipple, indication = null, onClick = onBackClick)
-                .semantics { contentDescription = backDescription }
-        )
+        Box(Modifier.wrapContentSize(Alignment.TopStart, unbounded = true).requiredSize(a(ArtWidth), a(ArtHeight))) {
+            PaintedPress(
+                R.drawable.bg_draw, 44f / ArtWidth, 90f / ArtHeight, 80f / ArtWidth, 82f / ArtHeight, a(ArtWidth), a(ArtHeight), corner = 20.dp,
+                art = drawPressArt(5), onClick = onBackClick
+            ) { Box(Modifier.fillMaxSize().semantics { contentDescription = backDescription }) }
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
@@ -233,19 +236,20 @@ fun DrawingScreen(
             }
             Text(progress, style = PaintedStyle(color = ink, fontSize = 17.sp * f), maxLines = 1)
         }
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .offset(a(593f), a(88f))
-                .size(a(97f), a(82f))
-                .pressable(pressedScale = 0.88f, onClick = onToggleMusic)
-        ) {
-            Icon(
-                imageVector = if (musicEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
-                contentDescription = stringResource(if (musicEnabled) R.string.cd_music_on else R.string.cd_music_off),
-                tint = ink,
-                modifier = Modifier.size(26.dp * f)
-            )
+        Box(Modifier.wrapContentSize(Alignment.TopStart, unbounded = true).requiredSize(a(ArtWidth), a(ArtHeight))) {
+            PaintedPress(
+                R.drawable.bg_draw, 589f / ArtWidth, 91f / ArtHeight, 91f / ArtWidth, 86f / ArtHeight, a(ArtWidth), a(ArtHeight), corner = 18.dp,
+                art = drawPressArt(4), onClick = onToggleMusic
+            ) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (musicEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                        contentDescription = stringResource(if (musicEnabled) R.string.cd_music_on else R.string.cd_music_off),
+                        tint = ink,
+                        modifier = Modifier.size(a(52f))
+                    )
+                }
+            }
         }
         Box(
             contentAlignment = Alignment.Center,
@@ -287,7 +291,7 @@ fun DrawingScreen(
         val wordSize = (a(425f).value * 0.97f / (wordText.length.coerceAtLeast(1) * 0.5f)).coerceIn(24f, 34f * f)
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.offset(a(125f), a(232f)).size(a(445f), a(112f)).springIn(key = state.word.id, fromY = -26, stepMs = 0)
+            modifier = Modifier.offset(a(135f), a(262f)).size(a(430f), a(104f)).springIn(key = state.word.id, fromY = -26, stepMs = 0)
         ) {
             com.sualtikasifi.cizimhafiza.presentation.common.FitText(
                 text = wordText,
@@ -305,8 +309,8 @@ fun DrawingScreen(
         LaunchedEffect(state.word.id) { underline.animateTo(1f, androidx.compose.animation.core.tween(520, delayMillis = 160, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
         Box(
             modifier = Modifier
-                .offset(a(235f), a(343f))
-                .size(a(250f), a(8f))
+                .offset(a(235f), a(372f))
+                .size(a(250f), a(7f))
                 .graphicsLayer { scaleX = underline.value; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f) }
                 .background(Color(0xFFF58A1F), RoundedCornerShape(50))
         )
@@ -314,14 +318,14 @@ fun DrawingScreen(
         }
 
         // --- The canvas ---
-        val canvasHeight = (screenHeight - topShift - a(438f) - a(ArtHeight - 1386f)).coerceAtLeast(120.dp)
+        val canvasHeight = (screenHeight - topShift - a(454f) - a(ArtHeight - 1384f)).coerceAtLeast(120.dp)
         key(state.word.id) {
             val wordId = state.word.id
             Box(
                 modifier = Modifier
-                    .offset(a(36f), a(438f) + topShift)
-                    .size(a(770f), canvasHeight)
-                    .clip(RoundedCornerShape(a(20f)))
+                    .offset(a(34f), a(454f) + topShift)
+                    .size(a(774f), canvasHeight)
+                    .clip(RoundedCornerShape(a(26f)))
                     .background(AppTheme.tokens.canvasPaper)
                     .dotGridBackground(dotColor = AppTheme.tokens.canvasGrid, spacing = 22.dp, radius = 1.2.dp)
             ) {
@@ -352,24 +356,47 @@ fun DrawingScreen(
             // The last seconds: sparks fly off the drawing area's edges, more and more of them, instead of a red frame.
             // Laid over the canvas unclipped, so they spill out around it; it takes no touches.
             if (!state.isUntimed && state.secondsLeft in 1..GameConstants.WARNING_THRESHOLD_SECONDS + 1) {
-                EdgeSparkles(Modifier.offset(a(36f), a(438f) + topShift).size(a(770f), canvasHeight))
+                EdgeSparkles(Modifier.offset(a(34f), a(454f) + topShift).size(a(774f), canvasHeight))
             }
         }
 
         // --- Tray: pen, eraser, undo, clear, and the ad / next-word action ---
         val toolSize = a(98f)
         val toolTop = fromBottom(1433f)
-        ToolButton(Modifier.offset(a(48f), toolTop), toolSize, selected = tool == DrawTool.PEN, onClick = { tool = DrawTool.PEN }, description = stringResource(R.string.tool_pen)) { tint, sz ->
-            Icon(Icons.Filled.Create, contentDescription = null, tint = tint, modifier = Modifier.size(sz))
-        }
-        ToolButton(Modifier.offset(a(165f), toolTop), toolSize, selected = tool == DrawTool.ERASER, onClick = { tool = DrawTool.ERASER }, description = stringResource(R.string.tool_eraser)) { tint, sz ->
-            EraserGlyph(tint = tint, size = sz)
-        }
-        ToolButton(Modifier.offset(a(290f), toolTop), toolSize, selected = false, enabled = state.strokes.isNotEmpty(), onClick = onUndoLastStroke, description = stringResource(R.string.tool_undo)) { tint, sz ->
-            Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = tint, modifier = Modifier.size(sz))
-        }
-        ToolButton(Modifier.offset(a(418f), toolTop), toolSize, selected = false, enabled = state.strokes.isNotEmpty(), onClick = onClearCanvas, description = stringResource(R.string.clear_canvas)) { tint, sz ->
-            Icon(Icons.Filled.Delete, contentDescription = null, tint = tint, modifier = Modifier.size(sz))
+        // The four tool buttons are painted into the tray; each is pressed for real (its cut-out sinks) with its live icon on it.
+        // (x, y, w, h) of each plate in the picture; the tray is anchored to the bottom, so the scene box is too.
+        val toolRects = listOf(floatArrayOf(44f, 1431f, 103f, 98f), floatArrayOf(166f, 1432f, 101f, 97f), floatArrayOf(290f, 1432f, 101f, 97f), floatArrayOf(415f, 1432f, 100f, 97f))
+        val toolOn = listOf(true, true, state.strokes.isNotEmpty(), state.strokes.isNotEmpty())
+        val toolSel = listOf(tool == DrawTool.PEN, tool == DrawTool.ERASER, false, false)
+        val toolAct = listOf<() -> Unit>({ tool = DrawTool.PEN }, { tool = DrawTool.ERASER }, onUndoLastStroke, onClearCanvas)
+        val toolDesc = listOf(R.string.tool_pen, R.string.tool_eraser, R.string.tool_undo, R.string.clear_canvas)
+        val descriptions = toolDesc.map { stringResource(it) }
+        Box(Modifier.offset(0.dp, screenHeight - a(ArtHeight)).wrapContentSize(Alignment.TopStart, unbounded = true).requiredSize(a(ArtWidth), a(ArtHeight))) {
+            toolRects.forEachIndexed { i, r ->
+                Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (toolOn[i]) 1f else 0.4f }) {
+                    PaintedPress(
+                        R.drawable.bg_draw, r[0] / ArtWidth, r[1] / ArtHeight, r[2] / ArtWidth, r[3] / ArtHeight, a(ArtWidth), a(ArtHeight), corner = 22.dp,
+                        enabled = toolOn[i], art = drawPressArt(i), onClick = toolAct[i]
+                    ) {
+                        val shape = RoundedCornerShape(a(26f))
+                        Box(
+                            Modifier.fillMaxSize()
+                                .then(if (toolSel[i]) Modifier.background(Brush.verticalGradient(listOf(Color(0xFFFFB45C), Color(0xFFF58A1F))), shape).border(2.dp, Color(0xFFE5701A), shape) else Modifier)
+                                .semantics { contentDescription = descriptions[i] },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val tint = if (toolSel[i]) Color.White else Color(0xFF3A2A22)
+                            val sz = a(54f)
+                            when (i) {
+                                0 -> Icon(Icons.Filled.Create, contentDescription = null, tint = tint, modifier = Modifier.size(sz))
+                                1 -> EraserGlyph(tint = tint, size = sz)
+                                2 -> Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = tint, modifier = Modifier.size(sz))
+                                else -> Icon(Icons.Filled.Delete, contentDescription = null, tint = tint, modifier = Modifier.size(sz))
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         Box(
@@ -457,6 +484,25 @@ fun DrawingScreen(
         }
     }
 }
+
+/** The painted buttons of bg_draw cut out for pressing: 0..3 the tools, 4 the music button, 5 the back button. */
+private fun drawPressArt(i: Int): PressArt {
+    val b = DrawPressBoxes[i]
+    val res = when (i) {
+        0 -> R.drawable.draw_press_0_cut to R.drawable.draw_press_0_patch
+        1 -> R.drawable.draw_press_1_cut to R.drawable.draw_press_1_patch
+        2 -> R.drawable.draw_press_2_cut to R.drawable.draw_press_2_patch
+        3 -> R.drawable.draw_press_3_cut to R.drawable.draw_press_3_patch
+        4 -> R.drawable.draw_press_4_cut to R.drawable.draw_press_4_patch
+        else -> R.drawable.draw_press_5_cut to R.drawable.draw_press_5_patch
+    }
+    return PressArt(res.first, res.second, b[0] / ArtWidth, b[1] / ArtHeight, b[2] / ArtWidth, b[3] / ArtHeight)
+}
+
+private val DrawPressBoxes = listOf(
+    floatArrayOf(38f, 1425f, 115f, 116f), floatArrayOf(160f, 1426f, 113f, 115f), floatArrayOf(284f, 1426f, 113f, 115f),
+    floatArrayOf(409f, 1426f, 112f, 115f), floatArrayOf(583f, 85f, 103f, 104f), floatArrayOf(24f, 80f, 112f, 112f)
+)
 
 private const val ArtWidth = 841f
 private const val ArtHeight = 1870f

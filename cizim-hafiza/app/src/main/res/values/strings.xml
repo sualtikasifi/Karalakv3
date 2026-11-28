@@ -1085,7 +1085,7 @@
     <string name="quick_match_you_named">%1$s (You)</string>
     <string name="quick_match_versus">VS</string>
     <string name="quick_match_gallery_yours">Yours</string>
-    <string name="account_nickname_locked">Your username can\'t be changed. It can be changed once, and it is fixed when your account is linked to Google.</string>
+    <string name="account_nickname_locked">Your username is now fixed. It can be changed once, and it becomes permanent when your account is linked to Google.</string>
     <string name="account_nickname_save">Save</string>
     <string name="account_nickname_saved">Saved</string>
     <string name="account_nickname_label">Nickname</string>
@@ -1300,7 +1300,11 @@
     <string name="frame_name_angel_halo">Angel Halo</string>
     <string name="frame_name_lion_king">Lion King</string>
     <string name="nickname_edit_title">Change your username</string>
-    <string name="nickname_edit_warning">You can change your username only ONCE. Choose carefully!</string>
+    <string name="nickname_edit_warning">You can change your username only once. The name you choose is visible to other players.</string>
+    <string name="report_bug_done_title">Report received</string>
+    <string name="report_bug_done_body">Thank you for your feedback. Our team will review your message as soon as possible. You can follow it under “My Past Reports” below.</string>
+    <string name="nickname_edit_note_title">One-time change</string>
+    <string name="nickname_locked_title">Username locked</string>
     <string name="nickname_edit_hint">2–16 characters</string>
     <string name="nickname_edit_save">Save</string>
     <string name="nickname_edit_cancel">Cancel</string>

@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -100,10 +101,19 @@ fun PaintedCloseButton(text: String, onClick: () -> Unit, modifier: Modifier = M
             primary = true,
             height = 46.dp,
             textSize = 17.sp,
-            modifier = Modifier.fillMaxWidth(0.58f).softShadow()
+            modifier = Modifier.fillMaxWidth(0.58f).closeButtonShadow()
         )
     }
 }
+
+/** The shadow all around a window's Kapat button: wider and darker than the faint one of the other buttons, so it lifts off the parchment. */
+fun Modifier.closeButtonShadow(): Modifier = this.shadow(
+    elevation = 9.dp,
+    shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+    clip = false,
+    ambientColor = Color(0x66000000),
+    spotColor = Color(0xA6000000)
+)
 
 /** A painted pill button: orange with white lettering ([primary]) or cream with brown lettering. */
 @Composable

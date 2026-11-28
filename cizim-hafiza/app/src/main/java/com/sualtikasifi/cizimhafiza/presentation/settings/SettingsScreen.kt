@@ -79,6 +79,7 @@ import com.sualtikasifi.cizimhafiza.BuildConfig
 import com.sualtikasifi.cizimhafiza.R
 import com.sualtikasifi.cizimhafiza.domain.model.SupportedLanguage
 import com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache
+import com.sualtikasifi.cizimhafiza.presentation.common.closeButtonShadow
 import com.sualtikasifi.cizimhafiza.presentation.common.DEVELOPER_REVEAL_TAPS
 import com.sualtikasifi.cizimhafiza.presentation.common.DescriptionStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
@@ -471,7 +472,19 @@ fun SettingsScreen(
                             Hit(art[2], art[3], art[4], art[5], 62f, stringResource(R.string.coupon_how_close)) { couponInfoOpen = false }
                             Hit(art[6], art[7], art[8], art[9], 70f, stringResource(R.string.coupon_how_instagram)) { openLink("https://www.instagram.com/karalakapp") }
                             Hit(art[10], art[11], art[12], art[13], 70f, stringResource(R.string.coupon_how_tiktok)) { openLink("https://www.tiktok.com/@karalakapp") }
-                            Hit(art[14], art[15], art[16], art[17], 30f, stringResource(R.string.coupon_how_close)) { couponInfoOpen = false }
+                            // The picture's own "Kapat" was painted out of it: a live button stands in its place (a real press, a shadow all around).
+                            val closeW = frameW * 0.40f
+                            Box(
+                                Modifier
+                                    .offset(k * ((art[14] + art[16]) / 2f) - closeW / 2f, k * ((art[15] + art[17]) / 2f) - 22.dp)
+                                    .width(closeW)
+                            ) {
+                                com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
+                                    text = stringResource(R.string.coupon_how_close), onClick = { couponInfoOpen = false },
+                                    height = 44.dp, textSize = 17.sp,
+                                    modifier = Modifier.fillMaxWidth().then(Modifier.closeButtonShadow())
+                                )
+                            }
                         }
                     }
                 }

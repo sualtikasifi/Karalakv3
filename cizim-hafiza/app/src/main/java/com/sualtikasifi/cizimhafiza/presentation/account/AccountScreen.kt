@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import com.sualtikasifi.cizimhafiza.presentation.common.a11yButton
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.offset
@@ -46,6 +47,9 @@ import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sinkWith
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenFace
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPress
+import com.sualtikasifi.cizimhafiza.presentation.common.closeButtonShadow
+import com.sualtikasifi.cizimhafiza.presentation.common.PressArt
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedBackButton
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedStyle
 import com.sualtikasifi.cizimhafiza.presentation.common.cachedPainterResource
@@ -457,61 +461,63 @@ fun AccountScreen(
         }
 
         // ---- Sign out / sign in --------------------------------------------------------------------------------
+        // The two painted buttons are pressed for real (PaintedPress): each is cut out of the picture on its own shape, and
+        // while a finger is down the whole button sinks a little over the wood behind it, darker, with its words.
+        val sceneBox = box(0f, 0f, ArtW, ArtH)
+        val orangeArt = PressArt(R.drawable.account_press_0_cut, R.drawable.account_press_0_patch, 145f / ArtW, 1454f / ArtH, 544f / ArtW, 149f / ArtH)
+        val deleteArt = PressArt(R.drawable.account_press_1_cut, R.drawable.account_press_1_patch, 150f / ArtW, 1603f / ArtH, 535f / ArtW, 114f / ArtH)
         when {
             uiState.isBusy -> Box(box(150f, 1462f, 685f, 1590f), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(modifier = Modifier.size(40.dp), color = Color.White)
             }
-            uiState.isSignedIn -> Box(
-                box(150f, 1462f, 685f, 1590f)
-                    .sunkenFace(outSink, sceneBitmap, 150f * pxX, 1462f * pxY, 535f * pxX, 128f * pxY, (15f * us).dp, (50f * us).dp)
-                    .clickable(interactionSource = outSink.source, indication = null, onClick = viewModel::promptSignOut)
-                    .a11yButton(stringResource(R.string.account_sign_out)),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    Modifier.sinkWith(outSink, 0.5f, 0.5f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+            uiState.isSignedIn -> Box(sceneBox) {
+                PaintedPress(
+                    R.drawable.bg_account, 150f / ArtW, 1462f / ArtH, 535f / ArtW, 128f / ArtH, unit * ArtW, unit * ArtH, corner = 15.dp,
+                    art = orangeArt, onClick = viewModel::promptSignOut
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.White, modifier = Modifier.size(unit * 64f))
-                    Spacer(Modifier.size(unit * 16f))
-                    LetteredText(
-                        stringResource(R.string.account_sign_out), fs(66f), outline = Color(0xFF8A3A00),
-                        modifier = Modifier.height(unit * 90f).weight(1f, fill = false), minScale = 0.5f
-                    )
+                    Box(Modifier.fillMaxSize().a11yButton(stringResource(R.string.account_sign_out)), contentAlignment = Alignment.Center) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.White, modifier = Modifier.size(unit * 64f))
+                            Spacer(Modifier.size(unit * 16f))
+                            LetteredText(
+                                stringResource(R.string.account_sign_out), fs(66f), outline = Color(0xFF8A3A00),
+                                modifier = Modifier.height(unit * 90f).weight(1f, fill = false), minScale = 0.5f
+                            )
+                        }
+                    }
                 }
             }
             // A guest: the painted orange button, the same one the busy spinner and the sign-out button sit on, so all three
             // look alike. The Google mark rides in a white disc so it stays legible on the orange.
-            else -> Box(
-                box(150f, 1462f, 685f, 1590f)
-                    .graphicsLayer { alpha = if (online) 1f else 0.55f }
-                    .sunkenFace(inSink, sceneBitmap, 150f * pxX, 1462f * pxY, 535f * pxX, 128f * pxY, (15f * us).dp, (50f * us).dp)
-                    .clickable(
-                        interactionSource = inSink.source, indication = null,
-                        onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::signIn)
-                    )
-                    .a11yButton(stringResource(R.string.account_sign_in_google)),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    // the whole width of the pill less its rounded ends: the label shrinks to fit this, it never runs to the rim
-                    Modifier.fillMaxWidth().padding(horizontal = unit * 46f).sinkWith(inSink, 0.5f, 0.5f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+            else -> Box(sceneBox) {
+                PaintedPress(
+                    R.drawable.bg_account, 150f / ArtW, 1462f / ArtH, 535f / ArtW, 128f / ArtH, unit * ArtW, unit * ArtH, corner = 15.dp,
+                    art = orangeArt, onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::signIn)
                 ) {
-                    Box(Modifier.size(unit * 78f).background(Color.White, CircleShape), contentAlignment = Alignment.Center) {
-                        Image(
-                            painter = painterResource(R.drawable.ic_google_g),
-                            contentDescription = null,
-                            modifier = Modifier.size(unit * 52f)
-                        )
+                    Box(
+                        Modifier.fillMaxSize().graphicsLayer { alpha = if (online) 1f else 0.55f }.a11yButton(stringResource(R.string.account_sign_in_google)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            // the whole width of the pill less its rounded ends: the label shrinks to fit this, it never runs to the rim
+                            Modifier.fillMaxWidth().padding(horizontal = unit * 46f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Box(Modifier.size(unit * 78f).background(Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                                Image(
+                                    painter = painterResource(R.drawable.ic_google_g),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(unit * 52f)
+                                )
+                            }
+                            Spacer(Modifier.size(unit * 18f))
+                            LetteredText(
+                                stringResource(R.string.account_sign_in_google), fs(60f), outline = Color(0xFF8A3A00),
+                                modifier = Modifier.height(unit * 90f).weight(1f), minScale = 0.4f
+                            )
+                        }
                     }
-                    Spacer(Modifier.size(unit * 18f))
-                    LetteredText(
-                        stringResource(R.string.account_sign_in_google), fs(60f), outline = Color(0xFF8A3A00),
-                        modifier = Modifier.height(unit * 90f).weight(1f), minScale = 0.4f
-                    )
                 }
             }
         }
@@ -520,30 +526,30 @@ fun AccountScreen(
         // Offered whether or not a Google account is signed in: an anonymous player still has a uid with a profile, a
         // friends list and a league entry under it, and Play's requirement is about the data, not about how the
         // account was created. The painted pill carries the bin; the words are laid beside it.
-        Box(
-            box(157f, 1610f, 673f, 1705f)
-                .graphicsLayer { alpha = if (online) 1f else 0.55f }
-                .sunkenFace(delSink, sceneBitmap, 157f * pxX, 1610f * pxY, 516f * pxX, 95f * pxY, (9f * us).dp, (38f * us).dp)
-                .clickable(
-                    interactionSource = delSink.source, indication = null,
-                    onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::promptDeleteAccount)
-                )
-                .a11yButton(stringResource(R.string.account_delete_action)),
-            contentAlignment = Alignment.Center
-        ) {
-            if (uiState.isDeleting) {
-                CircularProgressIndicator(modifier = Modifier.size(32.dp))
-            } else {
-                FitText(
-                    text = stringResource(R.string.account_delete_action),
-                    // the painted bin sits at the pill's left end: the words start just right of it; at this size the bin and the words together
-                    // are centred on the pill (the bin cannot move, the words can be made shorter)
-                    style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(33f), textAlign = TextAlign.Start),
-                    maxLines = 1,
-                    minScale = 0.55f,
-                    contentAlignment = Alignment.CenterStart,
-                    modifier = Modifier.sinkWith(delSink, 0.5f, 0.5f).padding(start = unit * 118f, end = unit * 26f).fillMaxWidth().height(unit * 68f)
-                )
+        Box(sceneBox) {
+            PaintedPress(
+                R.drawable.bg_account, 157f / ArtW, 1610f / ArtH, 516f / ArtW, 95f / ArtH, unit * ArtW, unit * ArtH, corner = 9.dp,
+                art = deleteArt, onClick = com.sualtikasifi.cizimhafiza.presentation.common.onlineOnly(viewModel::promptDeleteAccount)
+            ) {
+                Box(
+                    Modifier.fillMaxSize().graphicsLayer { alpha = if (online) 1f else 0.55f }.a11yButton(stringResource(R.string.account_delete_action)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (uiState.isDeleting) {
+                        CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                    } else {
+                        FitText(
+                            text = stringResource(R.string.account_delete_action),
+                            // the painted bin sits at the pill's left end: the words start just right of it; at this size the bin and the words together
+                            // are centred on the pill (the bin cannot move, the words can be made shorter)
+                            style = PaintedStyle(color = Color(0xFFC62828), fontSize = fs(33f), textAlign = TextAlign.Start),
+                            maxLines = 1,
+                            minScale = 0.55f,
+                            contentAlignment = Alignment.CenterStart,
+                            modifier = Modifier.padding(start = unit * 118f, end = unit * 26f).fillMaxWidth().height(unit * 68f)
+                        )
+                    }
+                }
             }
         }
 
@@ -573,22 +579,26 @@ fun AccountScreen(
             onDismiss = { showRename = false },
             buttons = {
                 if (editable) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
                             text = stringResource(R.string.nickname_edit_cancel),
                             onClick = { showRename = false },
                             primary = false,
-                            modifier = Modifier.weight(1f)
+                            height = 48.dp,
+                            textSize = 16.sp,
+                            modifier = Modifier.weight(0.8f).closeButtonShadow()
                         )
                         com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
                             text = stringResource(R.string.nickname_edit_save),
                             onClick = viewModel::saveNickname,
                             enabled = uiState.canSaveNickname,
-                            modifier = Modifier.weight(1f)
+                            height = 48.dp,
+                            textSize = 18.sp,
+                            modifier = Modifier.weight(1.2f).closeButtonShadow()
                         )
                     }
                 } else {
-                    com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(
+                    com.sualtikasifi.cizimhafiza.presentation.common.PaintedCloseButton(
                         text = stringResource(R.string.close),
                         onClick = { showRename = false }
                     )
@@ -596,8 +606,11 @@ fun AccountScreen(
             }
         ) {
             if (editable) {
-                com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialogText(stringResource(R.string.nickname_edit_warning))
-                Spacer(Modifier.height(10.dp))
+                com.sualtikasifi.cizimhafiza.presentation.common.InfoStrip(
+                    title = stringResource(R.string.nickname_edit_note_title),
+                    message = stringResource(R.string.nickname_edit_warning)
+                )
+                Spacer(Modifier.height(14.dp))
                 AppTextField(
                     value = uiState.nicknameDraft,
                     onValueChange = viewModel::setNicknameDraft,
@@ -610,7 +623,11 @@ fun AccountScreen(
                     Text(stringResource(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                 }
             } else {
-                com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialogText(stringResource(R.string.account_nickname_locked))
+                com.sualtikasifi.cizimhafiza.presentation.common.InfoStrip(
+                    title = stringResource(R.string.nickname_locked_title),
+                    message = stringResource(R.string.account_nickname_locked),
+                    icon = Icons.Filled.Lock
+                )
             }
         }
     }

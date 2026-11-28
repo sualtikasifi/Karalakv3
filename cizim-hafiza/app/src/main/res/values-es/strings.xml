@@ -1086,7 +1086,7 @@
     <string name="quick_match_you_named">%1$s (Tú)</string>
     <string name="quick_match_versus">VS</string>
     <string name="quick_match_gallery_yours">Tuyos</string>
-    <string name="account_nickname_locked">Tu nombre de usuario no se puede cambiar. Se puede cambiar una vez y queda fijo al vincular tu cuenta con Google.</string>
+    <string name="account_nickname_locked">Tu nombre de usuario ya es fijo. Se puede cambiar una vez y se vuelve permanente al vincular tu cuenta con Google.</string>
     <string name="account_nickname_save">Guardar</string>
     <string name="account_nickname_saved">Guardado</string>
     <string name="account_nickname_label">Apodo</string>
@@ -1301,7 +1301,11 @@
     <string name="frame_name_angel_halo">Aureola de Ángel</string>
     <string name="frame_name_lion_king">Rey León</string>
     <string name="nickname_edit_title">Cambia tu nombre de usuario</string>
-    <string name="nickname_edit_warning">Solo puedes cambiar tu nombre de usuario UNA vez. ¡Elige con cuidado!</string>
+    <string name="nickname_edit_warning">Solo puedes cambiar tu nombre de usuario una vez. El nombre que elijas es visible para otros jugadores.</string>
+    <string name="report_bug_done_title">Reporte recibido</string>
+    <string name="report_bug_done_body">Gracias por tus comentarios. Nuestro equipo revisará tu mensaje lo antes posible. Puedes seguirlo en “Mis Reportes Anteriores”, más abajo.</string>
+    <string name="nickname_edit_note_title">Cambio único</string>
+    <string name="nickname_locked_title">Nombre de usuario bloqueado</string>
     <string name="nickname_edit_hint">2–16 caracteres</string>
     <string name="nickname_edit_save">Guardar</string>
     <string name="nickname_edit_cancel">Cancelar</string>
