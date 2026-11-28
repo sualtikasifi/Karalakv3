@@ -1907,9 +1907,10 @@
     <string name="gift_result_title">Hediye alındı</string>
     <string name="gift_got_gold">+%1$d altın</string>
     <string name="gift_got_converted">Zaten sahiptin — yerine %1$d altın</string>
+    <string name="gift_locked_title">Hediye kilitli</string>
     <string name="gift_block_child">Çocuk modunda hediye kapalı.</string>
     <string name="gift_block_link">Hediye göndermek için Google ile giriş yap.</string>
-    <string name="gift_block_level">Hediye göndermek için 10. seviye gerekir.</string>
+    <string name="gift_block_level">Arkadaşlarına hediye göndermek için 10. seviyeye ulaşmalısın.</string>
     <string name="gift_block_age">Hediye göndermek için hesabın en az 7 günlük olmalı.</string>
     <string name="gift_block_friendship">Arkadaşlığınız en az 2 günlük olmalı.</string>
     <string name="gift_block_friend">Bu arkadaş henüz hediye alamıyor. Uygulamanın son sürümünü kurup bir kez açması ve Google ile giriş yapmış olması gerekir.</string>

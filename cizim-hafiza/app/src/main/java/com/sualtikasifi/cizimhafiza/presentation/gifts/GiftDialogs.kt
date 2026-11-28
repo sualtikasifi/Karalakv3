@@ -93,6 +93,10 @@ private fun giftName(kind: GiftKind, itemId: String, qty: Int): String = when (k
  */
 @Composable
 fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit, onClose: () -> Unit) {
+    if (state.blocked == GiftBlock.LEVEL) {
+        GiftLockedWindow(stringResource(state.blocked.messageRes()), onClose)
+        return
+    }
     val sent = state.sent
     androidx.compose.ui.window.Dialog(
         onDismissRequest = onClose,
@@ -397,3 +401,40 @@ fun GiftResultDialog(results: List<Pair<IncomingGift, GiftRepository.ClaimResult
         button = stringResource(R.string.gift_great), onClick = onClose, onDismiss = onClose
     )
 }
+
+/**
+ * The window a player under level 10 sees: one painted picture (gift_locked_window, 913 x 1471 px: the dog and the cat
+ * wondering over a locked present, a purple banner, a cream bar and the road from level 9 to level 10 to the gift).
+ * The banner and the bar are lettered live; the red cross closes it.
+ */
+@Composable
+private fun GiftLockedWindow(message: String, onClose: () -> Unit) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onClose,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        BoxWithConstraints(Modifier.fillMaxWidth(0.94f).widthIn(max = 400.dp).aspectRatio(LockedW / LockedH)) {
+            val w = maxWidth
+            val h = maxHeight
+            Image(
+                painter = painterResource(R.drawable.gift_locked_window), contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds, modifier = Modifier.fillMaxSize()
+            )
+            LetteredText(
+                text = stringResource(R.string.gift_locked_title), size = 26.sp, fill = Color.White, outline = Color(0xFF3E0B66),
+                title = true, minScale = 0.5f,
+                modifier = Modifier.offset(w * 0.268f, h * 0.146f).size(w * 0.52f, h * 0.056f)
+            )
+            Box(Modifier.offset(w * 0.875f, h * 0.112f).size(w * 0.125f, w * 0.125f).pressable(pressedScale = 0.9f, onClick = onClose))
+            FitText(
+                text = message,
+                style = PaintedStyle(color = Ink, fontSize = 15.sp, lineHeight = 17.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+                maxLines = 2, minScale = 0.75f,
+                modifier = Modifier.offset(w * 0.164f, h * 0.556f).size(w * 0.679f, h * 0.059f)
+            )
+        }
+    }
+}
+
+private const val LockedW = 913f
+private const val LockedH = 1471f

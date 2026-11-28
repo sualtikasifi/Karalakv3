@@ -1894,9 +1894,10 @@
     <string name="gift_result_title">Gift received</string>
     <string name="gift_got_gold">+%1$d gold</string>
     <string name="gift_got_converted">You already had it — %1$d gold instead</string>
+    <string name="gift_locked_title">Gift locked</string>
     <string name="gift_block_child">Gifts are closed in child mode.</string>
     <string name="gift_block_link">Sign in with Google to send gifts.</string>
-    <string name="gift_block_level">You can send gifts from level 10.</string>
+    <string name="gift_block_level">Reach level 10 to send gifts to your friends.</string>
     <string name="gift_block_age">Your account must be at least 7 days old to send gifts.</string>
     <string name="gift_block_friendship">You must be friends for at least 2 days.</string>
     <string name="gift_block_friend">This friend cannot receive gifts yet. They need the latest version of the app, opened once, and a Google sign-in.</string>

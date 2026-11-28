@@ -1895,9 +1895,10 @@
     <string name="gift_result_title">Presente recebido</string>
     <string name="gift_got_gold">+%1$d de ouro</string>
     <string name="gift_got_converted">Você já tinha: %1$d de ouro no lugar</string>
+    <string name="gift_locked_title">Presente bloqueado</string>
     <string name="gift_block_child">Presentes ficam fechados no modo infantil.</string>
     <string name="gift_block_link">Entre com o Google para enviar presentes.</string>
-    <string name="gift_block_level">Você pode enviar presentes a partir do nível 10.</string>
+    <string name="gift_block_level">Chegue ao nível 10 para enviar presentes aos seus amigos.</string>
     <string name="gift_block_age">Sua conta precisa ter pelo menos 7 dias para enviar presentes.</string>
     <string name="gift_block_friendship">Vocês precisam ser amigos há pelo menos 2 dias.</string>
     <string name="gift_block_friend">Este amigo ainda não pode receber presentes. Ele precisa da versão mais recente do app, aberta uma vez, e do login com o Google.</string>
