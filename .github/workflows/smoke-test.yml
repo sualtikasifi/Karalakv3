@@ -38,6 +38,7 @@ on:
           - nudgeover.sh
           - notice.sh
           - duelpage.sh
+          - drawpage.sh
           - pickers.sh
           - press.sh
           - titles2.sh

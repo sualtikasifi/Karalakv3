@@ -115,6 +115,18 @@ class ChestPreviewActivity : ComponentActivity() {
                     )
                     return@CizimHafizaTheme
                 }
+                if (state == "draw") {
+                    com.sualtikasifi.cizimhafiza.presentation.game.DrawingScreen(
+                        state = com.sualtikasifi.cizimhafiza.presentation.game.GamePhase.Drawing(
+                            word = com.sualtikasifi.cizimhafiza.domain.model.Word(1, "Kedi", "x", com.sualtikasifi.cizimhafiza.domain.model.Difficulty.EASY),
+                            wordNumber = 2, totalWords = 5, secondsLeft = 38, totalSeconds = 60, isWarning = false, strokes = emptyList(),
+                            matchSecondsRemaining = 150
+                        ),
+                        onStrokeFinished = { _, _ -> }, onStrokeProgress = { _, _ -> }, onClearCanvas = {}, onEraseStroke = {},
+                        onUndoLastStroke = {}, onNextWord = {}, onBackClick = { finish() }, timeJokerCount = 2
+                    )
+                    return@CizimHafizaTheme
+                }
                 if (state == "duel_create") {
                     com.sualtikasifi.cizimhafiza.presentation.duel.CreateDuelScreen(
                         opponentName = "Elif", opponentUid = "u", onBack = { finish() }, onChallengeStarted = { _, _ -> }
