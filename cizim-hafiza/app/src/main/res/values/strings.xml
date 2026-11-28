@@ -1935,6 +1935,8 @@
     <string name="report_player_note">Your report goes to the developer and is reviewed.</string>
     <string name="stake_burn_note">5% of the pot leaves the game.</string>
     <string name="stake_left_pill">Left today: %1$d duels · %2$d gold</string>
+    <string name="stake_win_label">Win</string>
+    <string name="stake_lose_label">Lose</string>
     <string name="stake_chip_win">Win +%1$d</string>
     <string name="stake_chip_lose">Lose −%1$d</string>
     <string name="gift_sent_title">Gift sent</string>
