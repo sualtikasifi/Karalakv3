@@ -68,9 +68,9 @@ private val InkSoft = Color(0xFF7A5A40)
 @StringRes
 fun stakeMessageRes(block: StakeBlock): Int = when (block) {
     StakeBlock.CHILD_MODE -> R.string.stake_block_child
-    StakeBlock.NOT_LINKED -> R.string.gift_block_link
+    StakeBlock.NOT_LINKED -> R.string.stake_block_link
     StakeBlock.LEVEL -> R.string.stake_block_level
-    StakeBlock.ACCOUNT_AGE -> R.string.gift_block_age
+    StakeBlock.ACCOUNT_AGE -> R.string.stake_block_age
     StakeBlock.FRIENDSHIP_AGE -> R.string.gift_block_friendship
     StakeBlock.FRIEND_NOT_READY -> R.string.stake_block_friend
     StakeBlock.FRIEND_LEVEL -> R.string.stake_block_friend_level

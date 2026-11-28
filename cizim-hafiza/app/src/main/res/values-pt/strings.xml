@@ -1928,6 +1928,8 @@
     <string name="stake_settle_forfeit_loss">%1$s: o tempo acabou, você perdeu %2$d de ouro</string>
     <string name="stake_block_title">Indisponível agora</string>
     <string name="gift_block_title">Não é possível enviar o presente</string>
+    <string name="stake_block_link">Entre com o Google para jogar Duelos de Ouro.</string>
+    <string name="stake_block_age">Sua conta precisa ter pelo menos 7 dias para jogar Duelos de Ouro.</string>
     <string name="stake_block_level">Duelos por ouro abrem no nível 10.</string>
     <string name="stake_block_friend">Este amigo ainda não pode jogar por ouro. Ele precisa da versão mais recente do app, aberta uma vez, e do login com o Google.</string>
     <string name="stake_block_friend_level">Este amigo está abaixo do nível 10.</string>

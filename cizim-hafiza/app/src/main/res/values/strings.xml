@@ -1927,6 +1927,8 @@
     <string name="stake_settle_forfeit_loss">%1$s: time ran out, you lost %2$d gold</string>
     <string name="stake_block_title">Not available right now</string>
     <string name="gift_block_title">Gift can’t be sent</string>
+    <string name="stake_block_link">Sign in with Google to play Gold Duels.</string>
+    <string name="stake_block_age">Your account must be at least 7 days old to play Gold Duels.</string>
     <string name="stake_block_level">Duels for gold open at level 10.</string>
     <string name="stake_block_friend">This friend cannot play for gold yet. They need the latest version of the app, opened once, and a Google sign-in.</string>
     <string name="stake_block_friend_level">This friend is below level 10.</string>

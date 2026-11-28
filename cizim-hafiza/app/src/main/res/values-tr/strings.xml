@@ -1940,6 +1940,8 @@
     <string name="stake_settle_forfeit_loss">%1$s: süre doldu, %2$d altın gitti</string>
     <string name="stake_block_title">Şu an kullanılamıyor</string>
     <string name="gift_block_title">Hediye gönderilemiyor</string>
+    <string name="stake_block_link">Altın Düellosu için Google ile giriş yapmalısın.</string>
+    <string name="stake_block_age">Altın Düellosu için hesabının en az 7 günlük olması gerekir.</string>
     <string name="stake_block_level">Altın Düellosu 10. seviyede açılır.</string>
     <string name="stake_block_friend">Bu arkadaş henüz Altın Düellosu oynayamıyor. Uygulamanın son sürümünü kurup bir kez açması ve Google ile giriş yapmış olması gerekir.</string>
     <string name="stake_block_friend_level">Bu arkadaş 10. seviyenin altında.</string>
