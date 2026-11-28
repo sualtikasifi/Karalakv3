@@ -29,7 +29,7 @@ object GiftRules {
     const val MIN_SENDER_ACCOUNT_DAYS = 7
     const val MIN_FRIENDSHIP_DAYS = 2
     const val MIN_COST = 100
-    const val GOLD_FEE_PERCENT = 20
+    const val GOLD_FEE_PERCENT = 10
     const val ITEM_FEE_PERCENT = 10
     const val JOKER_PACK = 3
     val GOLD_AMOUNTS = listOf(100, 250, 500, 1000)

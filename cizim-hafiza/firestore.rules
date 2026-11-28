@@ -1183,7 +1183,7 @@ service cloud.firestore {
                  && d.cost is int && d.cost >= 100 && d.cost <= 1000
                  && d.itemId is string && d.itemId.size() <= 40
                  && d.gold is int
-                 && ((d.kind == 'gold' && d.itemId == '' && d.qty == 1 && d.gold == d.cost - d.cost * 20 / 100)
+                 && ((d.kind == 'gold' && d.itemId == '' && d.qty == 1 && d.gold == d.cost - d.cost * 10 / 100)
                      || ((d.kind == 'pen' || d.kind == 'frame' || d.kind == 'joker') && d.itemId.size() > 0 && d.gold == 0));
         }
 

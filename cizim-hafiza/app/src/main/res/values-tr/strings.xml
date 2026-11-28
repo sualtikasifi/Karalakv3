@@ -1895,7 +1895,7 @@
     <string name="gift_section_gold">Altın</string>
     <string name="gift_section_items">Ürünler</string>
     <string name="gift_gold_amount">%1$d altın</string>
-    <string name="gift_fee_note">Ödediğinin %20\'si hizmet payıdır</string>
+    <string name="gift_fee_note">Ödediğinin %10\'u hizmet payıdır</string>
     <string name="gift_gold_name">Altın</string>
     <string name="gift_inbox_title">Gelen hediyeler</string>
     <string name="gift_from">Gönderen: %1$s</string>
@@ -1941,7 +1941,7 @@
     <string name="stake_block_limit">Bugünkü altınlı düello sınırına ulaşıldı.</string>
     <string name="stake_block_late">Bu teklifin süresi doldu.</string>
     <string name="stake_block_refused">Düello gönderilemedi. Altının geri verildi.</string>
-    <string name="gift_fee_inline">%20 hizmet payı</string>
+    <string name="gift_fee_inline">%10 hizmet payı</string>
     <string name="gift_today_pill">Bugün kalan: %1$d hediye · %2$d altın</string>
     <string name="report_player_ask">Bu oyuncuyu neden bildirmek istiyorsun?</string>
     <string name="report_player_note">Bildirimin geliştiriciye iletilir ve incelenir.</string>

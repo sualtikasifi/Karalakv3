@@ -1882,7 +1882,7 @@
     <string name="gift_section_gold">Gold</string>
     <string name="gift_section_items">Items</string>
     <string name="gift_gold_amount">%1$d gold</string>
-    <string name="gift_fee_note">20% of what you pay is the fee</string>
+    <string name="gift_fee_note">10% of what you pay is the fee</string>
     <string name="gift_gold_name">Gold</string>
     <string name="gift_inbox_title">Incoming gifts</string>
     <string name="gift_from">From %1$s</string>
@@ -1928,7 +1928,7 @@
     <string name="stake_block_limit">Today\'s gold duel limit is reached.</string>
     <string name="stake_block_late">This offer is no longer open.</string>
     <string name="stake_block_refused">The duel could not be sent. Your gold is back.</string>
-    <string name="gift_fee_inline">20% fee</string>
+    <string name="gift_fee_inline">10% fee</string>
     <string name="gift_today_pill">%1$d gifts left today · %2$d gold</string>
     <string name="report_player_ask">Why do you want to report this player?</string>
     <string name="report_player_note">Your report goes to the developer and is reviewed.</string>

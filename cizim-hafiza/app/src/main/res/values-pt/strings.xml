@@ -1883,7 +1883,7 @@
     <string name="gift_section_gold">Ouro</string>
     <string name="gift_section_items">Itens</string>
     <string name="gift_gold_amount">%1$d de ouro</string>
-    <string name="gift_fee_note">20% do que você paga é a taxa</string>
+    <string name="gift_fee_note">10% do que você paga é a taxa</string>
     <string name="gift_gold_name">Ouro</string>
     <string name="gift_inbox_title">Presentes recebidos</string>
     <string name="gift_from">De %1$s</string>
@@ -1929,7 +1929,7 @@
     <string name="stake_block_limit">O limite de duelos por ouro de hoje foi atingido.</string>
     <string name="stake_block_late">Esta oferta não está mais aberta.</string>
     <string name="stake_block_refused">Não foi possível enviar o duelo. Seu ouro voltou.</string>
-    <string name="gift_fee_inline">20% de taxa</string>
+    <string name="gift_fee_inline">10% de taxa</string>
     <string name="gift_today_pill">Hoje restam %1$d presentes · %2$d de ouro</string>
     <string name="report_player_ask">Por que você quer denunciar este jogador?</string>
     <string name="report_player_note">Sua denúncia vai para o desenvolvedor e é analisada.</string>
