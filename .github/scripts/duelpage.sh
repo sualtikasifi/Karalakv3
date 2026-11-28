@@ -12,6 +12,7 @@ adb shell input keyevent 82 || true
 adb install -r -t "$APK"
 adb shell "run-as $PKG rm -f shared_prefs/title_nudge.xml" || true
 shoot() {
+  local name="$1"
   adb shell uiautomator dump /sdcard/u.xml >/dev/null 2>&1 || true
   b=$(adb shell cat /sdcard/u.xml 2>/dev/null | grep -o 'text="Wait"[^>]*bounds="\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]"' | grep -o '\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]' | head -1)
   if [ -n "$b" ]; then
@@ -19,7 +20,7 @@ shoot() {
     set -- $nums
     adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); sleep 2
   fi
-  adb exec-out screencap -p > "$OUT/$1.png"
+  adb exec-out screencap -p > "$OUT/$name.png"
 }
 adb shell am force-stop "$PKG"
 adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.ChestPreviewActivity" --es tier silver --es state duel_create
