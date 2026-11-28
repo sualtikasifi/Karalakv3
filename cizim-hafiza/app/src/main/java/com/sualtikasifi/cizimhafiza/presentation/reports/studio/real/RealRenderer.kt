@@ -359,7 +359,7 @@ class RealRenderer(
         val (inkW, inkH) = text.measureInk(word, wordW, wordSize, 2, assets.display, SCENE_INK, spacing = 0.76f, balanced = true)
         val gap = art(16f)
         val bar = art(8f)
-        val top = art(288f) - (inkH + gap + bar) / 2f
+        val top = art(314f) - (inkH + gap + bar) / 2f
         text.draw(canvas, word, art(125f + 222.5f), top + inkH / 2f, wordW, wordSize, 2, assets.display, SCENE_INK, spacing = 0.76f, balanced = true, ink = true)
         plain.color = UNDERLINE
         val half = (inkW * 0.5f).coerceIn(art(90f), art(170f))
@@ -370,7 +370,7 @@ class RealRenderer(
         drawCanvasPaper(canvas)
         canvas.save()
         circle.reset()
-        circle.addRoundRect(canvasRect, art(20f), art(20f), Path.Direction.CW)
+        circle.addRoundRect(canvasRect, art(26f), art(26f), Path.Direction.CW)
         canvas.clipPath(circle)
         replay(d.id)?.draw(canvas, box, drawn, sceneInk, 0.02f)
         canvas.restore()
@@ -608,7 +608,7 @@ class RealRenderer(
     private val dp = W / 411f
 
     /** The game's canvas on the video: from below the notepad to above the tray. */
-    private val canvasRect = RectF(art(36f), art(438f), art(806f), H - art(ART_H - 1386f))
+    private val canvasRect = RectF(art(34f), art(454f), art(808f), H - art(ART_H - 1384f))
 
     /** Where the drawing goes: the canvas. */
     private val hookBox = canvasRect
@@ -642,18 +642,18 @@ class RealRenderer(
         val gap = 5f * dp
         val tw = label.measureText(line)
         val cx = art(152f + 148f)
-        val cy = art(88f + 41f)
+        val cy = art(133f)
         val left = cx - (icon + gap + tw) / 2f
         drawIcon(canvas, ICON_TIMER, left + icon / 2f, cy, icon, UNDERLINE_ICON)
         val fm = label.fontMetrics
         canvas.drawText(line, left + icon + gap, cy - (fm.ascent + fm.descent) / 2f, label)
-        drawIcon(canvas, ICON_VOLUME, art(593f + 48.5f), art(88f + 41f), 26f * dp, SCENE_INK)
+        drawIcon(canvas, ICON_VOLUME, art(634.5f), art(134f), 26f * dp, SCENE_INK)
     }
 
     /** The canvas's own white dotted paper, laid over the picture's painted one (which has its "+ Süre" pill printed on it). */
     private fun drawCanvasPaper(canvas: Canvas) {
         circle.reset()
-        circle.addRoundRect(canvasRect, art(20f), art(20f), Path.Direction.CW)
+        circle.addRoundRect(canvasRect, art(26f), art(26f), Path.Direction.CW)
         canvas.save()
         canvas.clipPath(circle)
         plain.color = C.WHITE
@@ -721,10 +721,10 @@ class RealRenderer(
     /** The tray as DrawingScreen has it: the four paper-cream tools (pen picked) and the painted "+10 sn" ad button. */
     private fun drawTray(canvas: Canvas, drawnAny: Boolean) {
         val size = art(98f)
-        val top = fromBottom(1433f)
-        drawTool(canvas, art(48f), top, size, true, true, ICON_PEN)
-        drawTool(canvas, art(165f), top, size, false, true, null)
-        drawTool(canvas, art(290f), top, size, false, drawnAny, ICON_UNDO)
+        val top = fromBottom(1432f)
+        drawTool(canvas, art(47f), top, size, true, true, ICON_PEN)
+        drawTool(canvas, art(169f), top, size, false, true, null)
+        drawTool(canvas, art(293f), top, size, false, drawnAny, ICON_UNDO)
         drawTool(canvas, art(418f), top, size, false, drawnAny, ICON_DELETE)
         // the ad button: right-aligned in its slot, 2.74 : 1
         val w = art(270f)
