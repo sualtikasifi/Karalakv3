@@ -177,7 +177,7 @@ private fun MessagePanel(w: androidx.compose.ui.unit.Dp, h: androidx.compose.ui.
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.offset(w * 0.10f, h * 0.245f).size(w * 0.80f, h * 0.64f)
+        modifier = Modifier.offset(w * 0.078f, h * 0.243f).size(w * 0.844f, h * 0.655f)
             .background(Brush.verticalGradient(listOf(Color(0xFFFFFAEC), Color(0xFFFBE9C4))), shape)
             .border(2.dp, Color(0xFFE2C28A), shape)
             .padding(12.dp),
@@ -200,8 +200,8 @@ private fun SendRow(
             .then(if (ok) Modifier.pressable(pressedScale = 0.97f, onClick = { onSend(offer) }) else Modifier.background(Color(0x66F2E3C8)))
     )
     val joker = offer.kind == GiftKind.JOKER
-    Column(
-        verticalArrangement = Arrangement.Center,
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.offset(w * 0.265f, h * top).size(w * 0.41f, h * 0.058f)
     ) {
         FitText(
@@ -211,13 +211,14 @@ private fun SendRow(
                 fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start
             ),
             maxLines = if (joker) 2 else 1, minScale = 0.75f, contentAlignment = Alignment.CenterStart,
-            modifier = Modifier.fillMaxWidth().weight(1f, fill = true)
+            modifier = Modifier.weight(1f)
         )
         if (feeTag) {
+            // the fee, once, beside the first gold amount
             Box(
-                Modifier.padding(bottom = 2.dp)
+                Modifier.padding(start = 4.dp)
                     .background(Brush.horizontalGradient(listOf(Color(0xFFE8329C), Color(0xFFB81F86))), RoundedCornerShape(50))
-                    .padding(horizontal = 8.dp, vertical = 1.dp)
+                    .padding(horizontal = 7.dp, vertical = 2.dp)
             ) {
                 androidx.compose.material3.Text(
                     stringResource(R.string.gift_fee_inline), color = Color.White, fontSize = 10.sp,
