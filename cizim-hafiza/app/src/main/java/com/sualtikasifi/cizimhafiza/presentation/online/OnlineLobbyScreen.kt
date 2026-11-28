@@ -95,7 +95,11 @@ fun OnlineLobbyScreen(
                 .springIn(index = 0, stepMs = 100, fromY = 40)
         )
         LetteredText(
-            text = stringResource(R.string.online_lobby_title),
+            // on two lines (broken at the space nearest the middle), in every language
+            text = stringResource(R.string.online_lobby_title).let { t ->
+                t.indices.filter { t[it] == ' ' }.minByOrNull { kotlin.math.abs(it - t.length / 2) }
+                    ?.let { t.substring(0, it) + "\n" + t.substring(it + 1) } ?: t
+            },
             size = fs(70f),
             outline = Color(0xFF5A2815),
             maxLines = 2,

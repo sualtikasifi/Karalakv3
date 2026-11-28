@@ -1,5 +1,11 @@
 package com.sualtikasifi.cizimhafiza.debug
 
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.background
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -66,6 +72,25 @@ class ChestPreviewActivity : ComponentActivity() {
                         onReport = {},
                         onDismiss = { finish() }
                     )
+                    return@CizimHafizaTheme
+                }
+                if (state == "titles") {
+                    // a sign sized by its words (as on WoodScreen) and a two-line sign, both curved through TitleNudge
+                    androidx.compose.foundation.layout.Column(
+                        androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF6B3A1E)),
+                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(40.dp)
+                    ) {
+                        androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(80.dp))
+                        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.width(300.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                            com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(androidx.compose.ui.res.stringResource(com.sualtikasifi.cizimhafiza.R.string.menu_play), 30.sp, title = true)
+                        }
+                        com.sualtikasifi.cizimhafiza.presentation.common.LetteredText(
+                            "Arkadaşlarınla\nYarış", 40.sp, maxLines = 2, title = true,
+                            modifier = androidx.compose.ui.Modifier.size(300.dp, 120.dp)
+                        )
+                    }
+                    com.sualtikasifi.cizimhafiza.presentation.common.TitleNudgeOverlay()
                     return@CizimHafizaTheme
                 }
                 if (state == "pen_picker") {

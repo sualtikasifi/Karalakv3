@@ -39,6 +39,10 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGestures
 
 /**
  * Hand-tuning of page titles: how far the lettering of each sign is moved from where the layout puts it, in hundredths
@@ -52,24 +56,24 @@ object TitleNudge {
     /** dx, dy in hundredths of the title size; positive is right / down. Filled in from the hand-tuned values. */
     private val DEFAULTS: Map<String, Pair<Int, Int>> = mapOf(
         // Hand-tuned in the developer panel (Başlık ayarı); each title in every language it is written in.
-        "Arkadaşlarım" to (0 to -9),
-        "Friends" to (0 to -9),
-        "Amigos" to (0 to -9),
+        "Arkadaşlarım" to (0 to -5),
+        "Friends" to (0 to -5),
+        "Amigos" to (0 to -5),
         "Arkadaşlarınla Yarış" to (0 to 12),
         "Race Your Friends" to (0 to 12),
         "Compite con tus Amigos" to (0 to 12),
         "Desafie seus Amigos" to (0 to 12),
-        "Ayarlar" to (-25 to -18),
-        "Settings" to (-25 to -18),
-        "Ajustes" to (-25 to -18),
-        "Aylık Lig" to (0 to -18),
-        "Monthly League" to (0 to -18),
-        "Liga Mensual" to (0 to -18),
-        "Liga Mensal" to (0 to -18),
-        "Başarımlar" to (12 to -15),
-        "Achievements" to (12 to -15),
-        "Logros" to (12 to -15),
-        "Conquistas" to (12 to -15),
+        "Ayarlar" to (0 to 0),
+        "Settings" to (0 to 0),
+        "Ajustes" to (0 to 0),
+        "Aylık Lig" to (0 to -15),
+        "Monthly League" to (0 to -15),
+        "Liga Mensual" to (0 to -15),
+        "Liga Mensal" to (0 to -15),
+        "Başarımlar" to (0 to 0),
+        "Achievements" to (0 to 0),
+        "Logros" to (0 to 0),
+        "Conquistas" to (0 to 0),
         "Bildir" to (18 to -27),
         "a Bug" to (18 to -27),
         "un Problema" to (18 to -27),
@@ -87,10 +91,10 @@ object TitleNudge {
         "Desafío" to (3 to -18),
         "Desafio" to (3 to -18),
         "Karalak" to (-6 to -15),
-        "GÜNÜN ÜCRETSİZ JOKERİ" to (-14 to -4),
-        "FREE JOKER OF THE DAY" to (-14 to -4),
-        "COMODÍN GRATIS DEL DÍA" to (-14 to -4),
-        "CORINGA GRÁTIS DO DIA" to (-14 to -4),
+        "GÜNÜN ÜCRETSİZ JOKERİ" to (-16 to -9),
+        "FREE JOKER OF THE DAY" to (-16 to -9),
+        "COMODÍN GRATIS DEL DÍA" to (-16 to -9),
+        "CORINGA GRÁTIS DO DIA" to (-16 to -9),
         "Karalak Mağaza" to (0 to -40),
         "Karalak Store" to (0 to -40),
         "Karalak Tienda" to (0 to -40),
@@ -166,7 +170,30 @@ object TitleNudge {
     )
 
     /** Hand-tuned curves, written back from the developer panel the same way as [DEFAULTS]. */
-    private val BEND_DEFAULTS: Map<String, Int> = mapOf()
+    private val BEND_DEFAULTS: Map<String, Int> = mapOf(
+        "Arkadaşlarım" to 11,
+        "Friends" to 11,
+        "Amigos" to 11,
+        "Arkadaşlarınla Yarış" to 30,
+        "Race Your Friends" to 30,
+        "Compite con tus Amigos" to 30,
+        "Desafie seus Amigos" to 30,
+        "Ayarlar" to 10,
+        "Settings" to 10,
+        "Ajustes" to 10,
+        "Aylık Lig" to 13,
+        "Monthly League" to 13,
+        "Liga Mensual" to 13,
+        "Liga Mensal" to 13,
+        "Başarımlar" to 13,
+        "Achievements" to 13,
+        "Logros" to 13,
+        "Conquistas" to 13,
+        "GÜNÜN ÜCRETSİZ JOKERİ" to 18,
+        "FREE JOKER OF THE DAY" to 18,
+        "COMODÍN GRATIS DEL DÍA" to 18,
+        "CORINGA GRÁTIS DO DIA" to 18
+    )
 
     private const val PREFS = "title_nudge"
     private const val ON = "__on"
@@ -201,6 +228,9 @@ object TitleNudge {
         enabled = on
         runCatching { context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(ON, on).apply() }
     }
+
+    /** The key a title is tuned under: its words, whatever line breaks it is set with. */
+    fun keyOf(text: String): String = text.replace('\n', ' ')
 
     fun offsetOf(key: String): Pair<Int, Int> = saved[key] ?: DEFAULTS[key] ?: (0 to 0)
 
@@ -253,6 +283,9 @@ fun TitleNudgeOverlay() {
     var picked by remember { mutableStateOf<String?>(null) }
     var step by remember { mutableStateOf(1) }
     var copied by remember { mutableStateOf(false) }
+    var folded by remember { mutableStateOf(false) }
+    var dragX by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    var dragY by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
     val key = picked?.takeIf { it in keys } ?: keys.firstOrNull()
     val clipboard = LocalClipboardManager.current
     androidx.compose.runtime.key(keys) {
@@ -266,17 +299,43 @@ fun TitleNudgeOverlay() {
             androidx.compose.runtime.SideEffect {
                 window?.apply {
                     setDimAmount(0f)
-                    setGravity(android.view.Gravity.BOTTOM)
+                    setGravity(android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL)
                     // no focus, and a touch outside the panel belongs to whatever is under it
                     addFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
                 }
             }
-            Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp), contentAlignment = Alignment.BottomCenter) {
+            // dragging moves the panel's whole window (its own content would only be cut off at the window's edge)
+            androidx.compose.runtime.SideEffect {
+                window?.let { w -> w.attributes = w.attributes.also { a -> a.x = dragX.roundToInt(); a.y = (-dragY).roundToInt() } }
+            }
+            Box(Modifier.navigationBarsPadding().padding(12.dp), contentAlignment = Alignment.BottomCenter) {
+        // The panel can be dragged anywhere by its handle and folded down to the handle alone, so it never sits on the
+        // very thing that needs tapping (a button at the foot of a page that opens the next page to tune).
         Column(
-            Modifier.clip(RoundedCornerShape(16.dp)).background(Color(0xEE1E1E24)).padding(10.dp),
+            Modifier
+                .clip(RoundedCornerShape(16.dp)).background(Color(0xEE1E1E24)).padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            // the handle: drag it to move the panel, tap the arrow to fold it away or open it again
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF3B3B46))
+                    .pointerInput(Unit) {
+                        detectDragGestures { change, amount -> change.consume(); dragX += amount.x; dragY += amount.y }
+                    }
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text("⠿ Sürükle", color = Color.White, fontSize = 12.sp)
+                Text(
+                    if (folded) "Aç ▲" else "Küçült ▼", color = Color(0xFFFFB347), fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { folded = !folded }
+                )
+            }
+            if (folded) return@Column
             if (key == null) {
                 Text("Bu ekranda başlık yok", color = Color.White, fontSize = 13.sp)
             } else {
