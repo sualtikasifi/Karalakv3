@@ -39,8 +39,9 @@ adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.ChestPreviewAc
 sleep 6
 tapText Wait || true
 adb exec-out screencap -p > "$OUT/titles_panel.png"
-if findText "⠿"; then adb shell input swipe $CX $CY $CX $((CY-900)) 800; sleep 2; fi
+# the handle row of the panel (found on an earlier run): drag it up, then fold the panel from its new place
+adb shell input swipe 462 1393 462 493 1200; sleep 2
 adb exec-out screencap -p > "$OUT/titles_dragged.png"
-tapText "Küçült" || tapText "K" || true
+adb shell input tap 602 493; sleep 2
 adb exec-out screencap -p > "$OUT/titles_folded.png"
 ls -la "$OUT"

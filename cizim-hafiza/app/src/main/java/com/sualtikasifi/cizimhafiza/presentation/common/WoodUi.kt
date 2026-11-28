@@ -160,8 +160,11 @@ fun LetteredText(
             // In a box that only wraps its content (a sign whose height comes from its words) the canvas would get no height
             // at all and the title would vanish, so it is given the height its lines need there.
             val lines = text.split('\n').size.coerceAtMost(maxLines.coerceAtLeast(1))
-            val canvasModifier = if (constraints.hasBoundedHeight && constraints.maxHeight > 0) Modifier.fillMaxSize()
-            else Modifier.fillMaxWidth().height((size.value * scale * (1.25f * lines + 0.35f)).dp)
+            // A box of a set height (size(...), fillMaxSize()) is filled; anywhere else the canvas is as tall as its lines,
+            // as straight text would be — filling all the height a parent merely allows dropped the words far below the sign.
+            val linesDp = (size.value * scale * (1.25f * lines + 0.35f)).dp
+            val canvasModifier = if (constraints.hasFixedHeight) Modifier.fillMaxSize()
+            else Modifier.fillMaxWidth().height(maxOf(linesDp, with(density) { constraints.minHeight.toDp() }).coerceAtMost(maxHeight))
             CurvedLettering(
                 text = text, sizeSp = size.value * scale, bend = bend, fill = fill, outline = outline,
                 strokeDp = strokeDp, offsetX = nx, offsetY = lift + ny, modifier = canvasModifier, maxLines = maxLines
