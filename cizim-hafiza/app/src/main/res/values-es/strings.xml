@@ -1881,7 +1881,7 @@
     <string name="gift_sent">¡Regalo enviado! Le espera en su buzón.</string>
     <string name="gift_today_left">Hoy aún puedes enviar %1$d regalos, hasta %2$d de oro.</string>
     <string name="gift_section_gold">Oro</string>
-    <string name="gift_section_items">Objetos</string>
+    <string name="gift_section_items">Comodines</string>
     <string name="gift_gold_amount">%1$d de oro</string>
     <string name="gift_fee_note">El 10% de lo que pagas es la comisión</string>
     <string name="gift_gold_name">Oro</string>
@@ -1942,7 +1942,7 @@
     <string name="gift_today_pill">Hoy quedan %1$d regalos · %2$d de oro</string>
     <string name="report_player_ask">¿Por qué quieres denunciar a este jugador?</string>
     <string name="report_player_note">Tu denuncia llega al desarrollador y se revisa.</string>
-    <string name="stake_burn_note">El 5% del bote sale del juego.</string>
+    <string name="stake_burn_note">Se aplica una comisión del 5% al bote del premio.</string>
     <string name="stake_left_pill">Hoy quedan: %1$d duelos · %2$d de oro</string>
     <string name="stake_win_label">Si ganas</string>
     <string name="stake_lose_label">Si pierdes</string>

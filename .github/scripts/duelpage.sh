@@ -26,6 +26,11 @@ adb shell am force-stop "$PKG"
 adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.ChestPreviewActivity" --es tier silver --es state duel_create
 sleep 6
 shoot page
+# hold the classic button down for a moment and shoot while it is down
+adb shell input swipe 260 2112 260 2112 2500 &
+sleep 1
+adb exec-out screencap -p > "$OUT/pressed_classic.png"
+wait
 # hold the gold button down for a moment and shoot while it is down
 adb shell input swipe 800 2112 800 2112 2500 &
 sleep 1

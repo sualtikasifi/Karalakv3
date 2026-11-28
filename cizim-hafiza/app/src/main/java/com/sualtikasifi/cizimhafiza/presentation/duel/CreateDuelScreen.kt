@@ -35,6 +35,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -181,66 +183,71 @@ fun CreateDuelScreen(
         // The two buttons are painted into the scene (a green one with the brushes, a gold one with the coins); their words
         // go beside the pictures. Pressed, the face of a painted button caves in (its own pixels drawn again, shrunk, inside
         // its frame) and the words dip with it.
-        val context = androidx.compose.ui.platform.LocalContext.current
-        val sceneBitmap = remember { runCatching { com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.get(context.resources, R.drawable.duel_create_bg) }.getOrNull() }
-        val pxX = (sceneBitmap?.width ?: 1) / ArtW
-        val pxY = (sceneBitmap?.height ?: 1) / ArtH
         // The classic duel is open to everyone: it goes straight to the round.
         ArtButton(
-            u = u, offX = offX, fs = ::fs, sheet = sceneBitmap, pxX = pxX, pxY = pxY,
-            x = 24f, y = 1471f, w = 393f, h = 149f, labelX = 190f, labelW = 215f,
+            u = u, offX = offX, fs = ::fs, art = R.drawable.duel_btn_classic,
+            x = 19f, y = 1465f, w = 404f, h = 163f, labelX = 190f, labelW = 215f,
             label = stringResource(R.string.duel_classic), outline = Color(0xFF1B5E10),
-            wellTop = Color(0xFF2B7410), wellBottom = Color(0xFF52AE1A),
             onClick = { onChallengeStarted(selectedCount, 0) }
         )
         // The gold duel opens its window: the amounts, or the reason it cannot be played with this friend.
         ArtButton(
-            u = u, offX = offX, fs = ::fs, sheet = sceneBitmap, pxX = pxX, pxY = pxY,
-            x = 422f, y = 1471f, w = 396f, h = 149f, labelX = 584f, labelW = 222f,
+            u = u, offX = offX, fs = ::fs, art = R.drawable.duel_btn_gold,
+            x = 416f, y = 1467f, w = 408f, h = 162f, labelX = 584f, labelW = 222f,
             label = stringResource(R.string.stake_picker_title), outline = ButtonOutline,
-            wellTop = Color(0xFF7A3508), wellBottom = Color(0xFFB85A10),
             onClick = { stakeViewModel.start(opponentUid, selectedCount) }
         )
     }
 }
 
-/** One painted button of the challenge page: a rectangle of the scene that caves in under the finger, with its label lettered beside the picture. */
+/**
+ * One button of the challenge page. The two buttons are their own pictures (cut out of the scene, which has their place
+ * filled with the wooden floor), so a press moves the WHOLE button: it sinks a little and settles back with one soft
+ * spring, darkens a touch, and its words go with it — no copy of it drawn inside a hole.
+ */
 @Composable
 private fun ArtButton(
-    u: Dp, offX: Dp, fs: (Float) -> androidx.compose.ui.unit.TextUnit,
-    sheet: androidx.compose.ui.graphics.ImageBitmap?, pxX: Float, pxY: Float,
+    u: Dp, offX: Dp, fs: (Float) -> androidx.compose.ui.unit.TextUnit, art: Int,
     x: Float, y: Float, w: Float, h: Float, labelX: Float, labelW: Float,
-    label: String, outline: Color, wellTop: Color, wellBottom: Color, onClick: () -> Unit
+    label: String, outline: Color, onClick: () -> Unit
 ) {
-    // A calm press: it goes down quickly, comes back with one soft settle (no wobble), and the phone ticks once as it lands.
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
-    val scale = animateFloatAsState(
-        targetValue = if (pressed) 0.965f else 1f,
-        animationSpec = spring(dampingRatio = 0.78f, stiffness = 520f),
+    val press by animateFloatAsState(
+        targetValue = if (pressed) 1f else 0f,
+        animationSpec = if (pressed) androidx.compose.animation.core.tween(90) else spring(dampingRatio = 0.55f, stiffness = 600f),
         label = "duel_button_press"
     )
-    val sink = com.sualtikasifi.cizimhafiza.presentation.mainmenu.SinkState(source, scale)
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     androidx.compose.runtime.LaunchedEffect(pressed) {
         if (pressed) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
     }
     Box(
         Modifier.offset(offX + u * x, u * y).size(u * w, u * h)
-            .sunkenFace(sink, sheet, x * pxX, y * pxY, w * pxX, h * pxY, (12f * u.value).dp, (70f * u.value).dp,
-                wellTop = wellTop, wellBottom = wellBottom, dim = 0.12f)
+            .graphicsLayer {
+                val k = 1f - 0.05f * press
+                scaleX = k; scaleY = k
+                translationY = 3.dp.toPx() * press
+                compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
+            }
+            .drawWithContent {
+                drawContent()
+                // a touch darker while held, only where the button itself is
+                if (press > 0f) drawRect(Color.Black.copy(alpha = 0.14f * press), blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop)
+            }
             .clickable(interactionSource = source, indication = null, onClick = onClick)
-    )
-    // The label is set on two lines (one word on each), so it fits the button in every language at a size that reads well.
-    LetteredText(
-        text = label.replace(" ", "\n"),
-        size = fs(56f),
-        outline = outline,
-        maxLines = 2,
-        modifier = Modifier.offset(offX + u * labelX, u * (y + 12f)).size(u * labelW, u * 125f)
-            .sinkWith(sink, (x + w / 2f - labelX) / labelW, (h / 2f - 12f) / 125f),
-        minScale = 0.5f
-    )
+    ) {
+        Image(painterResource(art), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+        // The label is set on two lines (one word on each), so it fits the button in every language at a size that reads well.
+        LetteredText(
+            text = label.replace(" ", "\n"),
+            size = fs(56f),
+            outline = outline,
+            maxLines = 2,
+            modifier = Modifier.offset(u * (labelX - x), u * 0f).size(u * labelW, u * h),
+            minScale = 0.5f
+        )
+    }
 }
 
 /** One answer of the word-count choice: cream while open, the game's orange with a tick once chosen. */

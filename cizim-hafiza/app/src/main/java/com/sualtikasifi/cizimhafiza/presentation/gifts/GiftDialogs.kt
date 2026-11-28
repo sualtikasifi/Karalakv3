@@ -55,6 +55,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.NoticeCard
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedCloseButton
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPress
+import com.sualtikasifi.cizimhafiza.presentation.common.PressArt
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton
 import com.sualtikasifi.cizimhafiza.presentation.common.softShadow
@@ -119,7 +120,8 @@ fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit,
                 modifier = Modifier.offset(w * 0.29f, h * 0.152f).size(w * 0.52f, h * 0.062f)
             )
             // the red cross, drawn into the picture
-            PaintedPress(R.drawable.gift_send_window, 0.877f, 0.126f, 0.108f, 0.068f, w, h, corner = 40.dp, onClick = onClose)
+            PaintedPress(R.drawable.gift_send_window, 0.89502f, 0.12952f, 0.09957f, 0.06271f, w, h, corner = 40.dp,
+                art = PressArt(R.drawable.gift_press_7_cut, R.drawable.gift_press_7_patch, 0.89177f, 0.12747f, 0.10714f, 0.06748f), onClick = onClose)
 
             when {
                 state.loading -> NoticeCard(
@@ -155,7 +157,7 @@ fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit,
                         modifier = Modifier.offset(w * 0.505f, h * 0.317f).size(w * 0.2f, h * 0.041f)
                     )
                     GiftRules.goldOffers().forEachIndexed { i, o ->
-                        SendRow(o, gold, usage, state.sending, onSend, w, h, SendRowTop[i], feeTag = i == 0)
+                        SendRow(o, gold, usage, state.sending, onSend, w, h, i)
                     }
                     FitText(
                         text = stringResource(R.string.gift_section_items),
@@ -168,7 +170,7 @@ fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit,
                     val items = GiftRules.itemOffers()
                     listOf(JokerType.FIRST_LETTER, JokerType.LETTER_COUNT, JokerType.EXTRA_TIME).forEachIndexed { i, type ->
                         items.firstOrNull { it.kind == GiftKind.JOKER && it.itemId == type.name }?.let {
-                            SendRow(it, gold, usage, state.sending, onSend, w, h, SendRowTop[4 + i], feeTag = false)
+                            SendRow(it, gold, usage, state.sending, onSend, w, h, 4 + i)
                         }
                     }
                 }
@@ -180,8 +182,18 @@ fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit,
 private const val SendW = 924f
 private const val SendH = 1467f
 
-/** Top edge of the seven rows in the picture, as fractions of its height (four gold, then three jokers). */
-private val SendRowTop = floatArrayOf(0.375f, 0.440f, 0.504f, 0.571f, 0.698f, 0.763f, 0.829f)
+/** The seven rows (four gold, three jokers): top and bottom of each painted row, in picture pixels; they run from x 100 to 835. */
+private val SendRows = arrayOf(intArrayOf(549, 646), intArrayOf(644, 742), intArrayOf(740, 838), intArrayOf(836, 935), intArrayOf(1020, 1118), intArrayOf(1116, 1215), intArrayOf(1213, 1315))
+/** Their cut-outs for the press (the coins sticking out above a row included). */
+private val SendRowArt = listOf(
+    PressArt(R.drawable.gift_press_0_cut, R.drawable.gift_press_0_patch, 0.10498f, 0.37219f, 0.80303f, 0.06885f),
+    PressArt(R.drawable.gift_press_1_cut, R.drawable.gift_press_1_patch, 0.10498f, 0.43899f, 0.80303f, 0.06748f),
+    PressArt(R.drawable.gift_press_2_cut, R.drawable.gift_press_2_patch, 0.10498f, 0.50443f, 0.80303f, 0.06748f),
+    PressArt(R.drawable.gift_press_3_cut, R.drawable.gift_press_3_patch, 0.10498f, 0.56987f, 0.80303f, 0.07021f),
+    PressArt(R.drawable.gift_press_4_cut, R.drawable.gift_press_4_patch, 0.10498f, 0.69325f, 0.80303f, 0.06953f),
+    PressArt(R.drawable.gift_press_5_cut, R.drawable.gift_press_5_patch, 0.10498f, 0.76074f, 0.80303f, 0.06817f),
+    PressArt(R.drawable.gift_press_6_cut, R.drawable.gift_press_6_patch, 0.10498f, 0.82686f, 0.80303f, 0.07226f)
+)
 
 /** The cream panel that takes the rows' place when there is something to say instead. */
 @Composable
@@ -202,47 +214,35 @@ private fun MessagePanel(w: androidx.compose.ui.unit.Dp, h: androidx.compose.ui.
 @Composable
 private fun SendRow(
     offer: GiftOffer, gold: Int, usage: GiftUsage, sending: Boolean, onSend: (GiftOffer) -> Unit,
-    w: androidx.compose.ui.unit.Dp, h: androidx.compose.ui.unit.Dp, top: Float, feeTag: Boolean
+    w: androidx.compose.ui.unit.Dp, h: androidx.compose.ui.unit.Dp, index: Int
 ) {
     val ok = gold >= offer.cost && usage.canAfford(offer) && !sending
     val ink = if (ok) Ink else Color(0xFFA8957F)
     val joker = offer.kind == GiftKind.JOKER
-    // the whole row is one button that caves in with its words
+    val (t, b) = SendRows[index].let { it[0] to it[1] }
+    // the whole row is one button: pressed, it sinks with its words
     PaintedPress(
-        R.drawable.gift_send_window, 0.115f, top, 0.785f, 0.058f, w, h, corner = 22.dp, enabled = ok, onClick = { onSend(offer) }
+        R.drawable.gift_send_window, 100f / SendW, t / SendH, 735f / SendW, (b - t) / SendH, w, h, corner = 22.dp, enabled = ok,
+        art = SendRowArt[index],
+        onClick = { onSend(offer) }
     ) {
         if (!ok) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(percent = 50)).background(Color(0x66F2E3C8)))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.offset(maxWidth * 0.191f, 0.dp).size(maxWidth * 0.522f, maxHeight)
-        ) {
-            FitText(
-                text = if (offer.kind == GiftKind.GOLD) stringResource(R.string.gift_gold_amount, offer.receives) else giftName(offer.kind, offer.itemId, offer.qty),
-                style = PaintedStyle(
-                    color = ink, fontSize = if (joker) 16.sp else 20.sp, lineHeight = if (joker) 17.sp else 22.sp,
-                    fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start
-                ),
-                maxLines = if (joker) 2 else 1, minScale = 0.75f, contentAlignment = Alignment.CenterStart,
-                modifier = Modifier.weight(1f)
-            )
-            if (feeTag) {
-                // the fee, once, beside the first gold amount
-                Box(
-                    Modifier.padding(start = 4.dp)
-                        .background(Brush.horizontalGradient(listOf(Color(0xFFE8329C), Color(0xFFB81F86))), RoundedCornerShape(50))
-                        .padding(horizontal = 7.dp, vertical = 2.dp)
-                ) {
-                    androidx.compose.material3.Text(
-                        stringResource(R.string.gift_fee_inline), color = Color.White, fontSize = 10.sp,
-                        fontWeight = FontWeight.ExtraBold, maxLines = 1
-                    )
-                }
-            }
-        }
+        // the row's face is the part above its darker bottom edge
+        val face = maxHeight * 0.9f
+        FitText(
+            text = if (offer.kind == GiftKind.GOLD) stringResource(R.string.gift_gold_amount, offer.receives) else giftName(offer.kind, offer.itemId, offer.qty),
+            style = PaintedStyle(
+                color = ink, fontSize = if (joker) 16.sp else 20.sp, lineHeight = if (joker) 17.sp else 22.sp,
+                fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Start
+            ),
+            maxLines = if (joker) 2 else 1, minScale = 0.75f, contentAlignment = Alignment.CenterStart,
+            modifier = Modifier.offset(maxWidth * 0.197f, 0.dp).size(maxWidth * 0.515f, face)
+        )
+        // the price on the yellow pill, right of its painted coin; a little smaller so 1000 fits too
         ButtonLettering(
-            text = "${offer.cost}", sizeSp = 21f, fill = if (ok) Color.White else Color(0xFFEDE6D8),
+            text = "${offer.cost}", sizeSp = 18f, fill = if (ok) Color.White else Color(0xFFEDE6D8),
             outline = if (ok) Color(0xFF7A3B00) else Color(0xFF8E7B66),
-            modifier = Modifier.offset(maxWidth * 0.828f, 0.dp).size(maxWidth * 0.159f, maxHeight)
+            modifier = Modifier.offset(maxWidth * 0.8256f, 0.dp).size(maxWidth * 0.150f, face)
         )
     }
 }

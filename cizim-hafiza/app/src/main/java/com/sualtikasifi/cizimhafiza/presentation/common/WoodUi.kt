@@ -146,10 +146,10 @@ fun LetteredText(
         val nudgeContext = LocalContext.current
         if (title) {
             TitleNudge.load(nudgeContext)
-            if (TitleNudge.enabled) DisposableEffect(text) { TitleNudge.show(text); onDispose { TitleNudge.hide(text) } }
+            if (TitleNudge.enabled) DisposableEffect(text) { val k = TitleNudge.keyOf(text); TitleNudge.show(k); onDispose { TitleNudge.hide(k) } }
         }
-        val (nudgeX, nudgeY) = if (title) TitleNudge.offsetOf(text) else (0 to 0)
-        val bend = if (title) TitleNudge.bendOf(text) else 0
+        val (nudgeX, nudgeY) = if (title) TitleNudge.offsetOf(TitleNudge.keyOf(text)) else (0 to 0)
+        val bend = if (title) TitleNudge.bendOf(TitleNudge.keyOf(text)) else 0
         val nx = (size.value * scale * nudgeX / 100f).dp
         val ny = (size.value * scale * nudgeY / 100f).dp
         // Page titles (and any title-sized lettering) also get a wide, soft shadow underneath, so a title laid on a
@@ -157,9 +157,17 @@ fun LetteredText(
         // screen width, so on a narrow phone they can come out small; their shadow keeps a floor so it still shows.
         if (bend != 0) {
             // A curved title is drawn by hand along an arc (the layers below can only lay text on a straight line).
+            // In a box that only wraps its content (a sign whose height comes from its words) the canvas would get no height
+            // at all and the title would vanish, so it is given the height its lines need there.
+            val lines = text.split('\n').size.coerceAtMost(maxLines.coerceAtLeast(1))
+            // A box of a set height (size(...), fillMaxSize()) is filled; anywhere else the canvas is as tall as its lines,
+            // as straight text would be — filling all the height a parent merely allows dropped the words far below the sign.
+            val linesDp = (size.value * scale * (1.25f * lines + 0.35f)).dp
+            val canvasModifier = if (constraints.hasFixedHeight) Modifier.fillMaxSize()
+            else Modifier.fillMaxWidth().height(maxOf(linesDp, with(density) { constraints.minHeight.toDp() }).coerceAtMost(maxHeight))
             CurvedLettering(
                 text = text, sizeSp = size.value * scale, bend = bend, fill = fill, outline = outline,
-                strokeDp = strokeDp, offsetX = nx, offsetY = lift + ny, modifier = Modifier.fillMaxSize()
+                strokeDp = strokeDp, offsetX = nx, offsetY = lift + ny, modifier = canvasModifier, maxLines = maxLines
             )
             return@BoxWithConstraints
         }
@@ -624,7 +632,9 @@ private fun CurvedLettering(
     /** Centre the letters themselves (the height of capitals and digits) in the box instead of their line box. */
     optical: Boolean = false,
     /** The wide soft shadow of a page title; small lettering on a button wants only its outline. */
-    softShadow: Boolean = true
+    softShadow: Boolean = true,
+    /** Lines it may use: the text's own line breaks, or — with more than one allowed — a break at the middle space when it is too wide. */
+    maxLines: Int = 1
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -638,28 +648,43 @@ private fun CurvedLettering(
             strokeJoin = android.graphics.Paint.Join.ROUND
             strokeCap = android.graphics.Paint.Cap.ROUND
         }
-        var width = paint.measureText(text)
-        // shrink rather than spill out of the box
-        if (width > size.width * 0.96f) {
-            textPx *= size.width * 0.96f / width
+        var lines = text.split('\n')
+        if (lines.size == 1 && maxLines > 1 && paint.measureText(text) > size.width * 0.96f && text.contains(' ')) {
+            // too wide for one line: break at the space nearest the middle
+            val mid = text.length / 2
+            val cut = text.indices.filter { text[it] == ' ' }.minBy { kotlin.math.abs(it - mid) }
+            lines = listOf(text.substring(0, cut), text.substring(cut + 1))
+        }
+        var width = lines.maxOf { paint.measureText(it) }
+        // shrink rather than spill out of the box, in width and in height
+        val fit = minOf(size.width * 0.96f / width, if (lines.size > 1) size.height / (textPx * 1.12f * lines.size) else 1f)
+        if (fit < 1f) {
+            textPx *= fit
             paint.textSize = textPx
-            width = paint.measureText(text)
+            width = lines.maxOf { paint.measureText(it) }
         }
         val fm = paint.fontMetrics
         val cx = size.width / 2f + offsetX.toPx()
-        // the baseline of a straight line of this text, centred in the box
-        val base = if (optical) {
+        val lineGap = textPx * 1.05f
+        // the baseline of the middle of the block of lines, centred in the box
+        val base0 = if (optical) {
             val ref = android.graphics.Rect()
             paint.getTextBounds("0H", 0, 2, ref)
             size.height / 2f - (ref.top + ref.bottom) / 2f + offsetY.toPx()
         } else size.height / 2f - (fm.ascent + fm.descent) / 2f + offsetY.toPx()
         val sag = bend / 100f * textPx
-        val path = android.graphics.Path().apply {
-            moveTo(cx - width / 2f, base + sag / 2f)
-            quadTo(cx, base - sag * 1.5f, cx + width / 2f, base + sag / 2f)
+        // each line on its own arc, the block centred on the box
+        val placed = lines.mapIndexed { i, line ->
+            val lw = paint.measureText(line)
+            val base = base0 + (i - (lines.size - 1) / 2f) * lineGap
+            val path = android.graphics.Path().apply {
+                moveTo(cx - lw / 2f, base + sag / 2f)
+                quadTo(cx, base - sag * 1.5f, cx + lw / 2f, base + sag / 2f)
+            }
+            val length = android.graphics.PathMeasure(path, false).length
+            Triple(line, path, ((length - lw) / 2f).coerceAtLeast(0f))
         }
-        val length = android.graphics.PathMeasure(path, false).length
-        val hOffset = ((length - width) / 2f).coerceAtLeast(0f)
+        fun drawAll(nc: android.graphics.Canvas) = placed.forEach { (line, path, hOffset) -> nc.drawTextOnPath(line, path, hOffset, 0f, paint) }
         drawIntoCanvas { c ->
             val nc = c.nativeCanvas
             paint.style = android.graphics.Paint.Style.STROKE
@@ -668,20 +693,20 @@ private fun CurvedLettering(
                 paint.strokeWidth = strokePx + 1.5f * density.density
                 paint.color = 0x40000000
                 paint.setShadowLayer(textPx * 0.16f, 0f, textPx * 0.09f, 0x66200C00)
-                nc.save(); nc.translate(0f, textPx * 0.07f); nc.drawTextOnPath(text, path, hOffset, 0f, paint); nc.restore()
+                nc.save(); nc.translate(0f, textPx * 0.07f); drawAll(nc); nc.restore()
                 paint.clearShadowLayer()
             }
             if (outline != null) {
                 paint.strokeWidth = strokePx
                 paint.color = outline.toArgb()
                 paint.setShadowLayer(3f * density.density, 0f, 2f * density.density, 0x66000000)
-                nc.drawTextOnPath(text, path, hOffset, 0f, paint)
+                drawAll(nc)
                 paint.clearShadowLayer()
             }
             paint.style = android.graphics.Paint.Style.FILL
             paint.color = fill.toArgb()
             if (outline == null) paint.setShadowLayer(2f * density.density, 0f, 1.5f * density.density, 0x66A04000)
-            nc.drawTextOnPath(text, path, hOffset, 0f, paint)
+            drawAll(nc)
         }
     }
 }
