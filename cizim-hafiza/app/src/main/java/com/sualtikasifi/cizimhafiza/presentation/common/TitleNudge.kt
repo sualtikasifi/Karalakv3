@@ -305,8 +305,11 @@ fun TitleNudgeOverlay() {
                 }
             }
             // dragging moves the panel's whole window (its own content would only be cut off at the window's edge)
-            androidx.compose.runtime.SideEffect {
-                window?.let { w -> w.attributes = w.attributes.also { a -> a.x = dragX.roundToInt(); a.y = (-dragY).roundToInt() } }
+            // read here, in the composition, so a drag recomposes and the window follows
+            val wx = dragX.roundToInt()
+            val wy = (-dragY).roundToInt()
+            androidx.compose.runtime.LaunchedEffect(wx, wy) {
+                window?.let { w -> w.attributes = w.attributes.also { a -> a.x = wx; a.y = wy } }
             }
             Box(Modifier.navigationBarsPadding().padding(12.dp), contentAlignment = Alignment.BottomCenter) {
         // The panel can be dragged anywhere by its handle and folded down to the handle alone, so it never sits on the
