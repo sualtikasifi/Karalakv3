@@ -186,13 +186,13 @@ private const val SendH = 1467f
 private val SendRows = arrayOf(intArrayOf(549, 646), intArrayOf(644, 742), intArrayOf(740, 838), intArrayOf(836, 935), intArrayOf(1020, 1118), intArrayOf(1116, 1215), intArrayOf(1213, 1315))
 /** Their cut-outs for the press (the coins sticking out above a row included). */
 private val SendRowArt = listOf(
-    PressArt(R.drawable.gift_press_0_cut, R.drawable.gift_press_0_patch, 0.10498f, 0.37219f, 0.80303f, 0.07089f),
-    PressArt(R.drawable.gift_press_1_cut, R.drawable.gift_press_1_patch, 0.10498f, 0.43695f, 0.80303f, 0.07157f),
-    PressArt(R.drawable.gift_press_2_cut, R.drawable.gift_press_2_patch, 0.10498f, 0.50239f, 0.80303f, 0.07157f),
-    PressArt(R.drawable.gift_press_3_cut, R.drawable.gift_press_3_patch, 0.10498f, 0.56783f, 0.80303f, 0.07226f),
-    PressArt(R.drawable.gift_press_4_cut, R.drawable.gift_press_4_patch, 0.10498f, 0.69325f, 0.80303f, 0.07157f),
-    PressArt(R.drawable.gift_press_5_cut, R.drawable.gift_press_5_patch, 0.10498f, 0.75869f, 0.80303f, 0.07226f),
-    PressArt(R.drawable.gift_press_6_cut, R.drawable.gift_press_6_patch, 0.10498f, 0.82481f, 0.80303f, 0.07430f)
+    PressArt(R.drawable.gift_press_0_cut, R.drawable.gift_press_0_patch, 0.10498f, 0.37219f, 0.80303f, 0.06885f),
+    PressArt(R.drawable.gift_press_1_cut, R.drawable.gift_press_1_patch, 0.10498f, 0.43899f, 0.80303f, 0.06748f),
+    PressArt(R.drawable.gift_press_2_cut, R.drawable.gift_press_2_patch, 0.10498f, 0.50443f, 0.80303f, 0.06748f),
+    PressArt(R.drawable.gift_press_3_cut, R.drawable.gift_press_3_patch, 0.10498f, 0.56987f, 0.80303f, 0.07021f),
+    PressArt(R.drawable.gift_press_4_cut, R.drawable.gift_press_4_patch, 0.10498f, 0.69325f, 0.80303f, 0.06953f),
+    PressArt(R.drawable.gift_press_5_cut, R.drawable.gift_press_5_patch, 0.10498f, 0.76074f, 0.80303f, 0.06817f),
+    PressArt(R.drawable.gift_press_6_cut, R.drawable.gift_press_6_patch, 0.10498f, 0.82686f, 0.80303f, 0.07226f)
 )
 
 /** The cream panel that takes the rows' place when there is something to say instead. */

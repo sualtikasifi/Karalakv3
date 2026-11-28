@@ -221,10 +221,10 @@ private const val StakeH = 1463f
 private val StakeRowOutline = arrayOf(intArrayOf(702, 808), intArrayOf(814, 921), intArrayOf(928, 1035), intArrayOf(1041, 1151))
 /** Their cut-outs for the press (coins sticking out included). */
 private val StakeRowArt = listOf(
-    PressArt(R.drawable.stake_press_0_cut, R.drawable.stake_press_0_patch, 0.04725f, 0.47710f, 0.89890f, 0.07861f),
-    PressArt(R.drawable.stake_press_1_cut, R.drawable.stake_press_1_patch, 0.04725f, 0.54067f, 0.89890f, 0.09569f),
-    PressArt(R.drawable.stake_press_2_cut, R.drawable.stake_press_2_patch, 0.04725f, 0.61791f, 0.89890f, 0.09569f),
-    PressArt(R.drawable.stake_press_3_cut, R.drawable.stake_press_3_patch, 0.04725f, 0.69310f, 0.89890f, 0.09706f)
+    PressArt(R.drawable.stake_press_0_cut, R.drawable.stake_press_0_patch, 0.04725f, 0.47779f, 0.90000f, 0.07724f),
+    PressArt(R.drawable.stake_press_1_cut, R.drawable.stake_press_1_patch, 0.04725f, 0.55434f, 0.90000f, 0.07792f),
+    PressArt(R.drawable.stake_press_2_cut, R.drawable.stake_press_2_patch, 0.04725f, 0.63226f, 0.90000f, 0.07792f),
+    PressArt(R.drawable.stake_press_3_cut, R.drawable.stake_press_3_patch, 0.04725f, 0.70950f, 0.90000f, 0.07997f)
 )
 
 /** One amount to put in: its coins painted at the left, the amount, and the two pills that say what it comes to. */
