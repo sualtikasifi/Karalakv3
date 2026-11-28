@@ -63,10 +63,14 @@ fun PaintedPenWindow(title: String, onDismiss: () -> Unit, content: @Composable 
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier.fillMaxSize()
                 )
-                FitText(
+                // The game's own lettering, like the other signs (Baloo 2 ExtraBold, cream over a dark brown edge) with the soft
+                // shadow of a page title, so the words read as part of the painted sign instead of flat text put on it.
+                LetteredText(
                     text = title,
-                    style = PaintedStyle(color = Color(0xFF3A2416), fontSize = 26.sp, textAlign = TextAlign.Center),
-                    maxLines = 1,
+                    size = (u.value * 64f).sp,
+                    fill = Color(0xFFFFF6DE),
+                    outline = Color(0xFF4A2308),
+                    title = true,
                     minScale = 0.6f,
                     modifier = Modifier.offset(u * 262f, u * 160f).size(u * 396f, u * 108f)
                 )

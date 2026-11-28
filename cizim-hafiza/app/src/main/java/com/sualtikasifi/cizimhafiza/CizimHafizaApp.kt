@@ -63,6 +63,7 @@ class CizimHafizaApp : Application(), Configuration.Provider {
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         com.sualtikasifi.cizimhafiza.presentation.common.BackdropCache.trim(level)
+        com.sualtikasifi.cizimhafiza.presentation.common.ArtCache.trim(level)
     }
 
     override fun onCreate() {

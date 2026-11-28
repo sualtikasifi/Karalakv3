@@ -68,6 +68,22 @@ class ChestPreviewActivity : ComponentActivity() {
                     )
                     return@CizimHafizaTheme
                 }
+                if (state == "pen_picker") {
+                    com.sualtikasifi.cizimhafiza.presentation.mainmenu.PenPickerSheet(
+                        items = com.sualtikasifi.cizimhafiza.domain.model.PenSkin.entries.filter { it.isStoreItem || it.unlockLevel >= 0 }.take(18)
+                            .mapIndexed { i, skin -> com.sualtikasifi.cizimhafiza.presentation.mainmenu.PenSkinUiItem(skin, unlocked = i < 6, selected = i == 1) },
+                        onSelect = {}, onDismiss = { finish() }
+                    )
+                    return@CizimHafizaTheme
+                }
+                if (state == "avatar_picker") {
+                    com.sualtikasifi.cizimhafiza.presentation.mainmenu.AvatarFramePickerSheet(
+                        items = com.sualtikasifi.cizimhafiza.domain.model.AvatarFrame.entries
+                            .mapIndexed { i, f -> com.sualtikasifi.cizimhafiza.presentation.mainmenu.AvatarFrameUiItem(f, unlocked = i < 8, selected = i == 2) },
+                        photoSource = "DINO", onPhotoSource = {}, onSelect = {}, onDismiss = { finish() }
+                    )
+                    return@CizimHafizaTheme
+                }
                 if (state == "duel_create") {
                     com.sualtikasifi.cizimhafiza.presentation.duel.CreateDuelScreen(
                         opponentName = "Elif", opponentUid = "u", onBack = { finish() }, onChallengeStarted = { _, _ -> }

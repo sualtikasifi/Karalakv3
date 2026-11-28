@@ -541,22 +541,31 @@ fun AvatarPhotoFace(photo: AvatarPhoto, modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         val dino = @Composable {
-            Image(
-                painter = painterResource(id = com.sualtikasifi.cizimhafiza.R.drawable.avatar_dino),
-                contentDescription = null,
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().graphicsLayer { scaleX = 1.05f; scaleY = 1.05f }
-            )
+            val art = rememberArtBitmap(com.sualtikasifi.cizimhafiza.R.drawable.avatar_dino)
+            if (art != null) {
+                Image(
+                    bitmap = art,
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize().graphicsLayer { scaleX = 1.05f; scaleY = 1.05f }
+                )
+            }
         }
         when (photo) {
             AvatarPhoto.Dino -> dino()
             is AvatarPhoto.Persona -> PersonaFace(photo.seed)
-            is AvatarPhoto.Res -> Image(
-                painter = painterResource(id = photo.res),
-                contentDescription = null,
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            is AvatarPhoto.Res -> {
+                // from the picture cache (see ArtCache): no main-thread decode as a photo scrolls into view
+                val art = rememberArtBitmap(photo.res)
+                if (art != null) {
+                    Image(
+                        bitmap = art,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
         }
     }
 }

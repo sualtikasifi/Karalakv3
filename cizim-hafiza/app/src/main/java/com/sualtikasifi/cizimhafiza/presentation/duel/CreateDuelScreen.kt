@@ -231,12 +231,14 @@ private fun ArtButton(
                 wellTop = wellTop, wellBottom = wellBottom, dim = 0.12f)
             .clickable(interactionSource = source, indication = null, onClick = onClick)
     )
+    // The label is set on two lines (one word on each), so it fits the button in every language at a size that reads well.
     LetteredText(
-        text = label,
-        size = fs(52f),
+        text = label.replace(" ", "\n"),
+        size = fs(56f),
         outline = outline,
-        modifier = Modifier.offset(offX + u * labelX, u * (y + 31f)).size(u * labelW, u * 88f)
-            .sinkWith(sink, (x + w / 2f - labelX) / labelW, (h / 2f - 31f) / 88f),
+        maxLines = 2,
+        modifier = Modifier.offset(offX + u * labelX, u * (y + 12f)).size(u * labelW, u * 125f)
+            .sinkWith(sink, (x + w / 2f - labelX) / labelW, (h / 2f - 12f) / 125f),
         minScale = 0.5f
     )
 }
