@@ -27,12 +27,12 @@ adb shell am start -W -n "$PKG/com.sualtikasifi.cizimhafiza.debug.ChestPreviewAc
 sleep 6
 shoot page
 # hold the gold button down for a moment and shoot while it is down
-adb shell input swipe 800 1985 800 1985 2500 &
+adb shell input swipe 800 2112 800 2112 2500 &
 sleep 1
 adb exec-out screencap -p > "$OUT/pressed_gold.png"
 wait
 # tap it: the window (here the reason, as the preview has no signed-in player)
-adb shell input tap 800 1985
+adb shell input tap 800 2112
 sleep 3
 shoot gold_window
 ls -la "$OUT"
