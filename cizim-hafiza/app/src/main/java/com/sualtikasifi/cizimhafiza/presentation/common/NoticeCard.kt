@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -69,6 +70,42 @@ fun NoticeCard(
                 message, color = Color(0xFF7A5A40), fontFamily = DisplayFont, fontSize = 16.sp, lineHeight = 22.sp,
                 fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
             )
+        }
+    }
+}
+
+/**
+ * A short notice inside a painted window: a gold badge at the left, a bold heading and a line of explanation, on a soft
+ * gold strip. For the one thing a player must know before acting (a change that can be made only once, a locked name).
+ */
+@Composable
+fun InfoStrip(
+    title: String,
+    message: String,
+    modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector = androidx.compose.material.icons.Icons.Filled.Info
+) {
+    val shape = RoundedCornerShape(18.dp)
+    androidx.compose.foundation.layout.Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(Color(0xFFFFF6DC), Color(0xFFFCE7B8))), shape)
+            .border(1.5.dp, Color(0xFFE2B866), shape)
+            .padding(horizontal = 12.dp, vertical = 11.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(38.dp)
+                .background(Brush.verticalGradient(listOf(Color(0xFFFFC95A), Color(0xFFF08A14))), CircleShape)
+                .border(2.dp, Color.White, CircleShape)
+        ) { Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp)) }
+        androidx.compose.foundation.layout.Spacer(Modifier.size(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color(0xFF3B2314), fontFamily = DisplayFont, fontSize = 16.sp, lineHeight = 19.sp, fontWeight = FontWeight.ExtraBold)
+            androidx.compose.foundation.layout.Spacer(Modifier.height(2.dp))
+            Text(message, color = Color(0xFF6B4A30), fontFamily = DisplayFont, fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

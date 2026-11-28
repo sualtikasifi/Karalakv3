@@ -156,15 +156,15 @@ fun ReportBugScreen(
                 val words = stringResource(R.string.report_bug_title).split(' ')
                 Column(
                     modifier = Modifier
-                        .offset(x = signW * 0.155f, y = signW * 0.399f)
-                        .width(signW * 0.66f)
+                        .offset(x = signW * 0.13f, y = signW * 0.399f)
+                        .width(signW * 0.74f)
                         .height(signW * 0.21f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
                     LetteredText(
                         text = words.first(),
-                        size = (signW.value * 0.135f).sp,
+                        size = (signW.value * 0.125f).sp,
                         fill = Color.White,
                         outline = Color(0xFF5A2815),
                         modifier = Modifier.fillMaxWidth().weight(1f),
@@ -173,7 +173,7 @@ fun ReportBugScreen(
                     )
                     if (words.size > 1) LetteredText(
                         text = words.drop(1).joinToString(" "),
-                        size = (signW.value * 0.135f).sp,
+                        size = (signW.value * 0.125f).sp,
                         outline = Color(0xFF5A2815),
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         minScale = 0.6f,
@@ -301,11 +301,15 @@ fun ReportBugScreen(
     }
     if (uiState.isSubmitted) {
         com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialog(
-            title = stringResource(R.string.report_bug_success),
+            title = stringResource(R.string.report_bug_done_title),
             onDismiss = viewModel::dismissSuccess,
-            buttons = { com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton(text = stringResource(R.string.close), onClick = viewModel::dismissSuccess, modifier = Modifier.fillMaxWidth()) }
+            buttons = {
+                com.sualtikasifi.cizimhafiza.presentation.common.PaintedCloseButton(text = stringResource(R.string.close), onClick = viewModel::dismissSuccess)
+            }
         ) {
             IconWell(icon = Icons.Filled.CheckCircle, tint = AppTheme.tokens.success)
+            Spacer(modifier = Modifier.height(10.dp))
+            com.sualtikasifi.cizimhafiza.presentation.common.PaintedDialogText(stringResource(R.string.report_bug_done_body))
         }
     }
     pendingDeleteId?.let { id ->

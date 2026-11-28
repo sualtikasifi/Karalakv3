@@ -1086,7 +1086,7 @@
     <string name="quick_match_you_named">%1$s (Você)</string>
     <string name="quick_match_versus">VS</string>
     <string name="quick_match_gallery_yours">Seus</string>
-    <string name="account_nickname_locked">Seu nome de usuário não pode ser alterado. Ele pode ser alterado uma vez e fica fixo quando sua conta é vinculada ao Google.</string>
+    <string name="account_nickname_locked">Seu nome de usuário agora é fixo. Ele pode ser alterado uma vez e se torna permanente quando sua conta é vinculada ao Google.</string>
     <string name="account_nickname_save">Salvar</string>
     <string name="account_nickname_saved">Salvo</string>
     <string name="account_nickname_label">Apelido</string>
@@ -1301,7 +1301,11 @@
     <string name="frame_name_angel_halo">Auréola de Anjo</string>
     <string name="frame_name_lion_king">Rei Leão</string>
     <string name="nickname_edit_title">Mude seu nome de usuário</string>
-    <string name="nickname_edit_warning">Você só pode mudar seu nome de usuário UMA vez. Escolha com cuidado!</string>
+    <string name="nickname_edit_warning">Você só pode mudar seu nome de usuário uma vez. O nome escolhido fica visível para outros jogadores.</string>
+    <string name="report_bug_done_title">Relato recebido</string>
+    <string name="report_bug_done_body">Obrigado pelo seu feedback. Nossa equipe vai analisar sua mensagem o mais rápido possível. Você pode acompanhá-la em “Meus Relatos Anteriores”, logo abaixo.</string>
+    <string name="nickname_edit_note_title">Alteração única</string>
+    <string name="nickname_locked_title">Nome de usuário bloqueado</string>
     <string name="nickname_edit_hint">2–16 caracteres</string>
     <string name="nickname_edit_save">Salvar</string>
     <string name="nickname_edit_cancel">Cancelar</string>

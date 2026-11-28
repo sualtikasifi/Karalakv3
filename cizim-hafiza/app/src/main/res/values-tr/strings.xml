@@ -812,7 +812,7 @@
     <string name="account_sign_out_local_only">Çıkış yapıldı. İlerlemen bu cihaza kaydedildi ama internet olmadığı için buluta yüklenemedi — bağlantı gelince yüklenecek.</string>
     <string name="account_sign_out_failed">Çıkış yapılamadı. Tekrar dene.</string>
     <string name="account_sign_out_wipe_failed">Çıkış yapıldı ama bu cihazdaki veriler tam temizlenemedi. Uygulamayı kapatıp tekrar açtıktan sonra yeniden dene.</string>
-    <string name="account_nickname_locked">Kullanıcı adın değiştirilemez. Bir kez değiştirilebilir ve hesabın Google\'a bağlanınca sabitlenir.</string>
+    <string name="account_nickname_locked">Kullanıcı adın artık sabit. Ad bir kez değiştirilebilir ve hesabın Google\'a bağlandığında kalıcı olur.</string>
     <string name="account_nickname_save">Kaydet</string>
     <string name="account_nickname_saved">Kaydedildi</string>
     <string name="account_nickname_label">Kullanıcı Adı</string>
@@ -1313,7 +1313,11 @@
     <string name="frame_name_angel_halo">Melek Halesi</string>
     <string name="frame_name_lion_king">Aslan Kral</string>
     <string name="nickname_edit_title">Kullanıcı adını değiştir</string>
-    <string name="nickname_edit_warning">Kullanıcı adını yalnızca BİR KEZ değiştirebilirsin. Dikkatli seç!</string>
+    <string name="nickname_edit_warning">Kullanıcı adını yalnızca bir kez değiştirebilirsin. Seçtiğin ad diğer oyuncular tarafından görülür.</string>
+    <string name="report_bug_done_title">Bildirimin alındı</string>
+    <string name="report_bug_done_body">Geri bildirimin için teşekkür ederiz. Ekibimiz mesajını en kısa sürede inceleyecek. Aşağıdaki “Geçmiş Bildirimlerim” bölümünden takip edebilirsin.</string>
+    <string name="nickname_edit_note_title">Tek seferlik hak</string>
+    <string name="nickname_locked_title">Kullanıcı adı kilitli</string>
     <string name="nickname_edit_hint">2–16 karakter</string>
     <string name="nickname_edit_save">Kaydet</string>
     <string name="nickname_edit_cancel">Vazgeç</string>
