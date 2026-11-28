@@ -156,9 +156,9 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
             // the rules, and the one thing the house keeps
             FitText(
                 text = stringResource(R.string.stake_picker_sub, friendName),
-                style = PaintedStyle(color = Ink, fontSize = 13.sp, lineHeight = 15.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
-                maxLines = 2, minScale = 0.75f,
-                modifier = Modifier.offset(w * 0.165f, h * 0.340f).size(w * 0.67f, h * 0.043f)
+                style = PaintedStyle(color = Ink, fontSize = 12.sp, lineHeight = 13.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+                maxLines = 2, minScale = 0.7f,
+                modifier = Modifier.offset(w * 0.165f, h * 0.336f).size(w * 0.67f, h * 0.052f)
             )
             FitText(
                 text = stringResource(R.string.stake_burn_note),
@@ -236,20 +236,11 @@ private fun StakeRow(
             .clip(RoundedCornerShape(22.dp))
             .then(if (enabled) Modifier.pressable(pressedScale = 0.97f, onClick = { onPick(stake) }) else Modifier.background(Color(0x66F2E3C8)))
     )
-    Column(
-        verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.offset(w * 0.236f, h * top).size(w * 0.194f, h * 0.068f)
-    ) {
-        FitText(
-            text = "$stake",
-            style = PaintedStyle(color = ink, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
-            minScale = 0.6f, modifier = Modifier.fillMaxWidth()
-        )
-        Text(
-            stringResource(R.string.gift_gold_name), color = if (enabled) InkSoft else Color(0xFFB0A090), fontSize = 10.sp,
-            fontWeight = FontWeight.ExtraBold, maxLines = 1
-        )
-    }
+    FitText(
+        text = "$stake",
+        style = PaintedStyle(color = ink, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
+        minScale = 0.6f, modifier = Modifier.offset(w * 0.236f, h * top).size(w * 0.194f, h * 0.068f)
+    )
     StakePillText(stringResource(R.string.stake_win_label), "+${StakeRules.netWin(stake)}", if (enabled) Color(0xFF1B6B2A) else Color(0xFF8E8A7A), Modifier.offset(w * 0.436f, h * (top + 0.009f)).size(w * 0.221f, h * 0.051f))
     StakePillText(stringResource(R.string.stake_lose_label), "−$stake", if (enabled) Color(0xFFA11D18) else Color(0xFF8E8A7A), Modifier.offset(w * 0.671f, h * (top + 0.009f)).size(w * 0.247f, h * 0.051f))
 }
