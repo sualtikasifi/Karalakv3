@@ -1912,7 +1912,7 @@
     <string name="stake_sent">Duel sent with %1$d gold. It is taken from your wallet now.</string>
     <string name="stake_chip">%1$d gold duel</string>
     <string name="stake_accept_title">Duel for gold</string>
-    <string name="stake_accept_message">%1$s offered a %2$d gold duel. If you accept, %2$d gold leaves your wallet now and you must finish within %4$d minutes. Win: +%3$d gold. Lose: you lose the gold you put in.</string>
+    <string name="stake_accept_message">%1$s offered a %2$d gold duel. If you accept, %2$d gold leaves your wallet now and you must finish within %4$d minutes. Win: you get %3$d gold back in total. Lose: you lose the gold you put in.</string>
     <string name="stake_accept_confirm">Accept and play</string>
     <string name="stake_result_title">Duel results</string>
     <string name="stake_settle_won">%1$s: you won +%2$d gold</string>

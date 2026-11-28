@@ -1913,7 +1913,7 @@
     <string name="stake_sent">Duelo enviado com %1$d de ouro. Ele foi descontado da sua carteira agora.</string>
     <string name="stake_chip">Duelo de %1$d de ouro</string>
     <string name="stake_accept_title">Duelo por ouro</string>
-    <string name="stake_accept_message">%1$s ofereceu um duelo de %2$d de ouro. Se aceitar, %2$d de ouro saem agora e você deve terminar em %4$d minutos. Ganha: +%3$d de ouro. Perde: perde o ouro colocado.</string>
+    <string name="stake_accept_message">%1$s ofereceu um duelo de %2$d de ouro. Se aceitar, %2$d de ouro saem agora e você deve terminar em %4$d minutos. Ganha: você recebe %3$d de ouro no total. Perde: perde o ouro colocado.</string>
     <string name="stake_accept_confirm">Aceitar e jogar</string>
     <string name="stake_result_title">Resultados dos duelos</string>
     <string name="stake_settle_won">%1$s: você ganhou +%2$d de ouro</string>

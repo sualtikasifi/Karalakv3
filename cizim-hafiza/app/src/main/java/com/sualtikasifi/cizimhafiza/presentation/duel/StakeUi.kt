@@ -47,6 +47,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.StakeUsage
 import com.sualtikasifi.cizimhafiza.domain.repository.DuelRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.StakeSettlement
 import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
+import com.sualtikasifi.cizimhafiza.presentation.common.ButtonLettering
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton
 import com.sualtikasifi.cizimhafiza.presentation.common.softShadow
 import com.sualtikasifi.cizimhafiza.util.LegalConsentStore
@@ -193,10 +194,10 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
             // the way out is the loudest button: the picture's own orange
             androidx.compose.foundation.layout.Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.offset(w * 0.225f, h * 0.80f).size(w * 0.55f, h * 0.075f).pressable(pressedScale = 0.95f, onClick = { onPick(0) })
+                modifier = Modifier.offset(w * 0.225f, h * 0.795f).size(w * 0.55f, h * 0.08f).pressable(pressedScale = 0.95f, onClick = { onPick(0) })
             ) {
-                LetteredText(
-                    text = stringResource(R.string.stake_none), size = 24.sp, fill = Color.White, outline = Color(0xFF9A3B00), minScale = 0.55f,
+                ButtonLettering(
+                    text = stringResource(R.string.stake_none), sizeSp = 25f, fill = Color.White, outline = Color(0xFF9A3B00),
                     modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
                 )
             }
@@ -236,26 +237,21 @@ private fun StakeRow(
             .clip(RoundedCornerShape(22.dp))
             .then(if (enabled) Modifier.pressable(pressedScale = 0.97f, onClick = { onPick(stake) }) else Modifier.background(Color(0x66F2E3C8)))
     )
-    FitText(
-        text = "$stake",
-        style = PaintedStyle(color = ink, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
-        minScale = 0.6f, modifier = Modifier.offset(w * 0.236f, h * top).size(w * 0.194f, h * 0.068f)
+    ButtonLettering(
+        text = "$stake", sizeSp = 27f, fill = if (enabled) Color.White else Color(0xFFEDE6D8), outline = if (enabled) Color(0xFF5A2815) else Color(0xFF9C8B78),
+        modifier = Modifier.offset(w * 0.236f, h * top).size(w * 0.194f, h * 0.068f)
     )
-    StakePillText(stringResource(R.string.stake_win_label), "+${StakeRules.netWin(stake)}", if (enabled) Color(0xFF1B6B2A) else Color(0xFF8E8A7A), Modifier.offset(w * 0.436f, h * (top + 0.009f)).size(w * 0.221f, h * 0.051f))
-    StakePillText(stringResource(R.string.stake_lose_label), "−$stake", if (enabled) Color(0xFFA11D18) else Color(0xFF8E8A7A), Modifier.offset(w * 0.671f, h * (top + 0.009f)).size(w * 0.247f, h * 0.051f))
-}
-
-/** A small label over a bigger figure, lettered on one of the picture's pills. */
-@Composable
-private fun StakePillText(label: String, value: String, ink: Color, modifier: Modifier) {
-    Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-        Text(label, color = ink, fontSize = 9.sp, lineHeight = 10.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
-        FitText(
-            text = value,
-            style = PaintedStyle(color = ink, fontSize = 16.sp, lineHeight = 17.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
-            minScale = 0.6f, modifier = Modifier.fillMaxWidth()
-        )
-    }
+    // the whole prize on the green pill, the whole loss on the pink one
+    ButtonLettering(
+        text = "+${StakeRules.winnerPayout(stake)}", sizeSp = 23f, fill = if (enabled) Color.White else Color(0xFFEDE6D8),
+        outline = if (enabled) Color(0xFF1B6B2A) else Color(0xFF8E8A7A),
+        modifier = Modifier.offset(w * 0.446f, h * (top + 0.009f)).size(w * 0.201f, h * 0.051f)
+    )
+    ButtonLettering(
+        text = "−$stake", sizeSp = 23f, fill = if (enabled) Color.White else Color(0xFFEDE6D8),
+        outline = if (enabled) Color(0xFFA11D18) else Color(0xFF8E8A7A),
+        modifier = Modifier.offset(w * 0.681f, h * (top + 0.009f)).size(w * 0.227f, h * 0.051f)
+    )
 }
 
 /** What each settled wager did to the wallet. */
