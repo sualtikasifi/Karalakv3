@@ -36,6 +36,7 @@ on:
           - gift.sh
           - bend.sh
           - nudgeover.sh
+          - notice.sh
           - reportplayer.sh
           - friendmenu.sh
           - homechip2.sh

@@ -1922,6 +1922,8 @@
     <string name="stake_settle_refund">%1$s não jogou: %2$d de ouro de volta</string>
     <string name="stake_settle_forfeit_win">%1$s não terminou a tempo: +%2$d de ouro</string>
     <string name="stake_settle_forfeit_loss">%1$s: o tempo acabou, você perdeu %2$d de ouro</string>
+    <string name="stake_block_title">Indisponível agora</string>
+    <string name="gift_block_title">Não é possível enviar o presente</string>
     <string name="stake_block_level">Duelos por ouro abrem no nível 10.</string>
     <string name="stake_block_friend">Este amigo ainda não pode jogar por ouro. Ele precisa da versão mais recente do app, aberta uma vez, e do login com o Google.</string>
     <string name="stake_block_friend_level">Este amigo está abaixo do nível 10.</string>

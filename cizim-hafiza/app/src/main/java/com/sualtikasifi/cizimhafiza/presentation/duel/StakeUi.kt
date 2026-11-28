@@ -48,6 +48,7 @@ import com.sualtikasifi.cizimhafiza.domain.repository.DuelRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.StakeSettlement
 import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
 import com.sualtikasifi.cizimhafiza.presentation.common.ButtonLettering
+import com.sualtikasifi.cizimhafiza.presentation.common.NoticeCard
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPress
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton
 import com.sualtikasifi.cizimhafiza.presentation.common.softShadow
@@ -168,15 +169,14 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
             )
             val usage = state.usage
             if (state.block != null || state.loading || usage == null) {
-                StakePanel(w, h) {
-                    if (state.block != null) {
-                        Text(
-                            stringResource(stakeMessageRes(state.block)), color = Color(0xFF9A2F12), fontSize = 15.sp, fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp)
-                        )
-                    } else {
-                        Text(stringResource(R.string.gift_loading), color = InkSoft, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                    }
+                val panel = Modifier.offset(w * 0.03f, h * 0.421f).size(w * 0.94f, h * 0.374f)
+                if (state.block != null) {
+                    NoticeCard(stringResource(R.string.stake_block_title), stringResource(stakeMessageRes(state.block)), panel)
+                } else {
+                    NoticeCard(
+                        stringResource(R.string.gift_loading), "", panel,
+                        icon = { androidx.compose.material3.CircularProgressIndicator(color = Color.White, strokeWidth = 3.5.dp, modifier = Modifier.size(34.dp)) }
+                    )
                 }
             } else {
                 // the purple bar: what is left today
@@ -206,20 +206,6 @@ private const val StakeH = 1463f
 
 /** Top edge of the four rows in the picture, as fractions of its height. */
 private val StakeRowTop = floatArrayOf(0.482f, 0.558f, 0.636f, 0.713f)
-
-/** The cream panel that takes the purple bar's and the rows' place when there is something to say instead. */
-@Composable
-private fun StakePanel(w: androidx.compose.ui.unit.Dp, h: androidx.compose.ui.unit.Dp, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-    val shape = RoundedCornerShape(22.dp)
-    Column(
-        verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.offset(w * 0.035f, h * 0.428f).size(w * 0.93f, h * 0.35f)
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFFAEC), Color(0xFFFBE9C4))), shape)
-            .border(2.dp, Color(0xFFE2C28A), shape)
-            .padding(12.dp),
-        content = content
-    )
-}
 
 /** One amount to put in: its coins painted at the left, the amount, and the two pills that say what it comes to. */
 @Composable

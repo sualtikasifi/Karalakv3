@@ -52,6 +52,7 @@ import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
 import com.sualtikasifi.cizimhafiza.presentation.common.ButtonLettering
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
+import com.sualtikasifi.cizimhafiza.presentation.common.NoticeCard
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedCloseButton
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPress
 import com.sualtikasifi.cizimhafiza.presentation.common.pressable
@@ -121,8 +122,14 @@ fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit,
             PaintedPress(R.drawable.gift_send_window, 0.877f, 0.126f, 0.108f, 0.068f, w, h, corner = 40.dp, onClick = onClose)
 
             when {
-                state.loading -> MessagePanel(w, h) { Note(stringResource(R.string.gift_loading)) }
-                state.blocked != null -> MessagePanel(w, h) { ErrorCard(stringResource(state.blocked.messageRes())) }
+                state.loading -> NoticeCard(
+                    stringResource(R.string.gift_loading), "", Modifier.offset(w * 0.078f, h * 0.243f).size(w * 0.844f, h * 0.655f),
+                    icon = { androidx.compose.material3.CircularProgressIndicator(color = Color.White, strokeWidth = 3.5.dp, modifier = Modifier.size(34.dp)) }
+                )
+                state.blocked != null -> NoticeCard(
+                    stringResource(R.string.gift_block_title), stringResource(state.blocked.messageRes()),
+                    Modifier.offset(w * 0.078f, h * 0.243f).size(w * 0.844f, h * 0.655f)
+                )
                 sent != null -> MessagePanel(w, h) {
                     SentCard(sent)
                     PaintedCloseButton(text = stringResource(R.string.close), onClick = onClose)

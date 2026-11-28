@@ -77,6 +77,11 @@ class ChestPreviewActivity : ComponentActivity() {
                                 com.sualtikasifi.cizimhafiza.domain.repository.StakeSettlement("Deniz", 100, 100, com.sualtikasifi.cizimhafiza.domain.model.DuelStatus.EXPIRED)
                             )
                         ) { finish() }
+                    } else if (state == "stake_blocked") {
+                        com.sualtikasifi.cizimhafiza.presentation.duel.StakePickerDialog(
+                            com.sualtikasifi.cizimhafiza.presentation.duel.StakePickerState(10, loading = false, block = com.sualtikasifi.cizimhafiza.domain.model.StakeBlock.FRIEND_NOT_READY),
+                            "Elif", 800, {}, { finish() }
+                        )
                     } else {
                         com.sualtikasifi.cizimhafiza.presentation.duel.StakePickerDialog(
                             com.sualtikasifi.cizimhafiza.presentation.duel.StakePickerState(10, loading = false, usage = com.sualtikasifi.cizimhafiza.domain.model.StakeUsage(1500, 2, 500)),
@@ -88,6 +93,7 @@ class ChestPreviewActivity : ComponentActivity() {
                 if (state.startsWith("gift")) {
                     val g = com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendState("u", "Elif", loading = false, usage = com.sualtikasifi.cizimhafiza.domain.model.GiftUsage(300, 1, 300))
                     when (state) {
+                        "gift_blocked2" -> com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendDialog(g.copy(usage = null, blocked = com.sualtikasifi.cizimhafiza.domain.model.GiftBlock.FRIEND_NOT_READY), 900, {}, { finish() })
                         "gift_blocked" -> com.sualtikasifi.cizimhafiza.presentation.gifts.GiftSendDialog(g.copy(usage = null, blocked = com.sualtikasifi.cizimhafiza.domain.model.GiftBlock.LEVEL), 900, {}, { finish() })
                         "gift_inbox" -> com.sualtikasifi.cizimhafiza.presentation.gifts.GiftInboxDialog(
                             listOf(
