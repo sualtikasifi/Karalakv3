@@ -169,7 +169,7 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
             )
             val usage = state.usage
             if (state.block != null || state.loading || usage == null) {
-                val panel = Modifier.offset(w * 0.03f, h * 0.421f).size(w * 0.94f, h * 0.374f)
+                val panel = Modifier.offset(w * 0.03f, h * 0.417f).size(w * 0.94f, h * 0.378f)
                 if (state.block != null) {
                     NoticeCard(stringResource(R.string.stake_block_title), stringResource(stakeMessageRes(state.block)), panel)
                 } else {
