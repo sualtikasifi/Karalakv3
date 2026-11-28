@@ -27,7 +27,6 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.sualtikasifi.cizimhafiza.presentation.mainmenu.rememberSink
@@ -36,11 +35,12 @@ import com.sualtikasifi.cizimhafiza.presentation.mainmenu.sunkenArt
 import kotlin.math.roundToInt
 
 /**
- * How a window's painted buttons are pressed for real: [keys] is the window's picture with ONLY its buttons and rows left
- * (each cut out on its own exact shape, icons sticking out of a row included), and [plate] the same picture with them
- * painted out. [left]..[height] is the button's cut-out (its shape's bounding box), as fractions of the picture.
+ * How a window's painted button is pressed for real: [cut] is the button alone, cut out of the window's picture on its
+ * own exact shape (icons sticking out of a row included), and [patch] what lies behind it — the window with the button
+ * painted out, on the button's own (slightly grown) shape only, so a neighbour is never covered. Both are the size of
+ * the button's bounding box, which is [left]..[height] as fractions of the window's picture.
  */
-class PressArt(val keys: Int, val plate: Int, val left: Float, val top: Float, val width: Float, val height: Float)
+class PressArt(val cut: Int, val patch: Int, val left: Float, val top: Float, val width: Float, val height: Float)
 
 /**
  * A button that is PAINTED into a window's picture. The area [left] [top] [width] [height] (fractions of the picture,
@@ -97,8 +97,8 @@ private fun CutOutPress(
     content: @Composable BoxWithConstraintsScope.() -> Unit
 ) {
     val context = LocalContext.current
-    val keys = remember(art.keys) { runCatching { BackdropCache.get(context.resources, art.keys) }.getOrNull() }
-    val plate = remember(art.plate) { runCatching { BackdropCache.get(context.resources, art.plate) }.getOrNull() }
+    val cut = remember(art.cut) { runCatching { BackdropCache.get(context.resources, art.cut) }.getOrNull() }
+    val patch = remember(art.patch) { runCatching { BackdropCache.get(context.resources, art.patch) }.getOrNull() }
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val press by animateFloatAsState(
@@ -118,15 +118,13 @@ private fun CutOutPress(
             .offset(parentW * art.left, parentH * art.top)
             .size(parentW * art.width, parentH * art.height)
             .drawBehind {
-                if (press <= 0f || keys == null || plate == null) return@drawBehind
-                val srcOff = IntOffset((art.left * keys.width).roundToInt(), (art.top * keys.height).roundToInt())
-                val srcSize = IntSize((art.width * keys.width).roundToInt(), (art.height * keys.height).roundToInt())
+                if (press <= 0f || cut == null || patch == null) return@drawBehind
                 val dst = IntSize(size.width.roundToInt(), size.height.roundToInt())
-                drawImage(plate, srcOffset = srcOff, srcSize = srcSize, dstSize = dst, filterQuality = FilterQuality.Medium)
+                drawImage(patch, dstSize = dst, filterQuality = FilterQuality.Medium)
                 translate(top = drop.toPx() * press) {
                     scale(k, k, pivot = center) {
                         drawImage(
-                            keys, srcOffset = srcOff, srcSize = srcSize, dstSize = dst, filterQuality = FilterQuality.Medium,
+                            cut, dstSize = dst, filterQuality = FilterQuality.Medium,
                             colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.13f * press), BlendMode.SrcAtop)
                         )
                     }

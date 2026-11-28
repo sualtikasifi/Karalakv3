@@ -121,7 +121,7 @@ fun GiftSendDialog(state: GiftSendState, gold: Int, onSend: (GiftOffer) -> Unit,
             )
             // the red cross, drawn into the picture
             PaintedPress(R.drawable.gift_send_window, 0.89502f, 0.12952f, 0.09957f, 0.06271f, w, h, corner = 40.dp,
-                art = PressArt(R.drawable.gift_send_window_keys, R.drawable.gift_send_window_plate, 0.89502f, 0.12952f, 0.09957f, 0.06271f), onClick = onClose)
+                art = PressArt(R.drawable.gift_press_7_cut, R.drawable.gift_press_7_patch, 0.89177f, 0.12747f, 0.10714f, 0.06748f), onClick = onClose)
 
             when {
                 state.loading -> NoticeCard(
@@ -185,7 +185,15 @@ private const val SendH = 1467f
 /** The seven rows (four gold, three jokers): top and bottom of each painted row, in picture pixels; they run from x 100 to 835. */
 private val SendRows = arrayOf(intArrayOf(549, 646), intArrayOf(644, 742), intArrayOf(740, 838), intArrayOf(836, 935), intArrayOf(1020, 1118), intArrayOf(1116, 1215), intArrayOf(1213, 1315))
 /** Their cut-outs for the press (the coins sticking out above a row included). */
-private val SendRowCuts = arrayOf(intArrayOf(549, 647), intArrayOf(644, 743), intArrayOf(740, 839), intArrayOf(836, 936), intArrayOf(1020, 1119), intArrayOf(1116, 1216), intArrayOf(1213, 1316))
+private val SendRowArt = listOf(
+    PressArt(R.drawable.gift_press_0_cut, R.drawable.gift_press_0_patch, 0.10498f, 0.37219f, 0.80303f, 0.07089f),
+    PressArt(R.drawable.gift_press_1_cut, R.drawable.gift_press_1_patch, 0.10498f, 0.43695f, 0.80303f, 0.07157f),
+    PressArt(R.drawable.gift_press_2_cut, R.drawable.gift_press_2_patch, 0.10498f, 0.50239f, 0.80303f, 0.07157f),
+    PressArt(R.drawable.gift_press_3_cut, R.drawable.gift_press_3_patch, 0.10498f, 0.56783f, 0.80303f, 0.07226f),
+    PressArt(R.drawable.gift_press_4_cut, R.drawable.gift_press_4_patch, 0.10498f, 0.69325f, 0.80303f, 0.07157f),
+    PressArt(R.drawable.gift_press_5_cut, R.drawable.gift_press_5_patch, 0.10498f, 0.75869f, 0.80303f, 0.07226f),
+    PressArt(R.drawable.gift_press_6_cut, R.drawable.gift_press_6_patch, 0.10498f, 0.82481f, 0.80303f, 0.07430f)
+)
 
 /** The cream panel that takes the rows' place when there is something to say instead. */
 @Composable
@@ -212,11 +220,10 @@ private fun SendRow(
     val ink = if (ok) Ink else Color(0xFFA8957F)
     val joker = offer.kind == GiftKind.JOKER
     val (t, b) = SendRows[index].let { it[0] to it[1] }
-    val (ct, cb) = SendRowCuts[index].let { it[0] to it[1] }
     // the whole row is one button: pressed, it sinks with its words
     PaintedPress(
         R.drawable.gift_send_window, 100f / SendW, t / SendH, 735f / SendW, (b - t) / SendH, w, h, corner = 22.dp, enabled = ok,
-        art = PressArt(R.drawable.gift_send_window_keys, R.drawable.gift_send_window_plate, 100f / SendW, ct / SendH, 736f / SendW, (cb - ct) / SendH),
+        art = SendRowArt[index],
         onClick = { onSend(offer) }
     ) {
         if (!ok) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(percent = 50)).background(Color(0x66F2E3C8)))

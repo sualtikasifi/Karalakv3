@@ -25,6 +25,7 @@ open() {
   sleep 6; dismiss_anr
 }
 hold() { # x y name
+  dismiss_anr
   adb shell input swipe "$1" "$2" "$1" "$2" 2500 &
   sleep 1
   adb exec-out screencap -p > "$OUT/$3.png"

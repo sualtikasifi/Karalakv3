@@ -164,7 +164,7 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
             )
             // the red cross, drawn into the picture
             PaintedPress(R.drawable.stake_window, 0.88681f, 0.12509f, 0.10989f, 0.06835f, w, h, corner = 40.dp,
-                art = PressArt(R.drawable.stake_window_keys, R.drawable.stake_window_plate, 0.88681f, 0.12509f, 0.10989f, 0.06835f), onClick = onDismiss)
+                art = PressArt(R.drawable.stake_press_5_cut, R.drawable.stake_press_5_patch, 0.88352f, 0.12303f, 0.11648f, 0.07314f), onClick = onDismiss)
             // the rules, and the one thing the house keeps
             FitText(
                 text = stringResource(R.string.stake_picker_sub, friendName),
@@ -203,7 +203,7 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
             // the start button: the picture's own orange, caving in with its label; with nothing to start it just closes
             val canStart = chosen.intValue > 0
             PaintedPress(R.drawable.stake_window, 0.21648f, 0.79699f, 0.56044f, 0.08749f, w, h, corner = 24.dp,
-                art = PressArt(R.drawable.stake_window_keys, R.drawable.stake_window_plate, 0.21538f, 0.79631f, 0.56374f, 0.08954f),
+                art = PressArt(R.drawable.stake_press_4_cut, R.drawable.stake_press_4_patch, 0.21319f, 0.79494f, 0.56813f, 0.09228f),
                 onClick = { if (canStart) onPick(chosen.intValue) else onDismiss() }) {
                 ButtonLettering(
                     text = stringResource(if (canStart) R.string.stake_start else R.string.stake_ok), sizeSp = 25f, fill = Color.White, outline = Color(0xFF9A3B00),
@@ -217,9 +217,15 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
 private const val StakeW = 910f
 private const val StakeH = 1463f
 
-/** The four rows: their painted outline (top, bottom) and their cut-out for the press (coins sticking out included), in picture pixels. */
+/** The four rows: their painted outline (top, bottom), in picture pixels. */
 private val StakeRowOutline = arrayOf(intArrayOf(702, 808), intArrayOf(814, 921), intArrayOf(928, 1035), intArrayOf(1041, 1151))
-private val StakeRowCut = arrayOf(intArrayOf(701, 810), intArrayOf(794, 928), intArrayOf(907, 1041), intArrayOf(1017, 1153))
+/** Their cut-outs for the press (coins sticking out included). */
+private val StakeRowArt = listOf(
+    PressArt(R.drawable.stake_press_0_cut, R.drawable.stake_press_0_patch, 0.04725f, 0.47710f, 0.89890f, 0.07861f),
+    PressArt(R.drawable.stake_press_1_cut, R.drawable.stake_press_1_patch, 0.04725f, 0.54067f, 0.89890f, 0.09569f),
+    PressArt(R.drawable.stake_press_2_cut, R.drawable.stake_press_2_patch, 0.04725f, 0.61791f, 0.89890f, 0.09569f),
+    PressArt(R.drawable.stake_press_3_cut, R.drawable.stake_press_3_patch, 0.04725f, 0.69310f, 0.89890f, 0.09706f)
+)
 
 /** One amount to put in: its coins painted at the left, the amount, and the two pills that say what it comes to. */
 @Composable
@@ -229,13 +235,12 @@ private fun StakeRow(
 ) {
     val fill = if (enabled) Color.White else Color(0xFFEDE6D8)
     val (t, b) = StakeRowOutline[index].let { it[0] to it[1] }
-    val (ct, cb) = StakeRowCut[index].let { it[0] to it[1] }
     // the row's own outline (x 46..858 of the 910 px picture, corners about a third of its height), so the chosen
     // frame lies exactly on the painted one
     val rowShape = RoundedCornerShape(percent = 34)
     PaintedPress(
         R.drawable.stake_window, 46f / StakeW, t / StakeH, 812f / StakeW, (b - t) / StakeH, w, h, corner = 22.dp, enabled = enabled,
-        art = PressArt(R.drawable.stake_window_keys, R.drawable.stake_window_plate, 46f / StakeW, ct / StakeH, 812f / StakeW, (cb - ct) / StakeH),
+        art = StakeRowArt[index],
         onClick = { onSelect(stake) }
     ) {
         if (selected) {
