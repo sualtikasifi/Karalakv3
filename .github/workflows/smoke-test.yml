@@ -37,6 +37,7 @@ on:
           - bend.sh
           - nudgeover.sh
           - notice.sh
+          - duelpage.sh
           - reportplayer.sh
           - friendmenu.sh
           - homechip2.sh

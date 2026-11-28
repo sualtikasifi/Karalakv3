@@ -1908,6 +1908,10 @@
     <string name="gift_block_refused">The gift could not be sent. Your gold is back.</string>
     <string name="stake_picker_title">Gold duel</string>
     <string name="stake_picker_sub">You and %1$s each add the same gold to the pot. The winner takes the pot.</string>
+    <string name="stake_start">Start</string>
+    <string name="stake_ok">OK</string>
+    <string name="duel_classic">Classic Duel</string>
+    <string name="stake_block_child">Gold Duel is turned off in child mode.</string>
     <string name="stake_none">Play without gold</string>
     <string name="stake_sent">Duel sent with %1$d gold. It is taken from your wallet now.</string>
     <string name="stake_chip">%1$d gold duel</string>

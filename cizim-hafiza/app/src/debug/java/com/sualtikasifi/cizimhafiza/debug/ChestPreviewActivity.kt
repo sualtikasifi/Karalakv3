@@ -67,6 +67,12 @@ class ChestPreviewActivity : ComponentActivity() {
                     )
                     return@CizimHafizaTheme
                 }
+                if (state == "duel_create") {
+                    com.sualtikasifi.cizimhafiza.presentation.duel.CreateDuelScreen(
+                        opponentName = "Elif", opponentUid = "u", onBack = { finish() }, onChallengeStarted = { _, _ -> }
+                    )
+                    return@CizimHafizaTheme
+                }
                 if (state.startsWith("stake")) {
                     if (state == "stake_result") {
                         val st = com.sualtikasifi.cizimhafiza.domain.model.DuelStatus.COMPLETE

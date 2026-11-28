@@ -1909,6 +1909,10 @@
     <string name="gift_block_refused">Não foi possível enviar o presente. Seu ouro voltou.</string>
     <string name="stake_picker_title">Duelo com ouro</string>
     <string name="stake_picker_sub">Você e %1$s colocam o mesmo ouro no pote. O vencedor leva o pote.</string>
+    <string name="stake_start">Começar</string>
+    <string name="stake_ok">Ok</string>
+    <string name="duel_classic">Duelo Clássico</string>
+    <string name="stake_block_child">O Duelo de Ouro está desativado no modo infantil.</string>
     <string name="stake_none">Jogar sem ouro</string>
     <string name="stake_sent">Duelo enviado com %1$d de ouro. Ele foi descontado da sua carteira agora.</string>
     <string name="stake_chip">Duelo de %1$d de ouro</string>
