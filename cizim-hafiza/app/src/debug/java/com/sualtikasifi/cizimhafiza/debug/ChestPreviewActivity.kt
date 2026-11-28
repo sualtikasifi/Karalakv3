@@ -30,6 +30,8 @@ class ChestPreviewActivity : ComponentActivity() {
         }
         setContent {
             CizimHafizaTheme {
+                // the tuning arrows (when the mode is on in the title_nudge preference), as in MainActivity
+                com.sualtikasifi.cizimhafiza.presentation.common.TitleNudgeOverlay()
                 if (state.startsWith("announce")) {
                     val long = state == "announce_long"
                     com.sualtikasifi.cizimhafiza.presentation.common.AnnouncementDialog(

@@ -48,6 +48,7 @@ import com.sualtikasifi.cizimhafiza.domain.repository.DuelRepository
 import com.sualtikasifi.cizimhafiza.domain.repository.StakeSettlement
 import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
 import com.sualtikasifi.cizimhafiza.presentation.common.ButtonLettering
+import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPress
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedPillButton
 import com.sualtikasifi.cizimhafiza.presentation.common.softShadow
 import com.sualtikasifi.cizimhafiza.util.LegalConsentStore
@@ -151,9 +152,7 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
                 modifier = Modifier.offset(w * 0.258f, h * 0.101f).size(w * 0.489f, h * 0.058f)
             )
             // the red cross, drawn into the picture
-            androidx.compose.foundation.layout.Box(
-                Modifier.offset(w * 0.875f, h * 0.113f).size(w * 0.125f, w * 0.125f).pressable(pressedScale = 0.9f, onClick = onDismiss)
-            )
+            PaintedPress(R.drawable.stake_window, 0.887f, 0.126f, 0.110f, 0.068f, w, h, corner = 40.dp, onClick = onDismiss)
             // the rules, and the one thing the house keeps
             FitText(
                 text = stringResource(R.string.stake_picker_sub, friendName),
@@ -191,11 +190,8 @@ fun StakePickerDialog(state: StakePickerState, friendName: String, gold: Int, on
                     StakeRow(stake, gold >= stake && usage.canStake(stake), onPick, w, h, StakeRowTop[i.coerceAtMost(3)])
                 }
             }
-            // the way out is the loudest button: the picture's own orange
-            androidx.compose.foundation.layout.Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.offset(w * 0.225f, h * 0.795f).size(w * 0.55f, h * 0.08f).pressable(pressedScale = 0.95f, onClick = { onPick(0) })
-            ) {
+            // the way out is the loudest button: the picture's own orange, caving in with its label
+            PaintedPress(R.drawable.stake_window, 0.225f, 0.80f, 0.55f, 0.075f, w, h, corner = 24.dp, onClick = { onPick(0) }) {
                 ButtonLettering(
                     text = stringResource(R.string.stake_none), sizeSp = 25f, fill = Color.White, outline = Color(0xFF9A3B00),
                     modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
@@ -231,27 +227,26 @@ private fun StakeRow(
     stake: Int, enabled: Boolean, onPick: (Int) -> Unit,
     w: androidx.compose.ui.unit.Dp, h: androidx.compose.ui.unit.Dp, top: Float
 ) {
-    val ink = if (enabled) Ink else Color(0xFFA8957F)
-    androidx.compose.foundation.layout.Box(
-        Modifier.offset(w * 0.055f, h * top).size(w * 0.885f, h * 0.068f)
-            .clip(RoundedCornerShape(22.dp))
-            .then(if (enabled) Modifier.pressable(pressedScale = 0.97f, onClick = { onPick(stake) }) else Modifier.background(Color(0x66F2E3C8)))
-    )
-    ButtonLettering(
-        text = "$stake", sizeSp = 27f, fill = if (enabled) Color.White else Color(0xFFEDE6D8), outline = if (enabled) Color(0xFF5A2815) else Color(0xFF9C8B78),
-        modifier = Modifier.offset(w * 0.236f, h * top).size(w * 0.194f, h * 0.068f)
-    )
-    // the whole prize on the green pill, the whole loss on the pink one
-    ButtonLettering(
-        text = "+${StakeRules.winnerPayout(stake)}", sizeSp = 23f, fill = if (enabled) Color.White else Color(0xFFEDE6D8),
-        outline = if (enabled) Color(0xFF1B6B2A) else Color(0xFF8E8A7A),
-        modifier = Modifier.offset(w * 0.446f, h * (top + 0.009f)).size(w * 0.201f, h * 0.051f)
-    )
-    ButtonLettering(
-        text = "−$stake", sizeSp = 23f, fill = if (enabled) Color.White else Color(0xFFEDE6D8),
-        outline = if (enabled) Color(0xFFA11D18) else Color(0xFF8E8A7A),
-        modifier = Modifier.offset(w * 0.681f, h * (top + 0.009f)).size(w * 0.227f, h * 0.051f)
-    )
+    val fill = if (enabled) Color.White else Color(0xFFEDE6D8)
+    // the whole row is one button that caves in with its numbers
+    PaintedPress(R.drawable.stake_window, 0.055f, top, 0.885f, 0.068f, w, h, corner = 22.dp, enabled = enabled, onClick = { onPick(stake) }) {
+        if (!enabled) androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().clip(RoundedCornerShape(22.dp)).background(Color(0x66F2E3C8)))
+        ButtonLettering(
+            text = "$stake", sizeSp = 27f, fill = fill, outline = if (enabled) Color(0xFF5A2815) else Color(0xFF9C8B78),
+            modifier = Modifier.offset(maxWidth * 0.2045f, 0.dp).size(maxWidth * 0.2192f, maxHeight)
+        )
+        // the whole prize on the green pill, the whole loss on the pink one
+        ButtonLettering(
+            text = "+${StakeRules.winnerPayout(stake)}", sizeSp = 23f, fill = fill,
+            outline = if (enabled) Color(0xFF1B6B2A) else Color(0xFF8E8A7A),
+            modifier = Modifier.offset(maxWidth * 0.4418f, maxHeight * 0.1324f).size(maxWidth * 0.2271f, maxHeight * 0.75f)
+        )
+        ButtonLettering(
+            text = "−$stake", sizeSp = 23f, fill = fill,
+            outline = if (enabled) Color(0xFFA11D18) else Color(0xFF8E8A7A),
+            modifier = Modifier.offset(maxWidth * 0.7073f, maxHeight * 0.1324f).size(maxWidth * 0.2565f, maxHeight * 0.75f)
+        )
+    }
 }
 
 /** What each settled wager did to the wallet. */

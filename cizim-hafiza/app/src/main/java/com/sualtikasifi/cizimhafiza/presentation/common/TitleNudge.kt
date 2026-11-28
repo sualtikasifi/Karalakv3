@@ -237,7 +237,13 @@ object TitleNudge {
     internal fun visibleKeys(): List<String> = active.distinct()
 }
 
-/** The tuning arrows, over the whole app; nothing at all while the mode is off. */
+/**
+ * The tuning arrows, over the whole app; nothing at all while the mode is off. They live in a window of their own (a
+ * dialog without a scrim or focus, touches outside the panel pass through) so that they are drawn above the app's own
+ * windows too — a dialog is a window above the activity, and arrows drawn in the activity stayed hidden behind it. A
+ * window opened later sits above an earlier one, so the arrows' window is made again whenever the set of titles on
+ * screen changes: a dialog that has just opened registers its title, and the arrows come up over it.
+ */
 @Composable
 fun TitleNudgeOverlay() {
     val context = LocalContext.current
@@ -246,10 +252,26 @@ fun TitleNudgeOverlay() {
     val keys = TitleNudge.visibleKeys()
     var picked by remember { mutableStateOf<String?>(null) }
     var step by remember { mutableStateOf(1) }
+    var copied by remember { mutableStateOf(false) }
     val key = picked?.takeIf { it in keys } ?: keys.firstOrNull()
     val clipboard = LocalClipboardManager.current
-    var copied by remember { mutableStateOf(false) }
-    Box(Modifier.fillMaxSize().navigationBarsPadding().padding(12.dp), contentAlignment = Alignment.BottomCenter) {
+    androidx.compose.runtime.key(keys) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = {},
+            properties = androidx.compose.ui.window.DialogProperties(
+                dismissOnBackPress = false, dismissOnClickOutside = false, usePlatformDefaultWidth = false, decorFitsSystemWindows = false
+            )
+        ) {
+            val window = (androidx.compose.ui.platform.LocalView.current.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
+            androidx.compose.runtime.SideEffect {
+                window?.apply {
+                    setDimAmount(0f)
+                    setGravity(android.view.Gravity.BOTTOM)
+                    // no focus, and a touch outside the panel belongs to whatever is under it
+                    addFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
+                }
+            }
+            Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp), contentAlignment = Alignment.BottomCenter) {
         Column(
             Modifier.clip(RoundedCornerShape(16.dp)).background(Color(0xEE1E1E24)).padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -295,6 +317,8 @@ fun TitleNudgeOverlay() {
                 }
                 Chip("Modu kapat", false) { TitleNudge.setEnabled(context, false) }
             }
+        }
+    }
         }
     }
 }
