@@ -23,11 +23,11 @@ fun TitleNudgePanel() {
                 title = "Başlık ayar modu",
                 checked = TitleNudge.enabled,
                 onChange = { TitleNudge.setEnabled(context, it) },
-                subtitle = "Açıkken oyun ekranlarının altında oklar çıkar; başlığı oklarla oynat."
+                subtitle = "Açıkken oyun ekranlarının altında oklar çıkar; başlığı oklarla oynat ve ovalleştir."
             )
         }
         Text(
-            "Nasıl kullanılır: modu aç, panelden çık, Hesap gibi tabelalı bir ekrana git. Alttaki oklarla başlığı yerine getir " +
+            "Nasıl kullanılır: modu aç, panelden çık, Hesap gibi tabelalı bir ekrana git. Alttaki oklarla başlığı yerine getir, \"Ovalleştir\" ile yay gibi kavisle " +
                 "(değer başlık boyunun yüzdesi, bu yüzden her telefonda aynı kalır). Hepsi bitince \"Tüm değerleri kopyala\" ile " +
                 "listeyi kopyalayıp bana yapıştır; ben kalıcı olarak koda işlerim.",
             modifier = Modifier.padding(top = 12.dp)
