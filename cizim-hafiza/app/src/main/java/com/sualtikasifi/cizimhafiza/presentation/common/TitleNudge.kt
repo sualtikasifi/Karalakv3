@@ -87,6 +87,14 @@ object TitleNudge {
         "Desafío" to (3 to -18),
         "Desafio" to (3 to -18),
         "Karalak" to (-6 to -15),
+        "GÜNÜN ÜCRETSİZ JOKERİ" to (-14 to -4)
+        "FREE JOKER OF THE DAY" to (-14 to -4)
+        "COMODÍN GRATIS DEL DÍA" to (-14 to -4)
+        "CORINGA GRÁTIS DO DIA" to (-14 to -4)
+        "Karalak Mağaza" to (0 to -40)
+        "Karalak Store" to (0 to -40)
+        "Karalak Tienda" to (0 to -40)
+        "Karalak Loja" to (0 to -40)
         "Karalak Rünleri" to (21 to 0),
         "Karalak Runes" to (21 to 0),
         "Runas de Karalak" to (21 to 0),
