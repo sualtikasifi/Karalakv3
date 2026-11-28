@@ -97,7 +97,6 @@ class ChestPreviewActivity : ComponentActivity() {
                             "Aylık Lig", 34.sp, title = true, modifier = androidx.compose.ui.Modifier.size(300.dp, 60.dp)
                         )
                     }
-                    com.sualtikasifi.cizimhafiza.presentation.common.TitleNudgeOverlay()
                     return@CizimHafizaTheme
                 }
                 if (state == "pen_picker") {

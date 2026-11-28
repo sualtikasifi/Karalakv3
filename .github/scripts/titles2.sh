@@ -40,8 +40,11 @@ sleep 6
 tapText Wait || true
 adb exec-out screencap -p > "$OUT/titles_panel.png"
 # the handle row of the panel (found on an earlier run): drag it up, then fold the panel from its new place
+tapText Wait || true
 adb shell input swipe 462 1393 462 493 1200; sleep 2
+tapText Wait || true
 adb exec-out screencap -p > "$OUT/titles_dragged.png"
 adb shell input tap 602 493; sleep 2
+tapText Wait || true
 adb exec-out screencap -p > "$OUT/titles_folded.png"
 ls -la "$OUT"
