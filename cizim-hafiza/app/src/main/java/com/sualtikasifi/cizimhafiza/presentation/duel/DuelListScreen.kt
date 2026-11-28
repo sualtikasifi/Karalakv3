@@ -177,7 +177,7 @@ fun DuelListScreen(
     acceptingDuel?.let { duel ->
         com.sualtikasifi.cizimhafiza.presentation.common.PaintedConfirmDialog(
             title = stringResource(R.string.stake_accept_title),
-            message = stringResource(R.string.stake_accept_message, duel.challengerName, duel.stake, com.sualtikasifi.cizimhafiza.domain.model.StakeRules.winnerPayout(duel.stake) - duel.stake, (com.sualtikasifi.cizimhafiza.domain.model.StakeRules.FINISH_MILLIS / 60_000).toInt()),
+            message = stringResource(R.string.stake_accept_message, duel.challengerName, duel.stake, com.sualtikasifi.cizimhafiza.domain.model.StakeRules.winnerPayout(duel.stake), (com.sualtikasifi.cizimhafiza.domain.model.StakeRules.FINISH_MILLIS / 60_000).toInt()),
             confirmText = stringResource(R.string.stake_accept_confirm),
             dismissText = stringResource(R.string.duel_list_decline_cancel),
             destructive = false,

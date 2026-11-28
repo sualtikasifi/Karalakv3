@@ -620,13 +620,17 @@ private fun CurvedLettering(
     strokeDp: Float,
     offsetX: Dp,
     offsetY: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Centre the letters themselves (the height of capitals and digits) in the box instead of their line box. */
+    optical: Boolean = false,
+    /** The wide soft shadow of a page title; small lettering on a button wants only its outline. */
+    softShadow: Boolean = true
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
     val typeface = remember { androidx.core.content.res.ResourcesCompat.getFont(context, R.font.baloo2_extrabold) }
     androidx.compose.foundation.Canvas(modifier) {
-        val textPx = sizeSp.sp.toPx()
+        var textPx = sizeSp.sp.toPx()
         val strokePx = strokeDp * density.density
         val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
             this.typeface = typeface
@@ -634,11 +638,21 @@ private fun CurvedLettering(
             strokeJoin = android.graphics.Paint.Join.ROUND
             strokeCap = android.graphics.Paint.Cap.ROUND
         }
-        val width = paint.measureText(text)
+        var width = paint.measureText(text)
+        // shrink rather than spill out of the box
+        if (width > size.width * 0.96f) {
+            textPx *= size.width * 0.96f / width
+            paint.textSize = textPx
+            width = paint.measureText(text)
+        }
         val fm = paint.fontMetrics
         val cx = size.width / 2f + offsetX.toPx()
         // the baseline of a straight line of this text, centred in the box
-        val base = size.height / 2f - (fm.ascent + fm.descent) / 2f + offsetY.toPx()
+        val base = if (optical) {
+            val ref = android.graphics.Rect()
+            paint.getTextBounds("0H", 0, 2, ref)
+            size.height / 2f - (ref.top + ref.bottom) / 2f + offsetY.toPx()
+        } else size.height / 2f - (fm.ascent + fm.descent) / 2f + offsetY.toPx()
         val sag = bend / 100f * textPx
         val path = android.graphics.Path().apply {
             moveTo(cx - width / 2f, base + sag / 2f)
@@ -648,13 +662,15 @@ private fun CurvedLettering(
         val hOffset = ((length - width) / 2f).coerceAtLeast(0f)
         drawIntoCanvas { c ->
             val nc = c.nativeCanvas
-            // the wide soft shadow of a title
             paint.style = android.graphics.Paint.Style.STROKE
-            paint.strokeWidth = strokePx + 1.5f * density.density
-            paint.color = 0x40000000
-            paint.setShadowLayer(textPx * 0.16f, 0f, textPx * 0.09f, 0x66200C00)
-            nc.save(); nc.translate(0f, textPx * 0.07f); nc.drawTextOnPath(text, path, hOffset, 0f, paint); nc.restore()
-            paint.clearShadowLayer()
+            if (softShadow) {
+                // the wide soft shadow of a title
+                paint.strokeWidth = strokePx + 1.5f * density.density
+                paint.color = 0x40000000
+                paint.setShadowLayer(textPx * 0.16f, 0f, textPx * 0.09f, 0x66200C00)
+                nc.save(); nc.translate(0f, textPx * 0.07f); nc.drawTextOnPath(text, path, hOffset, 0f, paint); nc.restore()
+                paint.clearShadowLayer()
+            }
             if (outline != null) {
                 paint.strokeWidth = strokePx
                 paint.color = outline.toArgb()
@@ -669,3 +685,21 @@ private fun CurvedLettering(
         }
     }
 }
+
+
+/**
+ * Lettering for a label on a painted button or pill: the game's Baloo 2 ExtraBold, [fill] over a rounded [outline], the
+ * letters (not their line box) centred in the box both ways, shrunk to fit its width rather than clipped.
+ */
+@Composable
+fun ButtonLettering(
+    text: String,
+    sizeSp: Float,
+    fill: Color,
+    outline: Color,
+    modifier: Modifier = Modifier
+) = CurvedLettering(
+    text = text, sizeSp = sizeSp, bend = 0, fill = fill, outline = outline,
+    strokeDp = (sizeSp * 0.11f).coerceIn(1.3f, 4.2f), offsetX = 0.dp, offsetY = 0.dp,
+    modifier = modifier, optical = true, softShadow = false
+)

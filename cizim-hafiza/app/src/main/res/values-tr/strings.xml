@@ -1925,7 +1925,7 @@
     <string name="stake_sent">%1$d altınlık düello gönderildi. Altın şimdi cüzdanından düştü.</string>
     <string name="stake_chip">%1$d altınlık düello</string>
     <string name="stake_accept_title">Altın Düellosu</string>
-    <string name="stake_accept_message">%1$s %2$d altınlık düello teklif etti. Kabul edersen %2$d altın hemen cüzdanından düşer ve %4$d dakika içinde bitirmen gerekir. Kazanırsan +%3$d altın alırsın, kaybedersen koyduğun altını kaybedersin.</string>
+    <string name="stake_accept_message">%1$s %2$d altınlık düello teklif etti. Kabul edersen %2$d altın hemen cüzdanından düşer ve %4$d dakika içinde bitirmen gerekir. Kazanırsan toplam %3$d altın alırsın, kaybedersen koyduğun altını kaybedersin.</string>
     <string name="stake_accept_confirm">Kabul et ve oyna</string>
     <string name="stake_result_title">Düello sonuçları</string>
     <string name="stake_settle_won">%1$s: kazandın, +%2$d altın</string>
@@ -1948,8 +1948,6 @@
     <string name="report_player_note">Bildirimin geliştiriciye iletilir ve incelenir.</string>
     <string name="stake_burn_note">Havuzun %5\'i oyundan çıkar.</string>
     <string name="stake_left_pill">Bugün kalan: %1$d düello · %2$d altın</string>
-    <string name="stake_win_label">Kazanırsan</string>
-    <string name="stake_lose_label">Kaybedersen</string>
     <string name="stake_chip_win">Kazanırsan +%1$d</string>
     <string name="stake_chip_lose">Kaybedersen −%1$d</string>
     <string name="gift_sent_title">Hediye gönderildi</string>

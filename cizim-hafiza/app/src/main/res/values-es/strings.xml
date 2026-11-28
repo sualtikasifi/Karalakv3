@@ -1913,7 +1913,7 @@
     <string name="stake_sent">Duelo enviado con %1$d de oro. Se descuenta de tu cartera ahora.</string>
     <string name="stake_chip">Duelo de %1$d de oro</string>
     <string name="stake_accept_title">Duelo por oro</string>
-    <string name="stake_accept_message">%1$s ofreció un duelo de %2$d de oro. Si aceptas, se descuentan %2$d de oro ahora y debes terminar en %4$d minutos. Ganas: +%3$d de oro. Pierdes: pierdes el oro puesto.</string>
+    <string name="stake_accept_message">%1$s ofreció un duelo de %2$d de oro. Si aceptas, se descuentan %2$d de oro ahora y debes terminar en %4$d minutos. Ganas: recibes %3$d de oro en total. Pierdes: pierdes el oro puesto.</string>
     <string name="stake_accept_confirm">Aceptar y jugar</string>
     <string name="stake_result_title">Resultados de duelos</string>
     <string name="stake_settle_won">%1$s: ganaste +%2$d de oro</string>
@@ -1936,8 +1936,6 @@
     <string name="report_player_note">Tu denuncia llega al desarrollador y se revisa.</string>
     <string name="stake_burn_note">El 5% del bote sale del juego.</string>
     <string name="stake_left_pill">Hoy quedan: %1$d duelos · %2$d de oro</string>
-    <string name="stake_win_label">Si ganas</string>
-    <string name="stake_lose_label">Si pierdes</string>
     <string name="stake_chip_win">Ganas +%1$d</string>
     <string name="stake_chip_lose">Pierdes −%1$d</string>
     <string name="gift_sent_title">Regalo enviado</string>

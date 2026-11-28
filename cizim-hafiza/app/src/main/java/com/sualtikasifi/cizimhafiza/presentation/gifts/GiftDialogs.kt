@@ -49,6 +49,7 @@ import com.sualtikasifi.cizimhafiza.domain.model.JokerType
 import com.sualtikasifi.cizimhafiza.domain.model.PenSkin
 import com.sualtikasifi.cizimhafiza.domain.repository.GiftRepository
 import com.sualtikasifi.cizimhafiza.presentation.common.AppWindowDialog
+import com.sualtikasifi.cizimhafiza.presentation.common.ButtonLettering
 import com.sualtikasifi.cizimhafiza.presentation.common.FitText
 import com.sualtikasifi.cizimhafiza.presentation.common.LetteredText
 import com.sualtikasifi.cizimhafiza.presentation.common.PaintedCloseButton
@@ -231,10 +232,9 @@ private fun SendRow(
             }
         }
     }
-    FitText(
-        text = "${offer.cost}",
-        style = PaintedStyle(color = if (ok) Color(0xFF3B2314) else Color(0xFF8E7B66), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center),
-        minScale = 0.6f,
+    ButtonLettering(
+        text = "${offer.cost}", sizeSp = 21f, fill = if (ok) Color.White else Color(0xFFEDE6D8),
+        outline = if (ok) Color(0xFF7A3B00) else Color(0xFF8E7B66),
         modifier = Modifier.offset(w * 0.765f, h * top).size(w * 0.125f, h * 0.058f)
     )
 }
